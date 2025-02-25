@@ -1,19 +1,15 @@
 # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 
-# Configuration du répertoire de travail
 WORKDIR /build
 
-# Copie du pom.xml et téléchargement des dépendances
+# First copy only POM file to cache dependencies
 COPY pom.xml .
-COPY .mvn/ .mvn/
-COPY mvnw mvnw.cmd ./
-RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
-# Copie des sources et build
+# Then copy source files and build
 COPY src src
-RUN ./mvnw package -DskipTests
+RUN mvn package -DskipTests
 
 # Stage 2: Runtime
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
