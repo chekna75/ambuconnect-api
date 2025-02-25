@@ -1,10 +1,10 @@
 # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY pom.xml .
-RUN mvn dependency:go-offline
-COPY . .
-RUN mvn package -DskipTests
+COPY pom.xml mvnw mvnw.cmd ./
+COPY .mvn ./.mvn
+COPY src ./src
+RUN ./mvnw package -DskipTests
 
 # Stage 2: Runtime
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
