@@ -1,7 +1,6 @@
 # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY pom.xml mvnw mvnw.cmd ./
 COPY . .
 RUN ./mvnw package -DskipTests
 
