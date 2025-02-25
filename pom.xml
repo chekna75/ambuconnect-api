@@ -178,6 +178,10 @@
     <artifactId>quarkus-flyway</artifactId>
 </dependency>
 <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-health</artifactId>
+</dependency>
+<dependency>
     <groupId>com.itextpdf</groupId>
     <artifactId>layout</artifactId>
     <version>7.2.5</version>
