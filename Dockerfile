@@ -2,7 +2,7 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY . .
-RUN ./mvnw package -DskipTests
+RUN mvn package -DskipTests
 
 # Stage 2: Runtime
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
