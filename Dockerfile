@@ -1,8 +1,15 @@
 # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY . .
+
+COPY back-ambuconnect/pom.xml .
+RUN mvn dependency:go-offline
+
+COPY back-ambuconnect/src ./src
+
 RUN mvn package -DskipTests
+
+WORKDIR /app
 
 # Stage 2: Runtime
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
