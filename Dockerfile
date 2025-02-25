@@ -1,23 +1,32 @@
 # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS build
-WORKDIR /app
 
-# Premier COPY avec vérification
-COPY . .
-RUN echo "=== Contenu du répertoire courant ===" && \
+# Création et vérification du répertoire de travail
+WORKDIR /app
+RUN echo "=== Vérification du répertoire de travail initial ===" && \
     pwd && \
-    echo "=== Liste des fichiers ===" && \
+    ls -la
+
+# Copie du pom.xml séparément pour le cache des dépendances
+COPY pom.xml .
+RUN echo "=== Vérification après copie du pom.xml ===" && \
     ls -la && \
     echo "=== Contenu du pom.xml ===" && \
-    cat pom.xml || echo "pom.xml non trouvé" && \
-    echo "=== Contenu du répertoire src ===" && \
-    ls -la src/ || echo "src/ non trouvé"
+    cat pom.xml
 
-# Installation des dépendances
-RUN mvn dependency:go-offline
+# Copie du reste des fichiers
+COPY src ./src
+COPY mvnw mvnw.cmd ./
+RUN echo "=== Vérification après copie des sources ===" && \
+    ls -la && \
+    echo "=== Contenu du répertoire src ===" && \
+    ls -R src/
+
+# Rendre le mvnw exécutable
+RUN chmod +x mvnw
 
 # Build du projet
-RUN mvn package -DskipTests
+RUN ./mvnw package -DskipTests
 
 
 # Stage 2: Runtime
