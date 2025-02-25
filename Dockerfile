@@ -5,7 +5,7 @@ WORKDIR /app
 COPY back-ambuconnect/pom.xml .
 RUN mvn dependency:go-offline
 
-COPY back-ambuconnect/src ./src
+COPY back-ambuconnect/src .
 
 RUN mvn package -DskipTests
 
