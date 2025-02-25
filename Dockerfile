@@ -1,44 +1,17 @@
-# Stage 1: Build
-FROM maven:3.9.6-eclipse-temurin-21 AS build
-WORKDIR /app
-
-# Copier d'abord le pom.xml pour profiter du cache des dépendances
-COPY pom.xml pom.xml
-RUN mvn dependency:go-offline
-
-# Copier le reste du code source
-COPY src src
-RUN mvn clean package -DskipTests
-
-# Stage 2: Runtime
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
 
 ENV LANGUAGE='en_US:en'
+
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=185 target/quarkus-app/*.jar /deployments/
+COPY --chown=185 target/quarkus-app/app/ /deployments/app/
+COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080
+USER 185
 ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
-ENV PORT=8080
 
-# Configuration de la base de données
-ENV QUARKUS_DATASOURCE_USERNAME=postgres
-ENV QUARKUS_DATASOURCE_PASSWORD=toNkzKAbXtdHGkmBYiNZMpCDTNskQcKt
-ENV QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://postgres.railway.internal:5432/railway
-
-# Configuration additionnelle pour la robustesse
-ENV QUARKUS_HTTP_PORT=5432
-ENV QUARKUS_HTTP_ACCESS_LOG_ENABLED=true
-ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+ExitOnOutOfMemoryError"
-ENV CI_PROJECT_NAME=e45ec9ae-0b48-4942-9ea3-0cd191708816
-
-# Copie des fichiers de l'application depuis l'étape de build
-COPY --from=build /app/target/quarkus-app/lib/ /deployments/lib/
-COPY --from=build /app/target/quarkus-app/*.jar /deployments/
-COPY --from=build /app/target/quarkus-app/app/ /deployments/app/
-COPY --from=build /app/target/quarkus-app/quarkus/ /deployments/quarkus/
-
-EXPOSE ${PORT}
-USER 185
-
-# Ajout d'un healthcheck
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:${PORT}/q/health || exit 1
-
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
