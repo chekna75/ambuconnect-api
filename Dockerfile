@@ -1,3 +1,11 @@
+# Stage 1: Build
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
 
 ENV LANGUAGE='en_US:en'
@@ -16,14 +24,11 @@ ENV QUARKUS_HTTP_ACCESS_LOG_ENABLED=true
 ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+ExitOnOutOfMemoryError"
 ENV CI_PROJECT_NAME=e45ec9ae-0b48-4942-9ea3-0cd191708816
 
-
-
-
-# Copie des fichiers de l'application
-COPY target/quarkus-app/lib/ /deployments/lib/
-COPY target/quarkus-app/*.jar /deployments/
-COPY target/quarkus-app/app/ /deployments/app/
-COPY target/quarkus-app/quarkus/ /deployments/quarkus/
+# Copie des fichiers de l'application depuis l'étape de build
+COPY --from=build /app/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=build /app/target/quarkus-app/*.jar /deployments/
+COPY --from=build /app/target/quarkus-app/app/ /deployments/app/
+COPY --from=build /app/target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE ${PORT}
 USER 185
