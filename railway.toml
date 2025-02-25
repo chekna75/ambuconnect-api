@@ -4,7 +4,10 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "java -jar /deployments/quarkus-run.jar"
-healthcheckPath = "/q/health"
+# Utiliser l'endpoint root comme healthcheck (qui est généralement disponible)
+healthcheckPath = "/"
+# Autre option : désactiver temporairement le healthcheck
+# healthcheckPath = ""
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

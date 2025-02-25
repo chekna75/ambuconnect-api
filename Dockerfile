@@ -8,6 +8,9 @@ WORKDIR /app
 COPY pom.xml mvnw* ./
 COPY src ./src
 
+# Ajouter l'extension SmallRye Health
+RUN mvn quarkus:add-extension -Dextensions="smallrye-health"
+
 # Construction avec Maven
 RUN mvn -B package -DskipTests
 
