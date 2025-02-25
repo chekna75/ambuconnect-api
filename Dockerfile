@@ -9,7 +9,7 @@ COPY pom.xml mvnw* ./
 COPY src ./src
 
 # Construction avec Maven
-RUN ./mvnw -B package -DskipTests
+RUN mvn -B package -DskipTests
 
 ## Étape 2: Création de l'image d'exécution
 FROM eclipse-temurin:21-jre-alpine
