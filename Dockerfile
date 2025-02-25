@@ -1,3 +1,11 @@
+# Stage 1: Build
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+COPY pom.xml /app/
+COPY src /app/src/
+WORKDIR /app
+RUN mvn package -DskipTests
+
+# Stage 2: Runtime
 FROM registry.access.redhat.com/ubi8/openjdk-21:1.20
 
 ENV LANGUAGE='en_US:en'
@@ -10,10 +18,10 @@ ENV QUARKUS_DATASOURCE_PASSWORD=toNkzKAbXtdHGkmBYiNZMpCDTNskQcKt
 ENV QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://postgres.railway.internal:5432/railway
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+COPY --from=build --chown=185 /app/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=build --chown=185 /app/target/quarkus-app/*.jar /deployments/
+COPY --from=build --chown=185 /app/target/quarkus-app/app/ /deployments/app/
+COPY --from=build --chown=185 /app/target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 USER 185
