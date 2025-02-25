@@ -1,12 +1,22 @@
 # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS build
-COPY . .
 WORKDIR /app
 
+# Premier COPY avec vérification
 COPY . .
+RUN echo "=== Contenu du répertoire courant ===" && \
+    pwd && \
+    echo "=== Liste des fichiers ===" && \
+    ls -la && \
+    echo "=== Contenu du pom.xml ===" && \
+    cat pom.xml || echo "pom.xml non trouvé" && \
+    echo "=== Contenu du répertoire src ===" && \
+    ls -la src/ || echo "src/ non trouvé"
+
+# Installation des dépendances
 RUN mvn dependency:go-offline
 
-COPY . .
+# Build du projet
 RUN mvn package -DskipTests
 
 
