@@ -1,8 +1,13 @@
 # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
-# Copier tout le contenu du projet
-COPY . .
+
+# Copier d'abord le pom.xml pour profiter du cache des dépendances
+COPY ./pom.xml ./pom.xml
+RUN mvn dependency:go-offline
+
+# Copier le reste du code source
+COPY ./src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime
