@@ -174,7 +174,7 @@ public class AuthenService {
                 }
                 return Jwt.claims()
                     .subject(userId.toString())
-                    .issuer("your-issuer")
+                    .issuer("ambuconnect-api-recette.up.railway.app")
                     .issuedAt(System.currentTimeMillis())
                     .expiresIn(Duration.ofHours(1))
                     .groups(new HashSet<>(Arrays.asList("admin")))
@@ -193,7 +193,7 @@ public class AuthenService {
                 }
                 return Jwt.claims()
                     .subject(userId.toString())
-                    .issuer("your-issuer")
+                    .issuer("ambuconnect-api-recette.up.railway.app")
                     .issuedAt(System.currentTimeMillis())
                     .expiresIn(Duration.ofHours(1))
                     .groups(new HashSet<>(Arrays.asList("chauffeur")))
