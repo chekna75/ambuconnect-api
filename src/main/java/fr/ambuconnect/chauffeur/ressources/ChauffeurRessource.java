@@ -4,6 +4,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.OPTIONS;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,10 +18,8 @@ import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.dto.PerformanceChauffeurDto;
 import fr.ambuconnect.chauffeur.services.ChauffeurService;
 import fr.ambuconnect.chauffeur.services.PerformanceChauffeurService;
-import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
-import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -94,11 +93,33 @@ public class ChauffeurRessource {
             // Supprimer les informations sensibles comme les mots de passe avant de renvoyer
             administrateurs.forEach(admin -> admin.setMotDePasse(null));
             
-            return Response.ok(administrateurs).build();
+            return Response.ok(administrateurs)
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Methods", "GET, OPTIONS")
+                .header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
+                .build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Erreur lors de la récupération des administrateurs: " + e.getMessage())
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Methods", "GET, OPTIONS")
+                .header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
                 .build();
         }
+    }
+
+    /**
+     * Gère les requêtes OPTIONS pour les requêtes CORS preflight
+     */
+    @OPTIONS
+    @Path("/admins")
+    @PermitAll
+    public Response optionsAdmins() {
+        return Response.ok()
+            .header("Access-Control-Allow-Origin", "*")
+            .header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            .header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
+            .header("Access-Control-Max-Age", "86400")
+            .build();
     }
 }
