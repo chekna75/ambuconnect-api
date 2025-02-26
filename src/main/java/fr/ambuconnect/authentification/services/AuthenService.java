@@ -177,7 +177,7 @@ public class AuthenService {
                 }
                 return Jwt.claims()
                     .subject(userId.toString())
-                    .issuer(jwtIssuer)
+                    .issuer("ambuconnect-api-recette.up.railway.app")
                     .issuedAt(System.currentTimeMillis())
                     .expiresIn(Duration.ofHours(1))
                     .groups(new HashSet<>(Arrays.asList("admin")))
@@ -188,7 +188,7 @@ public class AuthenService {
                     .claim("telephone", admin.getTelephone())
                     .claim("entrepriseId", admin.getEntreprise().getId().toString())
                     .claim("entrepriseNom", admin.getEntreprise().getNom())
-                    .sign(jwtSecret);
+                    .sign();
             } else {
                 ChauffeurEntity chauffeur = ChauffeurEntity.findById(userId);
                 if (chauffeur == null) {
@@ -196,7 +196,7 @@ public class AuthenService {
                 }
                 return Jwt.claims()
                     .subject(userId.toString())
-                    .issuer(jwtIssuer)
+                    .issuer("ambuconnect-api-recette.up.railway.app")
                     .issuedAt(System.currentTimeMillis())
                     .expiresIn(Duration.ofHours(1))
                     .groups(new HashSet<>(Arrays.asList("chauffeur")))
@@ -207,7 +207,7 @@ public class AuthenService {
                     .claim("telephone", chauffeur.getTelephone())
                     .claim("entrepriseId", chauffeur.getEntreprise().getId().toString())
                     .claim("entrepriseNom", chauffeur.getEntreprise().getNom())
-                    .sign(jwtSecret);
+                    .sign();
             }
         } catch (Exception e) {
             System.out.println("Erreur lors de la génération du JWT: " + e.getMessage());
