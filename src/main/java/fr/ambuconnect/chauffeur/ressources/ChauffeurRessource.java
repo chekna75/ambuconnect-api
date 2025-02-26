@@ -30,8 +30,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/chauffeurs")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Authenticated
-@Valid
+
 public class ChauffeurRessource {
 
     @Inject
