@@ -93,17 +93,11 @@ public class ChauffeurRessource {
             // Supprimer les informations sensibles comme les mots de passe avant de renvoyer
             administrateurs.forEach(admin -> admin.setMotDePasse(null));
             
-            return Response.ok(administrateurs)
-                .header("Access-Control-Allow-Origin", "*")
-                .header("Access-Control-Allow-Methods", "GET, OPTIONS")
-                .header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
-                .build();
+            // Pas besoin d'ajouter les en-têtes CORS ici, ils sont gérés par le filtre global
+            return Response.ok(administrateurs).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Erreur lors de la récupération des administrateurs: " + e.getMessage())
-                .header("Access-Control-Allow-Origin", "*")
-                .header("Access-Control-Allow-Methods", "GET, OPTIONS")
-                .header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
                 .build();
         }
     }
@@ -115,11 +109,7 @@ public class ChauffeurRessource {
     @Path("/admins")
     @PermitAll
     public Response optionsAdmins() {
-        return Response.ok()
-            .header("Access-Control-Allow-Origin", "*")
-            .header("Access-Control-Allow-Methods", "GET, OPTIONS")
-            .header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
-            .header("Access-Control-Max-Age", "86400")
-            .build();
+        // Pas besoin d'ajouter les en-têtes CORS ici, ils sont gérés par le filtre global
+        return Response.ok().build();
     }
 }

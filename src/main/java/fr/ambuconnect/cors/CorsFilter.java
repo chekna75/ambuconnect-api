@@ -25,17 +25,19 @@ public class CorsFilter implements ContainerResponseFilter {
         responseContext.getHeaders().remove("Access-Control-Allow-Headers");
         responseContext.getHeaders().remove("Access-Control-Allow-Methods");
         responseContext.getHeaders().remove("Access-Control-Max-Age");
+        responseContext.getHeaders().remove("Access-Control-Expose-Headers");
         
         // Ajouter les en-têtes CORS appropriés
         if (origin != null) {
+            // Utiliser l'origine exacte pour permettre les credentials
             responseContext.getHeaders().add("Access-Control-Allow-Origin", origin);
             responseContext.getHeaders().add("Access-Control-Allow-Credentials", "true");
         } else {
-            // Fallback si l'origine est null (peu probable mais par sécurité)
+            // Fallback si l'origine est null
             responseContext.getHeaders().add("Access-Control-Allow-Origin", "*");
         }
         
-        // En-têtes plus complets pour s'assurer que tous les en-têtes nécessaires sont autorisés
+        // En-têtes plus complets
         responseContext.getHeaders().add("Access-Control-Allow-Headers", 
             "origin, content-type, accept, authorization, x-requested-with, x-cors-headers");
         responseContext.getHeaders().add("Access-Control-Allow-Methods", 
