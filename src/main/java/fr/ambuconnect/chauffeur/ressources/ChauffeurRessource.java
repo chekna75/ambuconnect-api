@@ -10,19 +10,14 @@ import java.util.List;
 import java.util.UUID;
 
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
-import org.jboss.resteasy.reactive.RestResponse;
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
 import fr.ambuconnect.administrateur.services.AdministrateurService;
-import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.dto.PerformanceChauffeurDto;
-import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.chauffeur.services.ChauffeurService;
 import fr.ambuconnect.chauffeur.services.PerformanceChauffeurService;
 import io.quarkus.security.Authenticated;
-import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
