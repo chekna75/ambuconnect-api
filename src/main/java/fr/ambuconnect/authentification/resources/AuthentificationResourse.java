@@ -99,11 +99,8 @@ public class AuthentificationResourse {
     @OPTIONS
     @Path("{any:.*}")
     public Response options() {
-        return Response.ok()
-            .header("Access-Control-Allow-Origin", "*")
-            .header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-            .header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
-            .build();
+        // Nous ne définissons pas les en-têtes CORS ici car ils sont déjà gérés par le CorsFilter global
+        return Response.ok().build();
     }
 
 }

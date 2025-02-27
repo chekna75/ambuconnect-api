@@ -1,5 +1,6 @@
 package fr.ambuconnect.notification.websocket;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,6 +85,25 @@ public class NotificationWebSocket {
                     // Marquer une notification comme lue
                     UUID notificationId = UUID.fromString(jsonNode.get("notificationId").asText());
                     notificationService.marquerCommeLue(notificationId);
+                    break;
+                    
+                case "GET_UNREAD_NOTIFICATIONS":
+                    // Récupération des notifications non lues
+                    destinataireId = UUID.fromString(jsonNode.get("destinataireId").asText());
+                    List<NotificationDto> notifications = notificationService.recupererNotificationsNonLues(destinataireId);
+                    
+                    // Préparation de la réponse
+                    Map<String, Object> response = Map.of(
+                        "type", "UNREAD_NOTIFICATIONS",
+                        "notifications", notifications
+                    );
+                    
+                    // Envoi de la réponse
+                    Session userSession = sessions.get(expediteurId);
+                    if (userSession != null && userSession.isOpen()) {
+                        userSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(response));
+                        logger.info("Notifications non lues envoyées à l'utilisateur: " + expediteurId);
+                    }
                     break;
                     
                 default:
