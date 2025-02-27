@@ -67,9 +67,24 @@ public class MessagerieService {
             throw new IllegalArgumentException("Type d'expéditeur invalide");
         }
         
-        // Récupérer et définir les relations pour le destinataire
-        setMessageRelations(entity, messagerieDto);
+        // Vérifiez le type de destinataire et définissez les relations correctement
+        if (UserType.chauffeur.equals(messagerieDto.getDestinataireType())) {
+            ChauffeurEntity chauffeur = ChauffeurEntity.findById(messagerieDto.getDestinataireId());
+            if (chauffeur == null) {
+                throw new NotFoundException("Chauffeur non trouvé");
+            }
+            entity.setDestinataireChauffeur(chauffeur);
+        } else if (UserType.administrateur.equals(messagerieDto.getDestinataireType())) {
+            AdministrateurEntity admin = AdministrateurEntity.findById(messagerieDto.getDestinataireId());
+            if (admin == null) {
+                throw new NotFoundException("Administrateur non trouvé");
+            }
+            entity.setDestinataireAdmin(admin);
+        } else {
+            throw new IllegalArgumentException("Type de destinataire invalide");
+        }
         
+        // Persister l'entité
         entity.persist();
 
         // Envoyer une notification au destinataire
