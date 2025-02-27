@@ -56,19 +56,19 @@ public class MessagerieEntity extends PanacheEntityBase {
     private UUID destinataireId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "expediteur_id", insertable = false, updatable = false)
+    @JoinColumn(name = "expediteur_id", referencedColumnName = "id", insertable = false, updatable = false)
     private AdministrateurEntity expediteurAdmin;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "expediteur_id", insertable = false, updatable = false)
+    @JoinColumn(name = "expediteur_id", referencedColumnName = "id", insertable = false, updatable = false)
     private ChauffeurEntity expediteurChauffeur;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "destinataire_id", insertable = false, updatable = false)
+    @JoinColumn(name = "destinataire_id", referencedColumnName = "id", insertable = false, updatable = false)
     private AdministrateurEntity destinataireAdmin;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "destinataire_id", insertable = false, updatable = false)
+    @JoinColumn(name = "destinataire_id", referencedColumnName = "id", insertable = false, updatable = false)
     private ChauffeurEntity destinataireChauffeur;
 
     @ManyToOne
