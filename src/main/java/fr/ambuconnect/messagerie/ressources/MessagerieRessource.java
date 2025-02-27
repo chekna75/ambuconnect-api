@@ -162,15 +162,20 @@ public class MessagerieRessource {
                 logger.info("Contenu du message: " + message);
                 
                 try {
-                    MessagerieDto MessagerieDto = objectMapper.readValue(message, MessagerieDto.class);
-                    logger.info("Message parsé - De: " + MessagerieDto.getExpediteurId() + " À: " + MessagerieDto.getDestinataireId());
+                    MessagerieDto messagerieDto = objectMapper.readValue(message, MessagerieDto.class);
+                    logger.info("Message parsé - De: " + messagerieDto.getExpediteurId() + " À: " + messagerieDto.getDestinataireId());
+                    
+                    // Vérifiez le type d'expéditeur et de destinataire
+                    if (messagerieDto.getExpediteurType() == null || messagerieDto.getDestinataireType() == null) {
+                        throw new IllegalArgumentException("Les types d'expéditeur et de destinataire sont requis");
+                    }
                     
                     // Sauvegarder le message
-                    MessagerieDto = messagerieService.createMessage(MessagerieDto);
+                    messagerieDto = messagerieService.createMessage(messagerieDto);
                     
                     // Envoyer le message à l'expéditeur aussi
-                    sendMessageToUser(MessagerieDto, MessagerieDto.getDestinataireId());
-                    sendMessageToUser(MessagerieDto, MessagerieDto.getExpediteurId());
+                    sendMessageToUser(messagerieDto, messagerieDto.getDestinataireId());
+                    sendMessageToUser(messagerieDto, messagerieDto.getExpediteurId());
                     
                 } catch (Exception e) {
                     logger.severe("Erreur lors du traitement du message: " + e.getMessage());

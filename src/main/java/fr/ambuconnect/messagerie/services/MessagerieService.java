@@ -40,26 +40,43 @@ public class MessagerieService {
      * Crée un nouveau message
      */
     @Transactional
-    public MessagerieDto createMessage(MessagerieDto MessagerieDto) {
-        validateMessage(MessagerieDto);
+    public MessagerieDto createMessage(MessagerieDto messagerieDto) {
+        validateMessage(messagerieDto);
         
-        MessagerieEntity entity = messagerieMapper.toEntity(MessagerieDto);
+        MessagerieEntity entity = messagerieMapper.toEntity(messagerieDto);
         
         // Set la date si elle n'est pas définie
         if (entity.getDateHeure() == null) {
             entity.setDateHeure(LocalDateTime.now().toString());
         }
         
-        // Récupérer et définir les relations
-        setMessageRelations(entity, MessagerieDto);
+        // Vérifiez le type d'expéditeur et définissez les relations correctement
+        if (UserType.chauffeur.equals(messagerieDto.getExpediteurType())) {
+            ChauffeurEntity chauffeur = ChauffeurEntity.findById(messagerieDto.getExpediteurId());
+            if (chauffeur == null) {
+                throw new NotFoundException("Chauffeur non trouvé");
+            }
+            entity.setExpediteurChauffeur(chauffeur);
+        } else if (UserType.administrateur.equals(messagerieDto.getExpediteurType())) {
+            AdministrateurEntity admin = AdministrateurEntity.findById(messagerieDto.getExpediteurId());
+            if (admin == null) {
+                throw new NotFoundException("Administrateur non trouvé");
+            }
+            entity.setExpediteurAdmin(admin);
+        } else {
+            throw new IllegalArgumentException("Type d'expéditeur invalide");
+        }
+        
+        // Récupérer et définir les relations pour le destinataire
+        setMessageRelations(entity, messagerieDto);
         
         entity.persist();
 
         // Envoyer une notification au destinataire
         String expediteurNom = getExpediteurNom(entity);
         notificationService.notifierNouveauMessage(
-            MessagerieDto.getExpediteurId(),
-            MessagerieDto.getDestinataireId(),
+            messagerieDto.getExpediteurId(),
+            messagerieDto.getDestinataireId(),
             expediteurNom
         );
         
