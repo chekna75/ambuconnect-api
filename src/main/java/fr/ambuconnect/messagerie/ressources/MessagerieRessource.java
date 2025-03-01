@@ -32,6 +32,8 @@ import fr.ambuconnect.messagerie.dto.MessagerieDto;
 import fr.ambuconnect.messagerie.dto.UserStatusDTO;
 import fr.ambuconnect.messagerie.mapper.MessagerieMapper;
 import fr.ambuconnect.messagerie.services.MessagerieService;
+import fr.ambuconnect.messagerie.services.WebSocketService;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.util.logging.Logger;
@@ -45,12 +47,14 @@ public class MessagerieRessource {
     private final MessagerieMapper messagerieMapper;
     private final ObjectMapper objectMapper;
     private final MessagerieService messagerieService;
+    private final WebSocketService webSocketService;
 
     @Inject
-    public MessagerieRessource(MessagerieMapper messagerieMapper, ObjectMapper objectMapper, MessagerieService messagerieService){
+    public MessagerieRessource(MessagerieMapper messagerieMapper, ObjectMapper objectMapper, MessagerieService messagerieService, WebSocketService webSocketService){
         this.messagerieMapper =  messagerieMapper;
         this.objectMapper = objectMapper;
         this.messagerieService = messagerieService;
+        this.webSocketService = webSocketService;
     }
 
     private Map<UUID, Session> sessions = new HashMap<>();
@@ -118,75 +122,26 @@ public class MessagerieRessource {
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userIdString) {
         UUID userId = UUID.fromString(userIdString);
-        sessions.put(userId, session);
-        logger.info("Nouvelle connexion WebSocket - UserId: " + userId);
-        logger.info("Sessions actives: " + sessions.size());
-        logger.info("Liste des utilisateurs connectés: " + sessions.keySet());
-        broadcastUserStatus(userId, "CONNECTED");
+        webSocketService.registerSession(userId, session);
     }
 
     @OnClose
-    public void onClose(Session session, @PathParam("userId") String userIdString) {
+    public void onClose(@PathParam("userId") String userIdString) {
         UUID userId = UUID.fromString(userIdString);
-        sessions.remove(userId);
-        broadcastUserStatus(userId, "DISCONNECTED");
-    }
-
-    @OnError
-    public void onError(Session session, @PathParam("userId") String userIdString, Throwable throwable) {
-        UUID userId = UUID.fromString(userIdString);
-        sessions.remove(userId);
-        broadcastUserStatus(userId, "ERROR");
+        webSocketService.removeSession(userId);
     }
 
     @OnMessage
     public void onMessage(String message, @PathParam("userId") String userIdString) {
         UUID userId = UUID.fromString(userIdString);
         try {
-            JsonNode jsonNode = objectMapper.readTree(message);
-            String type = jsonNode.get("type").asText();
-            
-            if ("GET_CONVERSATION".equals(type)) {
-                UUID otherUserId = UUID.fromString(jsonNode.get("otherUserId").asText());
-                List<MessagerieDto> conversation = messagerieService.getConversation(userId, otherUserId);
-                
-                Session userSession = sessions.get(userId);
-                if (userSession != null && userSession.isOpen()) {
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("type", "CONVERSATION");
-                    response.put("messages", conversation);
-                    userSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(response));
-                }
-            } else {
-                logger.info("Message reçu de l'utilisateur: " + userId);
-                logger.info("Contenu du message: " + message);
-                
-                try {
-                    MessagerieDto messagerieDto = objectMapper.readValue(message, MessagerieDto.class);
-                    logger.info("Message parsé - De: " + messagerieDto.getExpediteurId() + " À: " + messagerieDto.getDestinataireId());
-                    
-                    // Vérifiez le type d'expéditeur et de destinataire
-                    if (messagerieDto.getExpediteurType() == null || messagerieDto.getDestinataireType() == null) {
-                        throw new IllegalArgumentException("Les types d'expéditeur et de destinataire sont requis");
-                    }
-                    
-                    // Sauvegarder le message
-                    messagerieDto = messagerieService.createMessage(messagerieDto);
-                    
-                    // Envoyer le message à l'expéditeur aussi
-                    sendMessageToUser(messagerieDto, messagerieDto.getDestinataireId());
-                    sendMessageToUser(messagerieDto, messagerieDto.getExpediteurId());
-                    
-                } catch (Exception e) {
-                    logger.severe("Erreur lors du traitement du message: " + e.getMessage());
-                    handleError(userId, e);
-                }
-            }
+            MessagerieDto messagerieDto = objectMapper.readValue(message, MessagerieDto.class);
+            messagerieService.createAndSendMessage(messagerieDto);
         } catch (Exception e) {
             handleError(userId, e);
         }
     }
-
+    
     private void sendMessageToUser(MessagerieDto MessagerieDto, UUID userId) {
         logger.info("Tentative d'envoi de message à l'utilisateur: " + userId);
         try {
@@ -227,6 +182,11 @@ public class MessagerieRessource {
 
     private void handleError(UUID userId, Exception e) {
         try {
+            // Log the error for debugging purposes
+            logger.severe("Erreur lors du traitement du message pour l'utilisateur " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+
+            // Send an error message back to the user
             Session session = sessions.get(userId);
             if (session != null && session.isOpen()) {
                 ErrorDTO errorDTO = new ErrorDTO("ERROR", e.getMessage());
@@ -235,6 +195,8 @@ public class MessagerieRessource {
                 );
             }
         } catch (Exception ex) {
+            // Log any additional errors that occur while handling the original error
+            logger.severe("Erreur lors de l'envoi du message d'erreur à l'utilisateur " + userId + ": " + ex.getMessage());
             ex.printStackTrace();
         }
     }

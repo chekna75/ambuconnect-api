@@ -40,6 +40,29 @@ public class MessagerieService {
      * Crée un nouveau message
      */
     @Transactional
+    public MessagerieDto createAndSendMessage(MessagerieDto messagerieDto) {
+        validateMessage(messagerieDto);
+        
+        MessagerieEntity entity = messagerieMapper.toEntity(messagerieDto);
+        entity.setDateHeure(LocalDateTime.now().toString());
+        setMessageRelations(entity, messagerieDto);
+        entity.persist();
+
+        MessagerieDto createdMessage = messagerieMapper.toDTO(entity);
+        webSocketService.sendMessageToUser(messagerieDto.getDestinataireId(), createdMessage);
+        webSocketService.sendMessageToUser(messagerieDto.getExpediteurId(), createdMessage);
+
+        String expediteurNom = getExpediteurNom(entity);
+        notificationService.notifierNouveauMessage(
+            messagerieDto.getExpediteurId(),
+            messagerieDto.getDestinataireId(),
+            expediteurNom
+        );
+        
+        return messagerieMapper.toDTO(entity);
+    }
+
+    @Transactional
     public MessagerieDto createMessage(MessagerieDto messagerieDto) {
         validateMessage(messagerieDto);
         
@@ -205,36 +228,64 @@ public class MessagerieService {
         return messagerieMapper.toDTO(entity);
     }
 
-    /**
-     * Validation des données du message
-     */
-    private void validateMessage(MessagerieDto MessagerieDto) {
-        if (MessagerieDto.getContenu() == null || MessagerieDto.getContenu().trim().isEmpty()) {
-            throw new IllegalArgumentException("Le contenu du message ne peut pas être vide");
-        }
-        
-        if (MessagerieDto.getExpediteurId() == null) {
-            throw new IllegalArgumentException("L'expéditeur est requis");
-        }
-        
-        if (MessagerieDto.getDestinataireId() == null) {
-            throw new IllegalArgumentException("Le destinataire est requis");
-        }
-    }
+
 
     /**
      * Configuration des relations pour un message
      */
     private void setMessageRelations(MessagerieEntity entity, MessagerieDto dto) {
-
-        // Course (optionnel)
-        if (dto.getCourseId() != null) {
-            CoursesEntity course = CoursesEntity.findById(dto.getCourseId());
-            if (course == null) {
-                throw new NotFoundException("Course not found");
+        // Logique pour définir les relations
+        if (UserType.chauffeur.equals(dto.getExpediteurType())) {
+            ChauffeurEntity chauffeur = ChauffeurEntity.findById(dto.getExpediteurId());
+            if (chauffeur == null) {
+                throw new NotFoundException("Chauffeur non trouvé");
             }
-            entity.setCourse(course);
+            entity.setExpediteurChauffeur(chauffeur);
+        } else if (UserType.administrateur.equals(dto.getExpediteurType())) {
+            AdministrateurEntity admin = AdministrateurEntity.findById(dto.getExpediteurId());
+            if (admin == null) {
+                throw new NotFoundException("Administrateur non trouvé");
+            }
+            entity.setExpediteurAdmin(admin);
         }
+
+        if (UserType.chauffeur.equals(dto.getDestinataireType())) {
+            ChauffeurEntity chauffeur = ChauffeurEntity.findById(dto.getDestinataireId());
+            if (chauffeur == null) {
+                throw new NotFoundException("Chauffeur non trouvé");
+            }
+            entity.setDestinataireChauffeur(chauffeur);
+        } else if (UserType.administrateur.equals(dto.getDestinataireType())) {
+            AdministrateurEntity admin = AdministrateurEntity.findById(dto.getDestinataireId());
+            if (admin == null) {
+                throw new NotFoundException("Administrateur non trouvé");
+            }
+
+            entity.setDestinataireAdmin(admin);
+        }
+    }
+
+    private void validateMessage(MessagerieDto messagerieDto) {
+        if (messagerieDto.getContenu() == null || messagerieDto.getContenu().trim().isEmpty()) {
+            throw new IllegalArgumentException("Le contenu du message ne peut pas être vide");
+        }
+        
+        if (messagerieDto.getExpediteurId() == null) {
+            throw new IllegalArgumentException("L'expéditeur est requis");
+        }
+        
+        if (messagerieDto.getDestinataireId() == null) {
+            throw new IllegalArgumentException("Le destinataire est requis");
+        }
+    }
+
+    private String getExpediteurNom(MessagerieEntity entity) {
+        if (entity.getExpediteurType() == UserType.administrateur && entity.getExpediteurAdmin() != null) {
+            return entity.getExpediteurAdmin().getNom() + " (Admin)";
+        } else if (entity.getExpediteurType() == UserType.chauffeur && entity.getExpediteurChauffeur() != null) {
+            return entity.getExpediteurChauffeur().getNom() + " (Chauffeur)";
+        }
+        return "Utilisateur";
     }
 
     /**
@@ -311,14 +362,6 @@ public class MessagerieService {
         return new ArrayList<>(conversations.values());
     }
 
-    // Méthode utilitaire pour obtenir le nom de l'expéditeur
-    private String getExpediteurNom(MessagerieEntity entity) {
-        if (entity.getExpediteurType() == UserType.administrateur && entity.getExpediteurAdmin() != null) {
-            return entity.getExpediteurAdmin().getNom() + " (Admin)";
-        } else if (entity.getExpediteurType() == UserType.chauffeur && entity.getExpediteurChauffeur() != null) {
-            return entity.getExpediteurChauffeur().getNom() + " (Chauffeur)";
-        }
-        return "Utilisateur";
-    }
+
 }
 

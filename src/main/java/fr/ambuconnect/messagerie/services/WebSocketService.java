@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fr.ambuconnect.messagerie.dto.MessagerieDto;
-import fr.ambuconnect.messagerie.ressources.MessagerieRessource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.websocket.Session;
@@ -41,4 +40,4 @@ public class WebSocketService {
             }
         }
     }
-} 
+}
