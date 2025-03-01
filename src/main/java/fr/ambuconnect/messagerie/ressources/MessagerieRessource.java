@@ -136,50 +136,13 @@ public class MessagerieRessource {
         UUID userId = UUID.fromString(userIdString);
         try {
             MessagerieDto messagerieDto = objectMapper.readValue(message, MessagerieDto.class);
-            messagerieService.createAndSendMessage(messagerieDto);
+            messagerieService.createMessage(messagerieDto);
         } catch (Exception e) {
             handleError(userId, e);
         }
     }
     
-    private void sendMessageToUser(MessagerieDto MessagerieDto, UUID userId) {
-        logger.info("Tentative d'envoi de message à l'utilisateur: " + userId);
-        try {
-            Session userSession = sessions.get(userId);
-            if (userSession != null && userSession.isOpen()) {
-                String messageJson = objectMapper.writeValueAsString(MessagerieDto);
-                logger.info("Session trouvée et ouverte pour l'utilisateur: " + userId);
-                userSession.getAsyncRemote().sendText(messageJson);
-                logger.info("Message envoyé avec succès à: " + userId);
-            } else {
-                logger.warning("Session non trouvée ou fermée pour l'utilisateur: " + userId);
-                if (userSession == null) {
-                    logger.warning("Session est null");
-                } else {
-                    logger.warning("Session fermée: isOpen = " + userSession.isOpen());
-                }
-            }
-        } catch (Exception e) {
-            logger.severe("Erreur lors de l'envoi du message à " + userId + ": " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    // Méthode pour diffuser le statut d'un utilisateur
-    private void broadcastUserStatus(UUID userId, String status) {
-        UserStatusDTO statusDTO = new UserStatusDTO(userId, status);
-        try {
-            String statusJson = objectMapper.writeValueAsString(statusDTO);
-            sessions.values().forEach(session -> {
-                if (session.isOpen()) {
-                    session.getAsyncRemote().sendText(statusJson);
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
+ 
     private void handleError(UUID userId, Exception e) {
         try {
             // Log the error for debugging purposes
