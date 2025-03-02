@@ -16,13 +16,8 @@ public class HealthResource {
 
     @GET
     @PermitAll
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
     public Response checkHealth() {
-        Map<String, Object> health = new HashMap<>();
-        health.put("status", "UP");
-        health.put("timestamp", LocalDateTime.now().toString());
-        health.put("service", "AmbuConnect API");
-        
-        return Response.ok(health).build();
+        return Response.ok("UP").build();
     }
 } 
