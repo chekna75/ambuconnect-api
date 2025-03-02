@@ -15,9 +15,8 @@ import java.util.Map;
 public class HealthResource {
 
     @GET
-    @PermitAll
     @Produces(MediaType.TEXT_PLAIN)
-    public Response checkHealth() {
-        return Response.ok("UP").build();
+    public String checkHealth() {
+        return "OK";
     }
 } 
