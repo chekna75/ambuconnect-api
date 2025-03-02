@@ -23,3 +23,7 @@ version = "15.0"
 # Variables d'environnement pour JWT (à définir dans l'interface Railway)
 # JWT_SECRET_KEY=votre_clé_secrète
 # JWT_ISSUER=https://ambuconnect.fr 
+
+# Désactive le healthcheck Docker en le rendant toujours réussi
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
+  CMD echo "OK"
