@@ -25,5 +25,5 @@ version = "15.0"
 # JWT_ISSUER=https://ambuconnect.fr 
 
 # Désactive le healthcheck Docker en le rendant toujours réussi
-HEALTHCHECK \
+HEALTHCHECK 
   CMD echo "OK"
