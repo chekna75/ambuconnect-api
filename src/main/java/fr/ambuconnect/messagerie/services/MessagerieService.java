@@ -1,33 +1,36 @@
 package fr.ambuconnect.messagerie.services;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.courses.entity.CoursesEntity;
-import fr.ambuconnect.messagerie.dto.ConversationDTO;
-import fr.ambuconnect.messagerie.dto.MessagerieDto;
+import fr.ambuconnect.messagerie.dto.MessageDTO;
 import fr.ambuconnect.messagerie.entity.MessagerieEntity;
 import fr.ambuconnect.messagerie.mapper.MessagerieMapper;
+import fr.ambuconnect.messagerie.repository.MessagerieRepository;
+import fr.ambuconnect.messagerie.enums.UserType;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.ArrayList;
-import java.util.HashMap;
 import fr.ambuconnect.notification.service.NotificationService;
-import fr.ambuconnect.messagerie.enums.UserType;
 
 @ApplicationScoped
 public class MessagerieService {
 
     private final MessagerieMapper messagerieMapper;
     private final NotificationService notificationService;
-
+    
     @Inject
-    private WebSocketService webSocketService;  // Injectez le service WebSocket
+    private MessagerieRepository messageRepository;
+    
+    @Inject
+    private WebSocketService webSocketService;
 
     @Inject
     public MessagerieService(MessagerieMapper messagerieMapper, NotificationService notificationService) {
@@ -35,333 +38,135 @@ public class MessagerieService {
         this.notificationService = notificationService;
     }
 
-
-    /**
-     * Crée un nouveau message
-     */
     @Transactional
-    public MessagerieDto createAndSendMessage(MessagerieDto messagerieDto) {
-        validateMessage(messagerieDto);
+    public MessageDTO sendMessage(MessageDTO messageDto) {
+        MessagerieEntity message = messagerieMapper.toEntity(messageDto);
+        message.setTimestamp(LocalDateTime.now());
+        messageRepository.persist(message);
         
-        MessagerieEntity entity = messagerieMapper.toEntity(messagerieDto);
-        entity.setDateHeure(LocalDateTime.now().toString());
-        setMessageRelations(entity, messagerieDto);
-        entity.persist();
-
-        MessagerieDto createdMessage = messagerieMapper.toDTO(entity);
-        webSocketService.sendMessageToUser(messagerieDto.getDestinataireId(), createdMessage);
-        webSocketService.sendMessageToUser(messagerieDto.getExpediteurId(), createdMessage);
-
-        String expediteurNom = getExpediteurNom(entity);
-        notificationService.notifierNouveauMessage(
-            messagerieDto.getExpediteurId(),
-            messagerieDto.getDestinataireId(),
-            expediteurNom
-        );
-        
-        return messagerieMapper.toDTO(entity);
-    }
-
-    @Transactional
-    public MessagerieDto createMessage(MessagerieDto messagerieDto) {
-        validateMessage(messagerieDto);
-        
-        MessagerieEntity entity = messagerieMapper.toEntity(messagerieDto);
-        
-        // Set la date si elle n'est pas définie
-        if (entity.getDateHeure() == null) {
-            entity.setDateHeure(LocalDateTime.now().toString());
-        }
-        
-        // Vérifiez le type d'expéditeur et définissez les relations correctement
-        if (UserType.chauffeur.equals(messagerieDto.getExpediteurType())) {
-            ChauffeurEntity chauffeur = ChauffeurEntity.findById(messagerieDto.getExpediteurId());
-            if (chauffeur == null) {
-                throw new NotFoundException("Chauffeur non trouvé");
-            }
-            entity.setExpediteurChauffeur(chauffeur);
-        } else if (UserType.administrateur.equals(messagerieDto.getExpediteurType())) {
-            AdministrateurEntity admin = AdministrateurEntity.findById(messagerieDto.getExpediteurId());
-            if (admin == null) {
-                throw new NotFoundException("Administrateur non trouvé");
-            }
-            entity.setExpediteurAdmin(admin);
-        } else {
-            throw new IllegalArgumentException("Type d'expéditeur invalide");
-        }
-        
-        // Vérifiez le type de destinataire et définissez les relations correctement
-        if (UserType.chauffeur.equals(messagerieDto.getDestinataireType())) {
-            ChauffeurEntity chauffeur = ChauffeurEntity.findById(messagerieDto.getDestinataireId());
-            if (chauffeur == null) {
-                throw new NotFoundException("Chauffeur non trouvé");
-            }
-            entity.setDestinataireChauffeur(chauffeur);
-        } else if (UserType.administrateur.equals(messagerieDto.getDestinataireType())) {
-            AdministrateurEntity admin = AdministrateurEntity.findById(messagerieDto.getDestinataireId());
-            if (admin == null) {
-                throw new NotFoundException("Administrateur non trouvé");
-            }
-            entity.setDestinataireAdmin(admin);
-        } else {
-            throw new IllegalArgumentException("Type de destinataire invalide");
-        }
-        
-        // Persister l'entité
-        entity.persist();
-
         // Envoyer une notification au destinataire
-        String expediteurNom = getExpediteurNom(entity);
-        notificationService.notifierNouveauMessage(
-            messagerieDto.getExpediteurId(),
-            messagerieDto.getDestinataireId(),
-            expediteurNom
-        );
+        sendNotificationForNewMessage(message);
         
-        return messagerieMapper.toDTO(entity);
-    }
-
-    /**
-     * Récupère un message par son ID
-     */
-    public MessagerieDto getMessageById(UUID id) {
-        MessagerieEntity entity = MessagerieEntity.findById(id);
-        if (entity == null) {
-            throw new NotFoundException("Message with id " + id + " not found");
+        // Envoyer le message via WebSocket si l'utilisateur est connecté
+        MessageDTO savedMessage = messagerieMapper.toDTO(message);
+        if (webSocketService.isUserConnected(message.getReceiverId())) {
+            webSocketService.sendMessageToUser(message.getReceiverId(), savedMessage);
         }
-        return messagerieMapper.toDTO(entity);
+        
+        return savedMessage;
     }
 
     /**
-     * Récupère tous les messages d'une conversation entre deux utilisateurs
+     * Envoie une notification au destinataire d'un nouveau message
      */
-    public List<MessagerieDto> getConversation(UUID expediteurId, UUID destinataireId) {
-        List<MessagerieEntity> messages = MessagerieEntity.list(
-            "expediteurId = ?1 and destinataireId = ?2 " +
-            "or expediteurId = ?2 and destinataireId = ?1 " +
-            "order by dateHeure asc",
-            expediteurId, destinataireId
-        );
-        return messagerieMapper.toDTOList(messages);
+    private void sendNotificationForNewMessage(MessagerieEntity message) {
+        try {
+            UUID receiverId = message.getReceiverId();
+            String senderType = message.getSenderType().name();
+            String notificationTitle = "Nouveau message";
+            String notificationContent = "Vous avez reçu un nouveau message de " + 
+                                       (senderType.equals("ADMIN") ? "l'administrateur" : "chauffeur");
+            
+            // Envoyer notification via WebSocket
+            if (webSocketService.isUserConnected(receiverId)) {
+                webSocketService.sendNotification(
+                    receiverId, 
+                    "NEW_MESSAGE", 
+                    notificationContent
+                );
+            } 
+            // Si l'utilisateur n'est pas connecté, envoyer notification via NotificationService
+            else {
+                // Supposons que cette méthode existe dans votre NotificationService
+                notificationService.createNotification(
+                    receiverId,
+                    notificationTitle,
+                    notificationContent,
+                    "/messagerie/conversation"
+                );
+            }
+        } catch (Exception e) {
+            // Ne pas bloquer l'envoi du message si la notification échoue
+            System.err.println("Erreur lors de l'envoi de la notification: " + e.getMessage());
+        }
     }
 
-    /**
-     * Récupère tous les messages liés à une course
-     */
-    public List<MessagerieDto> getMessagesByCourse(UUID courseId) {
-        List<MessagerieEntity> messages = MessagerieEntity.list(
-            "course.id = ?1 order by dateHeure asc", 
-            courseId
-        );
-        return messagerieMapper.toDTOList(messages);
+    @Transactional
+    public List<MessageDTO> getMessages(UUID userId, String userType) {
+        List<MessagerieEntity> messages = new ArrayList<>();
+    
+        if ("ADMIN".equalsIgnoreCase(userType)) {
+            messages = messageRepository.find("senderType = ?1 AND receiverId = ?2", UserType.ADMIN, userId).list();
+        } else if ("CHAUFFEUR".equalsIgnoreCase(userType)) {
+            messages = messageRepository.find("senderType = ?1 AND receiverId = ?2", UserType.CHAUFFEUR, userId).list();
+        }
+    
+        return messages.stream()
+                      .map(messagerieMapper::toDTO)
+                      .collect(Collectors.toList());
     }
 
-    /**
-     * Récupère tous les messages reçus par un chauffeur
-     */
-    public List<MessagerieDto> getMessagesByDestinataire(UUID destinataireId) {
-        List<MessagerieEntity> messages = MessagerieEntity.list(
-            "destinataireId = ?1 order by dateHeure desc", 
-            destinataireId
-        );
-        return messagerieMapper.toDTOList(messages);
+    @Transactional
+    public void markAsRead(UUID messageId) {
+        MessagerieEntity message = messageRepository.findById(messageId);
+        if (message != null) {
+            message.setIsRead(true);
+            messageRepository.persist(message);
+            
+            // Notifier l'expéditeur que son message a été lu
+            if (webSocketService.isUserConnected(message.getSenderId())) {
+                webSocketService.sendNotification(
+                    message.getSenderId(),
+                    "MESSAGE_READ",
+                    "Votre message a été lu"
+                );
+            }
+        }
     }
-
+    
     /**
-     * Récupère tous les messages envoyés par un administrateur
-     */
-    public List<MessagerieDto> getMessagesByExpediteur(UUID expediteurId) {
-        List<MessagerieEntity> messages = MessagerieEntity.list(
-            "expediteurId = ?1 order by dateHeure desc", 
-            expediteurId
-        );
-        return messagerieMapper.toDTOList(messages);
-    }
-
-    /**
-     * Met à jour un message existant
+     * Récupère les messages non lus pour un utilisateur
      */
     @Transactional
-    public MessagerieDto updateMessage(UUID id, MessagerieDto MessagerieDto) {
-        MessagerieEntity entity = MessagerieEntity.findById(id);
-        if (entity == null) {
-            throw new NotFoundException("Message with id " + id + " not found");
-        }
-
-        validateMessage(MessagerieDto);
-        messagerieMapper.updateEntityFromDTO(MessagerieDto, entity);
-        
-        // Mettre à jour les relations si nécessaire
-        setMessageRelations(entity, MessagerieDto);
-        
-        return messagerieMapper.toDTO(entity);
+    public List<MessageDTO> getUnreadMessages(UUID userId) {
+        List<MessagerieEntity> unreadMessages = messageRepository
+            .find("receiverId = ?1 AND isRead = false", userId)
+            .list();
+            
+        return unreadMessages.stream()
+            .map(messagerieMapper::toDTO)
+            .collect(Collectors.toList());
     }
-
+    
     /**
-     * Supprime un message
+     * Marque tous les messages d'une conversation comme lus
      */
     @Transactional
-    public void deleteMessage(UUID id) {
-        MessagerieEntity entity = MessagerieEntity.findById(id);
-        if (entity == null) {
-            throw new NotFoundException("Message with id " + id + " not found");
+    public void markConversationAsRead(UUID userId, UUID otherUserId) {
+        List<MessagerieEntity> unreadMessages = messageRepository
+            .find("receiverId = ?1 AND senderId = ?2 AND isRead = false", userId, otherUserId)
+            .list();
+            
+        for (MessagerieEntity message : unreadMessages) {
+            message.setIsRead(true);
+            messageRepository.persist(message);
         }
-        entity.delete();
+        
+        // Notifier l'autre utilisateur que ses messages ont été lus
+        if (!unreadMessages.isEmpty() && webSocketService.isUserConnected(otherUserId)) {
+            webSocketService.sendNotification(
+                otherUserId,
+                "MESSAGES_READ",
+                "Vos messages ont été lus"
+            );
+        }
     }
-
+    
     /**
-     * Marque un message comme lu
+     * Envoie une notification "utilisateur en train d'écrire"
      */
-    @Transactional
-    public MessagerieDto markMessageAsRead(UUID id) {
-        MessagerieEntity entity = MessagerieEntity.findById(id);
-        if (entity == null) {
-            throw new NotFoundException("Message with id " + id + " not found");
-        }
-
-        // Notifier l'expéditeur que son message a été lu
-        notificationService.notifierMessageLu(
-            entity.getExpediteurId(),
-            entity.getDestinataireId()
-        );
-
-        return messagerieMapper.toDTO(entity);
+    public void sendTypingNotification(UUID senderId, UUID receiverId, boolean isTyping) {
+        webSocketService.sendTypingNotification(senderId, receiverId, isTyping);
     }
-
-
-
-    /**
-     * Configuration des relations pour un message
-     */
-    private void setMessageRelations(MessagerieEntity entity, MessagerieDto dto) {
-        // Logique pour définir les relations
-        if (UserType.chauffeur.equals(dto.getExpediteurType())) {
-            ChauffeurEntity chauffeur = ChauffeurEntity.findById(dto.getExpediteurId());
-            if (chauffeur == null) {
-                throw new NotFoundException("Chauffeur non trouvé");
-            }
-            entity.setExpediteurChauffeur(chauffeur);
-        } else if (UserType.administrateur.equals(dto.getExpediteurType())) {
-            AdministrateurEntity admin = AdministrateurEntity.findById(dto.getExpediteurId());
-            if (admin == null) {
-                throw new NotFoundException("Administrateur non trouvé");
-            }
-            entity.setExpediteurAdmin(admin);
-        }
-
-        if (UserType.chauffeur.equals(dto.getDestinataireType())) {
-            ChauffeurEntity chauffeur = ChauffeurEntity.findById(dto.getDestinataireId());
-            if (chauffeur == null) {
-                throw new NotFoundException("Chauffeur non trouvé");
-            }
-            entity.setDestinataireChauffeur(chauffeur);
-        } else if (UserType.administrateur.equals(dto.getDestinataireType())) {
-            AdministrateurEntity admin = AdministrateurEntity.findById(dto.getDestinataireId());
-            if (admin == null) {
-                throw new NotFoundException("Administrateur non trouvé");
-            }
-
-            entity.setDestinataireAdmin(admin);
-        }
-    }
-
-    private void validateMessage(MessagerieDto messagerieDto) {
-        if (messagerieDto.getContenu() == null || messagerieDto.getContenu().trim().isEmpty()) {
-            throw new IllegalArgumentException("Le contenu du message ne peut pas être vide");
-        }
-        
-        if (messagerieDto.getExpediteurId() == null) {
-            throw new IllegalArgumentException("L'expéditeur est requis");
-        }
-        
-        if (messagerieDto.getDestinataireId() == null) {
-            throw new IllegalArgumentException("Le destinataire est requis");
-        }
-    }
-
-    private String getExpediteurNom(MessagerieEntity entity) {
-        if (entity.getExpediteurType() == UserType.administrateur && entity.getExpediteurAdmin() != null) {
-            return entity.getExpediteurAdmin().getNom() + " (Admin)";
-        } else if (entity.getExpediteurType() == UserType.chauffeur && entity.getExpediteurChauffeur() != null) {
-            return entity.getExpediteurChauffeur().getNom() + " (Chauffeur)";
-        }
-        return "Utilisateur";
-    }
-
-    /**
-     * Envoie un message dans une conversation chauffeur-admin
-     */
-    @Transactional
-    public MessagerieDto sendMessageChauffeurAdmin(MessagerieDto messageDto) {
-        // Validation de base
-        validateMessage(messageDto);
-        
-        // Vérifier les rôles des participants
-        AdministrateurEntity admin = AdministrateurEntity.findById(messageDto.getExpediteurId());
-        ChauffeurEntity chauffeur = ChauffeurEntity.findById(messageDto.getDestinataireId());
-        
-        boolean isAdminToChauffeur = admin != null && chauffeur != null;
-        if (!isAdminToChauffeur) {
-            // Vérifier dans l'autre sens (chauffeur vers admin)
-            admin = AdministrateurEntity.findById(messageDto.getDestinataireId());
-            chauffeur = ChauffeurEntity.findById(messageDto.getExpediteurId());
-            if (admin == null || chauffeur == null) {
-                throw new IllegalArgumentException("La conversation doit être entre un admin et un chauffeur");
-            }
-        }
-
-        // Vérifier que le chauffeur appartient à l'entreprise de l'admin
-        if (!chauffeur.getEntreprise().getId().equals(admin.getEntreprise().getId())) {
-            throw new IllegalArgumentException("Le chauffeur n'appartient pas à l'entreprise de l'administrateur");
-        }
-
-        // Créer et persister le message
-        MessagerieEntity entity = messagerieMapper.toEntity(messageDto);
-        entity.setDateHeure(LocalDateTime.now().toString());
-        entity.persist();
-
-        // Convertir en DTO pour la réponse
-        MessagerieDto createdMessage = messagerieMapper.toDTO(entity);
-
-        // Envoyer le message via WebSocket aux deux participants
-        webSocketService.sendMessageToUser(messageDto.getDestinataireId(), createdMessage);
-        
-        return createdMessage;
-    }
-
-    /**
-     * Récupère l'historique des conversations d'un utilisateur
-     */
-    public List<ConversationDTO> getUserConversations(UUID userId) {
-        // Récupérer tous les messages impliquant l'utilisateur
-        List<MessagerieEntity> messages = MessagerieEntity.list(
-            "expediteurId = ?1 or destinataireId = ?1 " +
-            "order by dateHeure desc",
-            userId
-        );
-
-        // Grouper les messages par conversation
-        Map<UUID, ConversationDTO> conversations = new HashMap<>();
-        
-        for (MessagerieEntity message : messages) {
-            UUID otherUserId = message.getExpediteur().equals(userId) 
-                ? message.getDestinataireId()
-                : message.getExpediteurId();
-                
-            ConversationDTO conversation = conversations.computeIfAbsent(otherUserId, 
-                k -> {
-                    ConversationDTO dto = new ConversationDTO();
-                    dto.setOtherUserId(otherUserId);
-                    dto.setMessages(new ArrayList<>());
-                    return dto;
-                });
-                
-            conversation.getMessages().add(messagerieMapper.toDTO(message));
-        }
-
-        return new ArrayList<>(conversations.values());
-    }
-
-
 }
 

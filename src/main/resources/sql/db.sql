@@ -258,6 +258,28 @@ CREATE TABLE ambuconnectdb.messages (
     course_id UUID REFERENCES ambuconnectdb.courses(id)
 );
 
+CREATE TABLE IF NOT EXISTS messages (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    sender_id UUID NOT NULL,                -- L'ID de l'expéditeur (peut être un admin ou un chauffeur)
+    receiver_id UUID NOT NULL,              -- L'ID du destinataire (peut être un admin ou un chauffeur)
+    content TEXT NOT NULL,                    -- Le contenu du message
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- Horodatage du message
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,   -- Statut de lecture du message
+    sender_type VARCHAR(50) NOT NULL,         -- Type d'expéditeur (admin ou chauffeur)
+    receiver_type VARCHAR(50) NOT NULL,       -- Type de destinataire (admin ou chauffeur)
+    
+    -- On ne fait plus de relation directe avec les tables admin et chauffeur
+    -- Les types seront gérés avec le `sender_type` et `receiver_type`
+    
+    -- On laisse les messages interconnectés sans contrainte de clé étrangère sur les utilisateurs
+);
+
+-- Index pour améliorer la performance des requêtes sur les destinataires et expéditeurs
+CREATE INDEX IF NOT EXISTS idx_messages_sender_receiver ON messages (sender_id, receiver_id);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver_sender ON messages (receiver_id, sender_id);
+
+
+
 CREATE TABLE ambuconnectdb.notifications (
     id UUID PRIMARY KEY,
     message TEXT NOT NULL,
