@@ -13,10 +13,15 @@ import java.util.Map;
 
 @Path("/api/health")
 public class HealthResource {
-
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String checkHealth() {
-        return "OK";
+    @PermitAll
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response checkHealth() {
+        Map<String, Object> health = new HashMap<>();
+        health.put("status", "UP");
+        health.put("timestamp", LocalDateTime.now().toString());
+        health.put("service", "AmbuConnect API");
+        
+        return Response.ok(health).build();
     }
 } 
