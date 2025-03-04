@@ -39,8 +39,19 @@ public class MessagerieMapper {
         message.setContent(dto.getContent());
         message.setTimestamp(dto.getTimestamp());
         message.setIsRead(dto.getIsRead());
-        message.setSenderType(UserType.valueOf(dto.getSenderType()));
-        message.setReceiverType(UserType.valueOf(dto.getReceiverType()));
+        
+        if (dto.getSenderType() != null) {
+            message.setSenderType(UserType.valueOf(dto.getSenderType()));
+        } else {
+            throw new IllegalArgumentException("Sender type is null");
+        }
+        
+        if (dto.getReceiverType() != null) {
+            message.setReceiverType(UserType.valueOf(dto.getReceiverType()));
+        } else {
+            throw new IllegalArgumentException("Receiver type is null");
+        }
+        
         return message;
     }
 }
