@@ -66,10 +66,6 @@ public class MessagerieRessource {
         messageDto.setContent(messageContent);
         messageDto.setTimestamp(LocalDateTime.now());
 
-        // Ajout de journalisation pour vérifier les valeurs
-        System.out.println("Sender Type: " + messageDto.getSenderType());
-        System.out.println("Receiver Type: " + messageDto.getReceiverType());
-
         // Sauvegarde le message dans la base
         messagerieService.sendMessage(messageDto);
 
