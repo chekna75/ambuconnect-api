@@ -1,15 +1,15 @@
 package fr.ambuconnect.messagerie.mapper;
 
-import java.util.UUID;
-import java.util.List;
 import jakarta.enterprise.context.ApplicationScoped;
+
+import org.mapstruct.Mapper;
 
 import fr.ambuconnect.messagerie.dto.MessageDTO;
 import fr.ambuconnect.messagerie.entity.MessagerieEntity;
 import fr.ambuconnect.messagerie.enums.UserType;
 
 
-@ApplicationScoped
+@Mapper(componentModel = "cdi")
 public class MessagerieMapper {
 
     public MessageDTO toDTO(MessagerieEntity message) {

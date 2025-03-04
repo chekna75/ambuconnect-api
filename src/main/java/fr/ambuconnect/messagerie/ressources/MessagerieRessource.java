@@ -56,7 +56,9 @@ public class MessagerieRessource {
     }
 
     @OnMessage
-    public void onMessage(String messageContent, @PathParam("userId") UUID userId, Session session) {
+    public void onMessage(String messageContent, @PathParam("userId") String userIdStr, Session session) {
+        UUID userId = UUID.fromString(userIdStr);
+        
         // Crée un message
         MessageDTO messageDto = new MessageDTO();
         messageDto.setSenderId(userId);
@@ -89,7 +91,6 @@ public class MessagerieRessource {
         return senderId.equals(id1) ? id2 : id1; // Exemple simple pour les utilisateurs 1 et 2
     }
     
- 
     private void handleError(UUID userId, Exception e) {
         try {
             // Log the error for debugging purposes
@@ -110,6 +111,4 @@ public class MessagerieRessource {
             ex.printStackTrace();
         }
     }
-
-
 }
