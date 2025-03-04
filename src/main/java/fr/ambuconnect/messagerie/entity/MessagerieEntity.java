@@ -44,13 +44,4 @@ public class MessagerieEntity  extends PanacheEntityBase{
     @Column(name = "is_read")
     private Boolean isRead = false;
 
-    @Column(name = "sender_type")
-    @Enumerated(EnumType.STRING)
-    private UserType senderType;  // admin ou chauffeur
-
-    @Column(name = "receiver_type")
-    @Enumerated(EnumType.STRING)
-    private UserType receiverType; // admin ou chauffeur
-
-    // Getters et setters
 }

@@ -24,10 +24,6 @@ public class MessagerieMapper {
         dto.setTimestamp(message.getTimestamp());
         dto.setIsRead(message.getIsRead());
         
-        // On assigne directement l'enum sans passer par .name()
-        dto.setSenderType(message.getSenderType());
-        dto.setReceiverType(message.getReceiverType());
-        
         return dto;
     }
 
@@ -42,17 +38,7 @@ public class MessagerieMapper {
         entity.setContent(dto.getContent());
         entity.setTimestamp(dto.getTimestamp());
         entity.setIsRead(dto.getIsRead());
-    
-        if (dto.getSenderType() == null) {
-            throw new IllegalArgumentException("Sender type is null");
-        }
-        entity.setSenderType(dto.getSenderType());
-        
-        if (dto.getReceiverType() == null) {
-            throw new IllegalArgumentException("Receiver type is null");
-        }
-        entity.setReceiverType(dto.getReceiverType());
-        
+     
         return entity;
     }
     

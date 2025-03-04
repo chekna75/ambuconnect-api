@@ -23,12 +23,6 @@ public class MessageDTO {
     @JsonProperty("content")
     private String content;
 
-    @JsonProperty("senderType")
-    private UserType senderType;
-
-    @JsonProperty("receiverType")
-    private UserType receiverType;
-
     @JsonProperty("isRead")
     private Boolean isRead;
 

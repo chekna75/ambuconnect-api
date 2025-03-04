@@ -62,10 +62,8 @@ public class MessagerieService {
     private void sendNotificationForNewMessage(MessagerieEntity message) {
         try {
             UUID receiverId = message.getReceiverId();
-            String senderType = message.getSenderType().name();
             String notificationTitle = "Nouveau message";
-            String notificationContent = "Vous avez reçu un nouveau message de " + 
-                                       (senderType.equals("ADMIN") ? "l'administrateur" : "chauffeur");
+            String notificationContent = "Vous avez reçu un nouveau message de " + message.getSenderId();
             
             // Envoyer notification via WebSocket
             if (webSocketService.isUserConnected(receiverId)) {
