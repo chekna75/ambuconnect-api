@@ -69,8 +69,10 @@ public class AmbulanceService {
         return mapToDto(ambulance);
     }
 
-    public List<AmbulanceDTO> getAllAmbulances() {
-        List<AmbulanceEntity> ambulances = AmbulanceEntity.listAll();
+    public List<AmbulanceDTO> getAllAmbulances(UUID entrepriseId) {
+        // Récupère uniquement les ambulances de l'entreprise spécifiée
+        List<AmbulanceEntity> ambulances = AmbulanceEntity.list("entrepriseId", entrepriseId);
+        
         return mapToDtoList(ambulances);
     }
 

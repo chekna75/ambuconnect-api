@@ -63,8 +63,8 @@ public class AmbulancesRessource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllAmbulances() {
-        List<AmbulanceDTO> ambulances = ambulanceService.getAllAmbulances();
+    public Response getAllAmbulances(@PathParam("id") UUID idEntreprise) {
+        List<AmbulanceDTO> ambulances = ambulanceService.getAllAmbulances(idEntreprise);
         return Response.ok(ambulances).build();
     }
 
