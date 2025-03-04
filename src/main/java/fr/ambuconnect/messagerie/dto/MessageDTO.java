@@ -3,6 +3,8 @@ package fr.ambuconnect.messagerie.dto;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import fr.ambuconnect.messagerie.enums.UserType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,14 +14,25 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageDTO {
+    @JsonProperty("senderId")
     private UUID senderId;
-    private UUID receiverId;
-    private String content;
-    private LocalDateTime timestamp;
-    private Boolean isRead;
-    private String senderType;  // admin ou chauffeur
-    private String receiverType; // admin ou chauffeur
 
-    // Getters et setters
+    @JsonProperty("receiverId")
+    private UUID receiverId;
+
+    @JsonProperty("content")
+    private String content;
+
+    @JsonProperty("senderType")
+    private UserType senderType;
+
+    @JsonProperty("receiverType")
+    private UserType receiverType;
+
+    @JsonProperty("isRead")
+    private Boolean isRead;
+
+    @JsonProperty("timestamp")
+    private LocalDateTime timestamp;
 }
 

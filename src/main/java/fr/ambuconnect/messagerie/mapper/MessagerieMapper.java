@@ -23,8 +23,11 @@ public class MessagerieMapper {
         dto.setContent(message.getContent());
         dto.setTimestamp(message.getTimestamp());
         dto.setIsRead(message.getIsRead());
-        dto.setSenderType(message.getSenderType().name());
-        dto.setReceiverType(message.getReceiverType().name());
+        
+        // On assigne directement l'enum sans passer par .name()
+        dto.setSenderType(message.getSenderType());
+        dto.setReceiverType(message.getReceiverType());
+        
         return dto;
     }
 
@@ -39,28 +42,16 @@ public class MessagerieMapper {
         entity.setContent(dto.getContent());
         entity.setTimestamp(dto.getTimestamp());
         entity.setIsRead(dto.getIsRead());
+    
+        if (dto.getSenderType() == null) {
+            throw new IllegalArgumentException("Sender type is null");
+        }
+        entity.setSenderType(dto.getSenderType());
         
-        // Conversion pour le type de l'expéditeur
-        String senderTypeStr = dto.getSenderType();
-        if (senderTypeStr == null || senderTypeStr.trim().isEmpty()) {
-            throw new IllegalArgumentException("Sender type is null or empty");
+        if (dto.getReceiverType() == null) {
+            throw new IllegalArgumentException("Receiver type is null");
         }
-        try {
-            entity.setSenderType(UserType.valueOf(senderTypeStr.trim().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid sender type: " + senderTypeStr, e);
-        }
-        
-        // Conversion pour le type du destinataire
-        String receiverTypeStr = dto.getReceiverType();
-        if (receiverTypeStr == null || receiverTypeStr.trim().isEmpty()) {
-            throw new IllegalArgumentException("Receiver type is null or empty");
-        }
-        try {
-            entity.setReceiverType(UserType.valueOf(receiverTypeStr.trim().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid receiver type: " + receiverTypeStr, e);
-        }
+        entity.setReceiverType(dto.getReceiverType());
         
         return entity;
     }
