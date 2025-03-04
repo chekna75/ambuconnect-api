@@ -33,25 +33,36 @@ public class MessagerieMapper {
             return null;
         }
         
-        MessagerieEntity message = new MessagerieEntity();
-        message.setSenderId(dto.getSenderId());
-        message.setReceiverId(dto.getReceiverId());
-        message.setContent(dto.getContent());
-        message.setTimestamp(dto.getTimestamp());
-        message.setIsRead(dto.getIsRead());
+        MessagerieEntity entity = new MessagerieEntity();
+        entity.setSenderId(dto.getSenderId());
+        entity.setReceiverId(dto.getReceiverId());
+        entity.setContent(dto.getContent());
+        entity.setTimestamp(dto.getTimestamp());
+        entity.setIsRead(dto.getIsRead());
         
-        if (dto.getSenderType() != null) {
-            message.setSenderType(UserType.valueOf(dto.getSenderType()));
-        } else {
-            throw new IllegalArgumentException("Sender type is null");
+        // Conversion pour le type de l'expéditeur
+        String senderTypeStr = dto.getSenderType();
+        if (senderTypeStr == null || senderTypeStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("Sender type is null or empty");
+        }
+        try {
+            entity.setSenderType(UserType.valueOf(senderTypeStr.trim().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid sender type: " + senderTypeStr, e);
         }
         
-        if (dto.getReceiverType() != null) {
-            message.setReceiverType(UserType.valueOf(dto.getReceiverType()));
-        } else {
-            throw new IllegalArgumentException("Receiver type is null");
+        // Conversion pour le type du destinataire
+        String receiverTypeStr = dto.getReceiverType();
+        if (receiverTypeStr == null || receiverTypeStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("Receiver type is null or empty");
+        }
+        try {
+            entity.setReceiverType(UserType.valueOf(receiverTypeStr.trim().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid receiver type: " + receiverTypeStr, e);
         }
         
-        return message;
+        return entity;
     }
+    
 }
