@@ -97,7 +97,7 @@ public class AuthentificationResourse {
     }
 
     @PUT
-    @Path("/admin/reinitialiser-mot-de-passe")
+    @Path("{id}/admin/reinitialiser-mot-de-passe")
     public Response reinitialiserMotDePasseAdmin(
             @PathParam("id") String adminEmail,
             @Valid MotDePasseRequestDto request) {
