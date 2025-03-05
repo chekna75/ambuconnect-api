@@ -128,12 +128,27 @@ public class MessagerieRessource {
             messageDto.setTimestamp(LocalDateTime.now());
             
             // Sauvegarde en base
-            messagerieService.sendMessage(messageDto);
+            MessageDTO savedMessage = messagerieService.sendMessage(messageDto);
             
-            // Envoie le message au destinataire uniquement
+            // 1. Envoie le message au destinataire
             Session receiverSession = sessions.get(receiverId);
             if (receiverSession != null && receiverSession.isOpen()) {
                 receiverSession.getAsyncRemote().sendText(messageContent);
+            }
+            
+            // 2. Envoie une confirmation à l'expéditeur (sauf si c'est le même que le destinataire)
+            Session senderSession = sessions.get(senderId);
+            if (senderSession != null && senderSession.isOpen() && !senderId.equals(receiverId)) {
+                // Option 1: Renvoie le même message pour confirmer l'envoi
+                senderSession.getAsyncRemote().sendText(messageContent);
+                
+                // Option 2 (alternative): Envoie une réponse de type "MESSAGE_SENT" avec l'ID du message
+                // Map<String, Object> confirmation = Map.of(
+                //     "type", "MESSAGE_SENT",
+                //     "messageId", savedMessage.getId(),
+                //     "timestamp", LocalDateTime.now().toString()
+                // );
+                // senderSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(confirmation));
             }
             
         } catch (Exception e) {
