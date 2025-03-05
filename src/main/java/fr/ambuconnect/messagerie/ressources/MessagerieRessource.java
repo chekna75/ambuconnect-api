@@ -29,6 +29,8 @@ import fr.ambuconnect.messagerie.services.WebSocketService;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.logging.Logger;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/message")
 @ServerEndpoint("/chat/{userId}")
@@ -64,6 +66,30 @@ public class MessagerieRessource {
             // Parse le message JSON
             JsonNode jsonNode = objectMapper.readTree(messageContent);
             String type = jsonNode.get("type").asText();
+            
+            // Gestion du type GET_CONVERSATION
+            if ("GET_CONVERSATION".equals(type)) {
+                // Extraction de l'ID de l'autre utilisateur
+                UUID otherUserId = UUID.fromString(jsonNode.get("otherUserId").asText());
+                
+                // Récupération directe des messages entre les deux utilisateurs (triés chronologiquement)
+                List<MessageDTO> messages = messagerieService.getConversation(userId, otherUserId);
+                
+                // Préparer la réponse
+                Map<String, Object> response = new HashMap<>();
+                response.put("type", "CONVERSATION");
+                response.put("userId", userId.toString());
+                response.put("otherUserId", otherUserId.toString());
+                response.put("messages", messages);
+                
+                // Envoyer la réponse à l'expéditeur de la demande
+                session.getAsyncRemote().sendText(objectMapper.writeValueAsString(response));
+                
+                // Marquer la conversation comme lue
+                messagerieService.markConversationAsRead(userId, otherUserId);
+                
+                return;
+            }
             
             // Gestion spéciale pour les messages de frappe (pas de persistance)
             if ("TYPING".equals(type)) {
