@@ -96,6 +96,25 @@ public class AuthentificationResourse {
         }
     }
 
+    @PUT
+    @Path("/admin/reinitialiser-mot-de-passe")
+    public Response reinitialiserMotDePasseAdmin(
+            @PathParam("id") String adminEmail,
+            @Valid MotDePasseRequestDto request) {
+        try {
+            authenService.reinitialiserMotDePasseAdmin(adminEmail, request.getNouveauMotDePasse());
+            return Response.ok().build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                         .entity(new ErrorResponse("Administrateur non trouvé"))
+                         .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                         .entity(new ErrorResponse("Erreur lors de la réinitialisation"))
+                         .build();
+        }
+    }
+
     @OPTIONS
     @Path("{any:.*}")
     public Response options() {

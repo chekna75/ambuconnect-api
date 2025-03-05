@@ -278,4 +278,29 @@ public class AuthenService {
         }
     }
 
+    @Transactional
+    public void reinitialiserMotDePasseAdmin(String adminEmail, String nouveauMotDePasse) {
+        try {
+            System.out.println("Début réinitialisation mot de passe pour administrateur: " + adminEmail);
+            
+            AdministrateurEntity admin = AdministrateurEntity.findByEmail(adminEmail);
+            if (admin == null) {
+                throw new NotFoundException("Administrateur non trouvé");
+            }
+            
+            // Hasher le nouveau mot de passe
+            String motDePasseHashe = hasherMotDePasse(nouveauMotDePasse);
+            
+            // Mettre à jour le mot de passe
+            admin.setMotDePasse(motDePasseHashe);
+            admin.persist();
+            
+            System.out.println("Mot de passe réinitialisé avec succès");
+            
+        } catch (Exception e) {
+            System.out.println("Erreur lors de la réinitialisation du mot de passe: " + e.getMessage());
+            throw e;
+        }
+    }
+
 }
