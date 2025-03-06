@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import fr.ambuconnect.messagerie.dto.ErrorDTO;
 import fr.ambuconnect.messagerie.dto.MessageDTO;
@@ -28,6 +29,8 @@ import fr.ambuconnect.messagerie.services.WebSocketService;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.logging.Logger;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/message")
 @ServerEndpoint("/chat/{userId}")
@@ -59,22 +62,123 @@ public class MessagerieRessource {
     public void onMessage(String messageContent, @PathParam("userId") String userIdStr, Session session) {
         UUID userId = UUID.fromString(userIdStr);
         
-        // Crée un message
-        MessageDTO messageDto = new MessageDTO();
-        messageDto.setSenderId(userId);
-        messageDto.setReceiverId(getReceiverId(userId));  // À définir en fonction de ton système
-        messageDto.setContent(messageContent);
-        messageDto.setTimestamp(LocalDateTime.now());
-
-        // Sauvegarde le message dans la base
-        messagerieService.sendMessage(messageDto);
-
-        // Envoie le message à l'autre utilisateur
-        for (Map.Entry<UUID, Session> entry : sessions.entrySet()) {
-            Session client = entry.getValue();
-            if (client.isOpen()) {
-                client.getAsyncRemote().sendText(messageContent);
+        try {
+            // Parse le message JSON
+            JsonNode jsonNode = objectMapper.readTree(messageContent);
+            String type = jsonNode.get("type").asText();
+            
+            // Gestion du type GET_CONVERSATION
+            if ("GET_CONVERSATION".equals(type)) {
+                // Extraction de l'ID de l'autre utilisateur
+                UUID otherUserId = UUID.fromString(jsonNode.get("otherUserId").asText());
+                
+                // Récupération directe des messages entre les deux utilisateurs (triés chronologiquement)
+                List<MessageDTO> messages = messagerieService.getConversation(userId, otherUserId);
+                
+                // Préparer la réponse
+                Map<String, Object> response = new HashMap<>();
+                response.put("type", "CONVERSATION");
+                response.put("userId", userId.toString());
+                response.put("otherUserId", otherUserId.toString());
+                response.put("messages", messages);
+                
+                // Envoyer la réponse à l'expéditeur de la demande
+                session.getAsyncRemote().sendText(objectMapper.writeValueAsString(response));
+                
+                // Marquer la conversation comme lue
+                messagerieService.markConversationAsRead(userId, otherUserId);
+                
+                return;
             }
+            
+            // Gestion spéciale pour les messages de frappe (pas de persistance)
+            if ("TYPING".equals(type)) {
+                UUID receiverId = UUID.fromString(jsonNode.get("receiverId").asText());
+                Session receiverSession = sessions.get(receiverId);
+                if (receiverSession != null && receiverSession.isOpen()) {
+                    receiverSession.getAsyncRemote().sendText(messageContent);
+                }
+                return;
+            }
+            
+            // Pour tous les autres types de messages (avec persistance)
+            MessageDTO messageDto = new MessageDTO();
+            
+            // Détermine l'expéditeur et le destinataire
+            UUID senderId = userId; // Par défaut, l'ID de la session WebSocket
+            UUID receiverId = null;
+            
+            // Extrait le contenu à stocker en base (selon le format)
+            String contentToStore = "";
+            
+            if ("SEND_MESSAGE".equals(type) && jsonNode.has("message")) {
+                // Format structuré avec un objet message
+                JsonNode messageNode = jsonNode.get("message");
+                
+                // Récupère le contenu du message
+                if (messageNode.has("content")) {
+                    contentToStore = messageNode.get("content").asText();
+                }
+                
+                // Récupère les IDs si présents
+                if (messageNode.has("senderId")) {
+                    senderId = UUID.fromString(messageNode.get("senderId").asText());
+                }
+                
+                if (messageNode.has("receiverId")) {
+                    receiverId = UUID.fromString(messageNode.get("receiverId").asText());
+                }
+            } else {
+                // Autres formats
+                if (jsonNode.has("content")) {
+                    contentToStore = jsonNode.get("content").asText();
+                } else if (jsonNode.has("message") && jsonNode.get("message").isTextual()) {
+                    contentToStore = jsonNode.get("message").asText();
+                }
+                
+                // Cherche receiverId dans le message
+                if (jsonNode.has("receiverId")) {
+                    receiverId = UUID.fromString(jsonNode.get("receiverId").asText());
+                }
+            }
+            
+            // Si receiverId n'est pas trouvé, utilise la méthode par défaut
+            if (receiverId == null) {
+                receiverId = getReceiverId(userId);
+            }
+            
+            // Création et sauvegarde du message
+            messageDto.setSenderId(senderId);
+            messageDto.setReceiverId(receiverId);
+            messageDto.setContent(contentToStore);
+            messageDto.setTimestamp(LocalDateTime.now());
+            
+            // Sauvegarde en base
+            MessageDTO savedMessage = messagerieService.sendMessage(messageDto);
+            
+            // 1. Envoie le message au destinataire
+            Session receiverSession = sessions.get(receiverId);
+            if (receiverSession != null && receiverSession.isOpen()) {
+                receiverSession.getAsyncRemote().sendText(messageContent);
+            }
+            
+            // 2. Envoie une confirmation à l'expéditeur (sauf si c'est le même que le destinataire)
+            Session senderSession = sessions.get(senderId);
+            if (senderSession != null && senderSession.isOpen() && !senderId.equals(receiverId)) {
+                // Option 1: Renvoie le même message pour confirmer l'envoi
+                senderSession.getAsyncRemote().sendText(messageContent);
+                
+                // Option 2 (alternative): Envoie une réponse de type "MESSAGE_SENT" avec l'ID du message
+                // Map<String, Object> confirmation = Map.of(
+                //     "type", "MESSAGE_SENT",
+                //     "messageId", savedMessage.getId(),
+                //     "timestamp", LocalDateTime.now().toString()
+                // );
+                // senderSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(confirmation));
+            }
+            
+        } catch (Exception e) {
+            handleError(userId, e);
         }
     }
 

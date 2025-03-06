@@ -2,6 +2,7 @@ package fr.ambuconnect.messagerie.services;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
@@ -19,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 import fr.ambuconnect.notification.service.NotificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class MessagerieService {
@@ -31,6 +34,8 @@ public class MessagerieService {
     
     @Inject
     private WebSocketService webSocketService;
+
+    private static final Logger logger = LoggerFactory.getLogger(MessagerieService.class);
 
     @Inject
     public MessagerieService(MessagerieMapper messagerieMapper, NotificationService notificationService) {
@@ -165,6 +170,29 @@ public class MessagerieService {
      */
     public void sendTypingNotification(UUID senderId, UUID receiverId, boolean isTyping) {
         webSocketService.sendTypingNotification(senderId, receiverId, isTyping);
+    }
+
+    /**
+     * Récupère tous les messages échangés entre deux utilisateurs spécifiques.
+     * 
+     * @param userId ID de l'utilisateur actuel
+     * @param otherUserId ID de l'autre utilisateur de la conversation
+     * @return Liste des messages entre les deux utilisateurs, triés chronologiquement
+     */
+    @Transactional
+    public List<MessageDTO> getConversation(UUID userId, UUID otherUserId) {
+        logger.info("Récupération des messages entre " + userId + " et " + otherUserId);
+        
+        // Récupération directe des messages entre les deux utilisateurs
+        List<MessagerieEntity> messages = messageRepository.findByParticipants(userId, otherUserId);
+        
+        // Tri chronologique des messages
+        messages.sort(Comparator.comparing(MessagerieEntity::getTimestamp));
+        
+        // Conversion en DTO
+        return messages.stream()
+            .map(messagerieMapper::toDTO)
+            .collect(Collectors.toList());
     }
 }
 
