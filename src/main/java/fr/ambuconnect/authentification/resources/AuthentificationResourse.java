@@ -118,8 +118,12 @@ public class AuthentificationResourse {
     @OPTIONS
     @Path("{any:.*}")
     public Response options() {
-        // Nous ne définissons pas les en-têtes CORS ici car ils sont déjà gérés par le CorsFilter global
-        return Response.ok().build();
+        return Response.ok()
+            .header("Access-Control-Allow-Origin", "https://ambuconnect-frontend.vercel.app")
+            .header("Access-Control-Allow-Credentials", "true")
+            .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            .header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            .build();
     }
 
 }
