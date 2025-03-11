@@ -24,7 +24,7 @@ public class AttributionVehiculeRessource {
     AttributionVehiculeService attributionService;
 
     @POST
-    @AdminOnly
+    @Path("/attribuer")
     public Response attribuerVehicule(AttributionVehiculeDTO dto) {
         AttributionVehiculeEntity attribution = attributionService.attribuerVehicule(
             dto.getVehiculeId(),
@@ -34,6 +34,8 @@ public class AttributionVehiculeRessource {
         );
         return Response.status(Response.Status.CREATED).entity(attribution).build();
     }
+
+    
 
     @PUT
     @Path("/{id}/terminer")
