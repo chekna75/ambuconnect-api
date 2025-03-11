@@ -1,0 +1,25 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "java -jar /deployments/quarkus-run.jar"
+# Utiliser notre nouvel endpoint de santé accessible sans authentification
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[service]
+name = "ambuconnect-api"
+internal_port = 8080
+auto_deploy = true
+
+# Configuration de la base de données PostgreSQL
+[postgres]
+enabled = true
+version = "15.0"
+
+# Variables d'environnement pour JWT (à définir dans l'interface Railway)
+# JWT_SECRET_KEY=votre_clé_secrète
+# JWT_ISSUER=https://ambuconnect.fr 
