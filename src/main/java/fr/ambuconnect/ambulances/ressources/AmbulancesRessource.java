@@ -50,7 +50,7 @@ public class AmbulancesRessource {
     }
 
     @GET
-    @Path("/{id}")
+    @Path("/une-ambulance/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAmbulance(@PathParam("id") UUID id) {
         try {
@@ -62,6 +62,7 @@ public class AmbulancesRessource {
     }
 
     @GET
+    @Path("/toutes-les-ambulances/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAllAmbulances(@PathParam("id") UUID idEntreprise) {
         List<AmbulanceDTO> ambulances = ambulanceService.getAllAmbulances(idEntreprise);
