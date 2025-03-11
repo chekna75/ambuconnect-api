@@ -21,6 +21,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.OPTIONS;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -72,13 +73,20 @@ public class AdministrateurResourse {
         return Response.ok(chauffeurDto).build();
     }
 
+    /**
+     * Récupérer tous les chauffeurs d'une entreprise
+     */
     @GET
     @Path("/{id}/allchauffeur")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response getAllChauffeur(@PathParam("id") UUID id){
-        List<ChauffeurDto> chauffeurDtos = administrateurService.findAll(id);
-        return Response.ok(chauffeurDtos).build();
+    public Response getAllChauffeur(@PathParam("id") UUID id) {
+        try {
+            List<ChauffeurDto> chauffeurDtos = administrateurService.findAll(id);
+            return Response.ok(chauffeurDtos).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 
     @POST
@@ -155,6 +163,73 @@ public class AdministrateurResourse {
 @Produces(MediaType.APPLICATION_JSON)
 public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") UUID identreprise) {
         return administrateurService.findByEntreprise(identreprise);
+    }
+
+    /**
+     * Récupère tous les chauffeurs d'une entreprise spécifique
+     */
+    @GET
+    @Path("/entreprise/{entrepriseId}/chauffeurs")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response getChauffeursByEntreprise(@PathParam("entrepriseId") UUID entrepriseId) {
+        try {
+            List<ChauffeurDto> chauffeurs = administrateurService.getChauffeursByEntreprise(entrepriseId);
+            return Response.ok(chauffeurs).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    /**
+     * Crée un nouveau chauffeur associé à une entreprise
+     */
+    @POST
+    @Path("/entreprise/{entrepriseId}/chauffeur")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response createChauffeurForEntreprise(
+            @PathParam("entrepriseId") UUID entrepriseId,
+            @RequestBody ChauffeurDto chauffeurDto) {
+        try {
+            // S'assurer que l'ID d'entreprise est cohérent
+            chauffeurDto.setEntrepriseId(entrepriseId);
+            
+            ChauffeurDto createdChauffeur = administrateurService.createChauffeur(chauffeurDto);
+            return Response.status(Response.Status.CREATED).entity(createdChauffeur).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    /**
+     * Gestion des requêtes OPTIONS pour le navigateur (CORS preflight)
+     */
+    @OPTIONS
+    @Path("{any:.*}")
+    public Response preflight() {
+        return Response.ok()
+            .header("Access-Control-Allow-Origin", "http://localhost:8080")
+            .header("Access-Control-Allow-Credentials", "true")
+            .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            .header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            .build();
+    }
+
+    /**
+     * Endpoint public pour récupérer les chauffeurs sans authentification (pour test)
+     */
+    @GET
+    @Path("/public/{id}/chauffeurs")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response getPublicChauffeurs(@PathParam("id") UUID id) {
+        try {
+            List<ChauffeurDto> chauffeurDtos = administrateurService.findAll(id);
+            return Response.ok(chauffeurDtos).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 
 }

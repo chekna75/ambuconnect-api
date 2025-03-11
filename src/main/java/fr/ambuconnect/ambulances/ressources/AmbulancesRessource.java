@@ -6,6 +6,7 @@ import java.time.LocalDate;
 
 import fr.ambuconnect.ambulances.dto.AmbulanceDTO;
 import fr.ambuconnect.ambulances.dto.EquipmentDTO;
+import fr.ambuconnect.ambulances.dto.VehicleDTO;
 import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 import fr.ambuconnect.ambulances.services.AmbulanceService;
 import io.quarkus.security.Authenticated;
@@ -198,5 +199,21 @@ public class AmbulancesRessource {
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
+    }
+
+    @GET
+    @Path("/{ambulanceId}/vehicules/{vehiculeId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getVehicule(@PathParam("ambulanceId") UUID ambulanceId, @PathParam("vehiculeId") UUID vehiculeId) {
+        VehicleDTO vehicule = ambulanceService.getVehicule(ambulanceId, vehiculeId);
+        return Response.ok(vehicule).build();
+    }
+
+    @GET
+    @Path("/tous-les-vehicules/{ambulanceId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getVehiculeAll(@PathParam("ambulanceId") UUID ambulanceId) {
+        List<VehicleDTO> vehicules = ambulanceService.getAllVehicules(ambulanceId);
+        return Response.ok(vehicules).build();
     }
 }

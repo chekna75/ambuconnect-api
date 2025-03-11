@@ -9,8 +9,10 @@ import org.jboss.logging.Logger;
 
 import fr.ambuconnect.ambulances.dto.AmbulanceDTO;
 import fr.ambuconnect.ambulances.dto.EquipmentDTO;
+import fr.ambuconnect.ambulances.dto.VehicleDTO;
 import fr.ambuconnect.ambulances.entity.AmbulanceEntity;
 import fr.ambuconnect.ambulances.entity.EquipmentEntity;
+import fr.ambuconnect.ambulances.entity.VehicleEntity;
 import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 import fr.ambuconnect.ambulances.mapper.AmbulancesMapper;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
@@ -264,5 +266,28 @@ public class AmbulanceService {
         dto.setDateModification(entity.getDateModification());
         dto.setModifiePar(entity.getModifiePar());
         return dto;
+    }
+
+    public VehicleDTO getVehicule(UUID ambulanceId, UUID vehiculeId) {
+        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
+        if (ambulance == null) {
+            throw new NotFoundException("Ambulance non trouvée");
+        }
+        return ambulance.getVehicules().stream()
+            .filter(vehicle -> vehicle.getId().equals(vehiculeId))
+            .map(vehicle -> new VehicleDTO(vehicle))
+            .findFirst()
+            .orElseThrow(() -> new NotFoundException("Véhicule non trouvé pour cette ambulance"));
+    }
+
+    public List<VehicleDTO> getAllVehicules(UUID ambulanceId) {
+        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
+        if (ambulance == null) {
+            throw new NotFoundException("Ambulance non trouvée");
+        }
+
+        return ambulance.getVehicules().stream()
+            .map(vehicle -> new VehicleDTO(vehicle))
+            .collect(Collectors.toList());
     }
 }

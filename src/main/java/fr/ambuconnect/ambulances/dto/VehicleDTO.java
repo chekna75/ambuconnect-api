@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import fr.ambuconnect.ambulances.entity.VehicleEntity;
 
 @Data
 @NoArgsConstructor
@@ -20,4 +21,14 @@ public class VehicleDTO {
     private String model;
     private LocalDate dateMiseEnService;
     private UUID ambulanceId;
+
+    public VehicleDTO(VehicleEntity entity) {
+        if (entity != null) {
+            this.id = entity.getId();
+            this.model = entity.getModel();
+            this.immatriculation = entity.getImmatriculation();
+            this.dateMiseEnService = entity.getDateMiseEnService();
+            this.ambulanceId = entity.getAmbulance() != null ? entity.getAmbulance().getId() : null;
+        }
+    }
 } 

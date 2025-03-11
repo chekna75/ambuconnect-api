@@ -109,21 +109,50 @@ public class AdministrateurService {
      */
     @Transactional
     public ChauffeurDto createChauffeur(ChauffeurDto chauffeurDto) throws Exception {
-        // Vérifier si l'email exsite déjà
-        if(ChauffeurEntity.findByEmail(chauffeurDto.getEmail()) != null){
-            throw new Exception("Un administrateur avec cet email existe déjà");
+        LOG.debug("Début création chauffeur avec email: " + chauffeurDto.getEmail());
+        
+        // Vérifier si l'email existe déjà
+        if (ChauffeurEntity.findByEmail(chauffeurDto.getEmail()) != null) {
+            LOG.error("Email déjà utilisé: " + chauffeurDto.getEmail());
+            throw new Exception("Un chauffeur avec cet email existe déjà");
         }
-         // Hasher le mot de passe
-         chauffeurDto.setMotDePasse(authenService.hasherMotDePasse(chauffeurDto.getMotDePasse()));
-    
-         // Convertir DTO en entité
-         ChauffeurEntity nouveauChauffeur = chauffeurMapper.chauffeurDtoToEntity(chauffeurDto);
-     
-         // Persister l'entité
-         entityManager.persist(nouveauChauffeur);
-     
-         // Retourner le DTO de l'administrateur créé
-         return chauffeurMapper.chauffeurToDto(nouveauChauffeur);
+        
+        try {
+            // Vérifier si l'entreprise existe
+            if (chauffeurDto.getEntrepriseId() == null) {
+                LOG.error("ID d'entreprise non fourni");
+                throw new BadRequestException("L'ID de l'entreprise est obligatoire pour créer un chauffeur");
+            }
+            
+            // Récupérer le rôle
+            if (chauffeurDto.getRoleId() == null) {
+                LOG.error("ID de rôle non fourni");
+                throw new BadRequestException("L'ID du rôle est obligatoire pour créer un chauffeur");
+            }
+            
+            // Hasher le mot de passe
+            chauffeurDto.setMotDePasse(authenService.hasherMotDePasse(chauffeurDto.getMotDePasse()));
+            
+            // Convertir DTO en entité
+            ChauffeurEntity nouveauChauffeur = chauffeurMapper.chauffeurDtoToEntity(chauffeurDto);
+            
+            // Par défaut, le chauffeur est disponible
+            if (!chauffeurDto.isDisponible()) {
+                nouveauChauffeur.setDisponible(true);
+            }
+            
+            // Persister l'entité
+            entityManager.persist(nouveauChauffeur);
+            entityManager.flush(); // Forcer la persistence pour détecter les erreurs potentielles
+            
+            LOG.info("Chauffeur créé avec succès: " + chauffeurDto.getEmail());
+            
+            // Retourner le DTO du chauffeur créé
+            return chauffeurMapper.chauffeurToDto(nouveauChauffeur);
+        } catch (PersistenceException e) {
+            LOG.error("Erreur lors de la création du chauffeur", e);
+            throw new InternalServerErrorException("Erreur lors de la création du chauffeur: " + e.getMessage());
+        }
     }
     /**
      * Mise a jour d'un chauffeur
@@ -249,6 +278,29 @@ public class AdministrateurService {
         List<AdministrateurEntity> admins = AdministrateurEntity.list("entreprise.id", identreprise);
         return admins.stream()
                 .map(administrateurMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Récupère tous les chauffeurs appartenant à une entreprise spécifique
+     * 
+     * @param entrepriseId ID de l'entreprise
+     * @return Liste des chauffeurs de l'entreprise
+     */
+    public List<ChauffeurDto> getChauffeursByEntreprise(UUID entrepriseId) {
+        LOG.debug("Récupération des chauffeurs pour l'entreprise: " + entrepriseId);
+        
+        if (entrepriseId == null) {
+            LOG.error("ID d'entreprise non fourni pour la recherche de chauffeurs");
+            throw new BadRequestException("L'ID de l'entreprise est obligatoire");
+        }
+        
+        List<ChauffeurEntity> chauffeurs = ChauffeurEntity.findByEntrepriseId(entrepriseId);
+        
+        LOG.debug("Nombre de chauffeurs trouvés: " + chauffeurs.size());
+        
+        return chauffeurs.stream()
+                .map(chauffeurMapper::chauffeurToDto)
                 .collect(Collectors.toList());
     }
 

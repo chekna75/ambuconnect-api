@@ -2,6 +2,7 @@ package fr.ambuconnect.ambulances.entity;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 
 import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
@@ -77,7 +78,18 @@ public class AmbulanceEntity extends PanacheEntityBase{
     @OneToMany(mappedBy = "ambulance", cascade = CascadeType.ALL)
     private List<EquipmentEntity> equipements;
 
+    @OneToMany(mappedBy = "ambulance", cascade = CascadeType.ALL)
+    private List<VehicleEntity> vehicules = new ArrayList<>();
+
     public static AmbulanceEntity findByImmatriculation(String immatriculation){
         return find("immatriculation", immatriculation).firstResult();
+    }
+
+    public List<VehicleEntity> getVehicules() {
+        return vehicules;
+    }
+
+    public void setVehicules(List<VehicleEntity> vehicules) {
+        this.vehicules = vehicules;
     }
 }

@@ -119,5 +119,9 @@ public class ChauffeurEntity extends PanacheEntityBase{
         LocalDate now = LocalDate.now();
         return (now.getYear() - dateEntree.getYear()) * 12 + now.getMonthValue() - dateEntree.getMonthValue();
     }
+
+    public static List<ChauffeurEntity> findByEntrepriseId(UUID entrepriseId) {
+        return list("entreprise.id", entrepriseId);
+    }
 }
 
