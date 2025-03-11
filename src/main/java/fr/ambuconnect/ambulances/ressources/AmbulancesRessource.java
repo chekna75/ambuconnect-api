@@ -29,7 +29,6 @@ import jakarta.ws.rs.core.Response;
 @Path("/ambulances")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Authenticated
 @Valid
 public class AmbulancesRessource {
 
