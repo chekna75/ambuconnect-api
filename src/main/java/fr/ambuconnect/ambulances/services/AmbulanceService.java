@@ -268,26 +268,37 @@ public class AmbulanceService {
         return dto;
     }
 
-    public VehicleDTO getVehicule(UUID ambulanceId, UUID vehiculeId) {
-        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
-        if (ambulance == null) {
-            throw new NotFoundException("Ambulance non trouvée");
-        }
-        return ambulance.getVehicules().stream()
-            .filter(vehicle -> vehicle.getId().equals(vehiculeId))
-            .map(vehicle -> new VehicleDTO(vehicle))
-            .findFirst()
-            .orElseThrow(() -> new NotFoundException("Véhicule non trouvé pour cette ambulance"));
-    }
-
     public List<VehicleDTO> getAllVehicules(UUID ambulanceId) {
         AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
         if (ambulance == null) {
             throw new NotFoundException("Ambulance non trouvée");
         }
-
         return ambulance.getVehicules().stream()
-            .map(vehicle -> new VehicleDTO(vehicle))
+            .map(this::mapVehicleToDto)
             .collect(Collectors.toList());
     }
+
+    public VehicleDTO getVehicule(UUID ambulanceId, UUID vehiculeId) {
+        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
+        if (ambulance == null) {
+            throw new NotFoundException("Ambulance non trouvée");
+        }
+        VehicleEntity vehicule = ambulance.getVehicules().stream()
+            .filter(v -> v.getId().equals(vehiculeId))
+            .findFirst()
+            .orElseThrow(() -> new NotFoundException("Véhicule non trouvé pour cette ambulance"));
+        return mapVehicleToDto(vehicule);
+    }
+    
+
+    private VehicleDTO mapVehicleToDto(VehicleEntity entity) {
+        VehicleDTO dto = new VehicleDTO();
+        dto.setId(entity.getId());
+        dto.setImmatriculation(entity.getImmatriculation());
+        dto.setModel(entity.getModel());
+        dto.setDateMiseEnService(entity.getDateMiseEnService());
+        dto.setAmbulanceId(entity.getAmbulance().getId());
+        return dto;
+    }
+
 }
