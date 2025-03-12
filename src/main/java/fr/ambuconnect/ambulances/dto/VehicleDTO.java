@@ -21,7 +21,9 @@ public class VehicleDTO {
     private String model;
     private LocalDate dateMiseEnService;
     private UUID ambulanceId;
-
+    private String marque;
+    private String statut;
+    
     public VehicleDTO(VehicleEntity entity) {
         if (entity != null) {
             this.id = entity.getId();

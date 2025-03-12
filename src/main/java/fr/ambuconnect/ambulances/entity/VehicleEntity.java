@@ -41,6 +41,12 @@ public class VehicleEntity extends PanacheEntityBase{
 
     @Column(name = "date_mise_en_service", nullable = true)
     private LocalDate dateMiseEnService;
+
+    @Column(name = "marque", length = 50)
+    private String marque;
+
+    @Column(name = "statut", length = 50)
+    private String statut;
     
     @OneToMany(mappedBy = "vehicle")
     private List<MaintenanceEntity> maintenances;

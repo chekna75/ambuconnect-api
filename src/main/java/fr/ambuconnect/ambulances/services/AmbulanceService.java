@@ -298,6 +298,8 @@ public class AmbulanceService {
         dto.setModel(entity.getModel());
         dto.setDateMiseEnService(entity.getDateMiseEnService());
         dto.setAmbulanceId(entity.getAmbulance().getId());
+        dto.setMarque(entity.getMarque());
+        dto.setStatut(entity.getStatut());
         return dto;
     }
 
