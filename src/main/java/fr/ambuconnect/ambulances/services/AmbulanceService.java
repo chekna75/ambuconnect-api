@@ -117,7 +117,7 @@ public class AmbulanceService {
 
     @Transactional
     public List<EquipmentDTO> getEquipementsByAmbulance(UUID ambulanceId) {
-        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
+        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(ambulanceId);
         if (ambulance == null) {
             throw new NotFoundException("Ambulance non trouvée");
         }
