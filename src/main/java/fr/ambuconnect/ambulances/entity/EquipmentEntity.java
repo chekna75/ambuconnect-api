@@ -81,5 +81,9 @@ public class EquipmentEntity extends PanacheEntityBase{
         dateModification = LocalDateTime.now();
     }
 
+    public static EquipmentEntity findByAmbulanceId(UUID ambulanceId) {
+        return find("ambulance.id", ambulanceId).firstResult();
+    }
+
 }
 

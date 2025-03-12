@@ -117,11 +117,17 @@ public class AmbulanceService {
 
     @Transactional
     public List<EquipmentDTO> getEquipementsByAmbulance(UUID ambulanceId) {
-        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(ambulanceId);
+        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
         if (ambulance == null) {
             throw new NotFoundException("Ambulance non trouvée");
         }
-        return ambulance.getEquipements().stream()
+        
+        List<EquipmentEntity> equipments = EquipmentEntity.list("ambulance.id", ambulanceId);
+        if (equipments.isEmpty()) {
+            throw new NotFoundException("Aucun équipement trouvé pour cette ambulance");
+        }
+        
+        return equipments.stream()
                 .map(this::mapEquipmentToDto)
                 .collect(Collectors.toList());
     }
