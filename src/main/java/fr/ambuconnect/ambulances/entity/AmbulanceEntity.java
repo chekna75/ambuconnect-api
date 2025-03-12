@@ -92,4 +92,8 @@ public class AmbulanceEntity extends PanacheEntityBase{
     public void setVehicules(List<VehicleEntity> vehicules) {
         this.vehicules = vehicules;
     }
+
+    public static AmbulanceEntity findByEntrepriseId(UUID id) {
+        return find("entreprise.id", id).firstResult();
+    }
 }
