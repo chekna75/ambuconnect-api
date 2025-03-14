@@ -110,6 +110,13 @@ public class BulletinPaieService {
     }
     
     private void ajouterTableauPaie(Document document, FichePaieDTO fichePaie) {
+        // Vérifier que les valeurs nécessaires ne sont pas nulles
+        Double heuresTravaillees = fichePaie.getHeuresTravaillees() != null ? fichePaie.getHeuresTravaillees() : 0.0;
+        BigDecimal tauxHoraire = fichePaie.getTauxHoraire() != null ? fichePaie.getTauxHoraire() : BigDecimal.ZERO;
+        BigDecimal salaireBase = fichePaie.getSalaireBase() != null ? fichePaie.getSalaireBase() : BigDecimal.ZERO;
+        Double heuresSupplementaires = fichePaie.getHeuresSupplementaires() != null ? fichePaie.getHeuresSupplementaires() : 0.0;
+        BigDecimal montantHeuresSupplementaires = fichePaie.getMontantHeuresSupplementaires() != null ? fichePaie.getMontantHeuresSupplementaires() : BigDecimal.ZERO;
+        
         Table paieTable = new Table(UnitValue.createPercentArray(BulletinPaieConstants.COLUMN_WIDTHS))
             .setWidth(UnitValue.createPercentValue(100));
         
@@ -130,21 +137,21 @@ public class BulletinPaieService {
         // Salaire de base
         ajouterLignePaie(paieTable,
             "Salaire de base",
-            formatNumber(fichePaie.getHeuresTravaillees()),
-            formatCurrency(fichePaie.getTauxHoraire()),
+            formatNumber(heuresTravaillees),
+            formatCurrency(tauxHoraire),
             "",
-            formatCurrency(fichePaie.getSalaireBase()),
+            formatCurrency(salaireBase),
             true
         );
         
         // Heures supplémentaires
-        if (fichePaie.getHeuresSupplementaires() > 0) {
+        if (heuresSupplementaires > 0) {
             ajouterLignePaie(paieTable,
                 "Heures supplémentaires",
-                formatNumber(fichePaie.getHeuresSupplementaires()),
+                formatNumber(heuresSupplementaires),
                 formatPercentage(BulletinPaieConstants.OVERTIME_RATE),
                 "",
-                formatCurrency(fichePaie.getMontantHeuresSupplementaires()),
+                formatCurrency(montantHeuresSupplementaires),
                 false
             );
         }
@@ -159,30 +166,39 @@ public class BulletinPaieService {
     }
     
     private void ajouterCotisations(Table table, FichePaieDTO fichePaie) {
+        // Vérifier que les valeurs nécessaires ne sont pas nulles
+        BigDecimal salaireBase = fichePaie.getSalaireBase() != null ? fichePaie.getSalaireBase() : BigDecimal.ZERO;
+        BigDecimal cotisationSS = fichePaie.getCotisationSecuriteSociale() != null ? fichePaie.getCotisationSecuriteSociale() : BigDecimal.ZERO;
+        BigDecimal cotisationSSPatronale = fichePaie.getCotisationSecuriteSocialePatronale() != null ? fichePaie.getCotisationSecuriteSocialePatronale() : BigDecimal.ZERO;
+        BigDecimal cotisationRetraite = fichePaie.getCotisationRetraite() != null ? fichePaie.getCotisationRetraite() : BigDecimal.ZERO;
+        BigDecimal cotisationRetraitePatronale = fichePaie.getCotisationRetraitePatronale() != null ? fichePaie.getCotisationRetraitePatronale() : BigDecimal.ZERO;
+        
         // Sécurité sociale
         ajouterLignePaie(table,
             "Sécurité sociale",
-            formatCurrency(fichePaie.getSalaireBase()),
+            formatCurrency(salaireBase),
             formatPercentage(TauxCotisationsConstants.TAUX_SECURITE_SOCIALE_SALARIAL),
-            formatCurrency(fichePaie.getCotisationSecuriteSociale()),
-            formatCurrency(fichePaie.getCotisationSecuriteSocialePatronale()),
+            formatCurrency(cotisationSS),
+            formatCurrency(cotisationSSPatronale),
             false
         );
         
         // Retraite
         ajouterLignePaie(table,
             "Retraite complémentaire",
-            formatCurrency(fichePaie.getSalaireBase()),
+            formatCurrency(salaireBase),
             formatPercentage(TauxCotisationsConstants.TAUX_RETRAITE_TRANCHE_1_SALARIAL),
-            formatCurrency(fichePaie.getCotisationRetraite()),
-            formatCurrency(fichePaie.getCotisationRetraitePatronale()),
+            formatCurrency(cotisationRetraite),
+            formatCurrency(cotisationRetraitePatronale),
             true
         );
     }
     
     private void ajouterTotaux(Table table, FichePaieDTO fichePaie) {
+        BigDecimal netAPayer = fichePaie.getNetAPayer() != null ? fichePaie.getNetAPayer() : BigDecimal.ZERO;
+        
         Cell totalCell = new Cell(1, 5)
-            .add(new Paragraph("NET À PAYER : " + formatCurrency(fichePaie.getNetAPayer())))
+            .add(new Paragraph("NET À PAYER : " + formatCurrency(netAPayer)))
             .addStyle(BulletinPaieStyle.getTotalStyle());
         table.addCell(totalCell);
     }
@@ -202,15 +218,39 @@ public class BulletinPaieService {
     }
     
     private String formatCurrency(BigDecimal amount) {
-        return currencyFormat.format(amount);
+        if (amount == null) {
+            return "0,00 €";
+        }
+        try {
+            return currencyFormat.format(amount);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Erreur de formatage de la valeur monétaire: " + amount, e);
+            return "0,00 €";
+        }
     }
     
     private String formatPercentage(BigDecimal percentage) {
-        return percentageFormat.format(percentage);
+        if (percentage == null) {
+            return "0,00 %";
+        }
+        try {
+            return percentageFormat.format(percentage);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Erreur de formatage du pourcentage: " + percentage, e);
+            return "0,00 %";
+        }
     }
     
     private String formatNumber(Number number) {
-        return String.format(Locale.FRANCE, "%.2f", number);
+        if (number == null) {
+            return "0,00";
+        }
+        try {
+            return String.format(Locale.FRANCE, "%.2f", number);
+        } catch (Exception e) {
+            LOG.error("Erreur de formatage du nombre: " + number, e);
+            return "0,00";
+        }
     }
     
     private String formatPeriode(LocalDate debut, LocalDate fin) {
@@ -254,6 +294,11 @@ public class BulletinPaieService {
     }
     
     private void ajouterRecapitulatif(Document document, FichePaieDTO fichePaie) {
+        // Vérifier que les valeurs nécessaires ne sont pas nulles
+        BigDecimal totalBrut = fichePaie.getTotalBrut() != null ? fichePaie.getTotalBrut() : BigDecimal.ZERO;
+        BigDecimal netImposable = fichePaie.getNetImposable() != null ? fichePaie.getNetImposable() : BigDecimal.ZERO;
+        BigDecimal netAPayer = fichePaie.getNetAPayer() != null ? fichePaie.getNetAPayer() : BigDecimal.ZERO;
+        
         Table recapTable = new Table(4)
             .setWidth(UnitValue.createPercentValue(100));
         
@@ -268,9 +313,9 @@ public class BulletinPaieService {
         
         // Valeurs du mois
         recapTable.addCell(new Cell().add(new Paragraph("Mois")));
-        recapTable.addCell(new Cell().add(new Paragraph(formatCurrency(fichePaie.getTotalBrut()))));
-        recapTable.addCell(new Cell().add(new Paragraph(formatCurrency(fichePaie.getNetImposable()))));
-        recapTable.addCell(new Cell().add(new Paragraph(formatCurrency(fichePaie.getNetAPayer()))));
+        recapTable.addCell(new Cell().add(new Paragraph(formatCurrency(totalBrut))));
+        recapTable.addCell(new Cell().add(new Paragraph(formatCurrency(netImposable))));
+        recapTable.addCell(new Cell().add(new Paragraph(formatCurrency(netAPayer))));
         
         document.add(recapTable);
     }
