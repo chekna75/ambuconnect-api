@@ -3,6 +3,8 @@ package fr.ambuconnect.administrateur.services;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 import org.jboss.logging.Logger;
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
@@ -22,6 +24,9 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotFoundException;
+import fr.ambuconnect.planning.dto.PlannigDto;
+import fr.ambuconnect.planning.enums.StatutEnum;
+import fr.ambuconnect.planning.services.PlanningService;
 
 @ApplicationScoped
 public class AdministrateurService {
@@ -30,19 +35,19 @@ public class AdministrateurService {
 
     private final AdministrateurMapper administrateurMapper;
     private final ChauffeurMapper chauffeurMapper;
-
-    
-    private AuthenService authenService;
-
-    @Inject
-    public AdministrateurService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService){
-        this.administrateurMapper= administrateurMapper;
-        this.chauffeurMapper= chauffeurMapper;
-        this.authenService= authenService;
-    }
+    private final AuthenService authenService;
+    private final PlanningService planningService;
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Inject
+    public AdministrateurService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, PlanningService planningService) {
+        this.administrateurMapper = administrateurMapper;
+        this.chauffeurMapper = chauffeurMapper;
+        this.authenService = authenService;
+        this.planningService = planningService;
+    }
 
     /**
      * Création d'un admin
@@ -98,8 +103,6 @@ public class AdministrateurService {
         }
     }
 
-
-
     /**
      * Création d'un chauffeur
      * 
@@ -127,7 +130,7 @@ public class AdministrateurService {
             // Récupérer le rôle
             if (chauffeurDto.getRoleId() == null) {
                 LOG.error("ID de rôle non fourni");
-                throw new BadRequestException("L'ID du rôle est obligatoire pour créer un chauffeur");
+                chauffeurDto.setRoleId(UUID.fromString("ecfeaf60-6adb-42e2-a01c-c8d8c12a9269"));
             }
             
             // Hasher le mot de passe
@@ -147,6 +150,9 @@ public class AdministrateurService {
             
             LOG.info("Chauffeur créé avec succès: " + chauffeurDto.getEmail());
             
+            // Créer un planning par défaut pour le chauffeur
+            creerPlanningParDefaut(nouveauChauffeur, chauffeurDto.getEntrepriseId());
+            
             // Retourner le DTO du chauffeur créé
             return chauffeurMapper.chauffeurToDto(nouveauChauffeur);
         } catch (PersistenceException e) {
@@ -154,6 +160,37 @@ public class AdministrateurService {
             throw new InternalServerErrorException("Erreur lors de la création du chauffeur: " + e.getMessage());
         }
     }
+    
+    /**
+     * Crée un planning par défaut pour un nouveau chauffeur
+     */
+    private void creerPlanningParDefaut(ChauffeurEntity chauffeur, UUID entrepriseId) {
+        try {
+            // Récupérer l'administrateur de l'entreprise (premier trouvé)
+            AdministrateurEntity admin = AdministrateurEntity.find("entreprise.id", entrepriseId).firstResult();
+            if (admin == null) {
+                LOG.error("Aucun administrateur trouvé pour l'entreprise: " + entrepriseId);
+                return;
+            }
+            
+            // Créer un DTO de planning
+            PlannigDto planningDto = new PlannigDto();
+            planningDto.setChauffeurId(chauffeur.getId());
+            planningDto.setDate(LocalDate.now());
+            planningDto.setHeureDebut(LocalTime.of(8, 0)); // 8h00
+            planningDto.setHeureFin(LocalTime.of(17, 0));  // 17h00
+            planningDto.setStatut(StatutEnum.EN_ATTENTE);
+            
+            // Appeler le service de planning pour créer le planning
+            planningService.creerPlanning(planningDto, admin.getId());
+            
+            LOG.info("Planning par défaut créé pour le chauffeur: " + chauffeur.getEmail());
+        } catch (Exception e) {
+            // Ne pas bloquer la création du chauffeur si la création du planning échoue
+            LOG.error("Erreur lors de la création du planning par défaut", e);
+        }
+    }
+
     /**
      * Mise a jour d'un chauffeur
      * 

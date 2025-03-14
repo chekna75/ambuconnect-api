@@ -17,6 +17,9 @@ import fr.ambuconnect.planning.entity.PlannnigEntity;
 import fr.ambuconnect.planning.enums.StatutEnum;
 import fr.ambuconnect.notification.service.NotificationService;
 import fr.ambuconnect.courses.dto.CourseStatistiquesDto;
+import fr.ambuconnect.geolocalisation.service.GeoService;
+import fr.ambuconnect.geolocalisation.dto.GeoPoint;
+import fr.ambuconnect.geolocalisation.dto.RouteInfo;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,11 +35,13 @@ public class CourseService {
 
     private final CourseMapper courseMapper;
     private final NotificationService notificationService;
+    private final GeoService geoService;
 
     @Inject
-    public CourseService(CourseMapper courseMapper, NotificationService notificationService) {
+    public CourseService(CourseMapper courseMapper, NotificationService notificationService, GeoService geoService) {
         this.courseMapper = courseMapper;
         this.notificationService = notificationService;
+        this.geoService = geoService;
     }
 
     @Transactional
@@ -45,9 +50,6 @@ public class CourseService {
         if (administrateur == null) {
             throw new IllegalArgumentException("Administrateur non trouvé");
         }
-    
-
-    
     
         ChauffeurEntity chauffeur = ChauffeurEntity.findById(courseDto.getChauffeurId());
         if (chauffeur == null) {
@@ -68,6 +70,40 @@ public class CourseService {
         PatientEntity patientEntity = PatientEntity.findById(courseDto.getPatientId());
         if (patientEntity == null) {
             throw new IllegalArgumentException("Patient non trouvé");
+        }
+        
+        // Calculer les coordonnées géographiques, la distance et le temps estimé
+        try {
+            // Si les adresses sont fournies mais pas les coordonnées, on les calcule
+            if (courseDto.getAdresseDepart() != null && courseDto.getAdresseArrivee() != null) {
+                // Géocodage de l'adresse de départ
+                if (courseDto.getLatitudeDepart() == null || courseDto.getLongitudeDepart() == null) {
+                    GeoPoint departPoint = geoService.geocodeAddress(courseDto.getAdresseDepart());
+                    courseDto.setLatitudeDepart(departPoint.getLatitude());
+                    courseDto.setLongitudeDepart(departPoint.getLongitude());
+                }
+                
+                // Géocodage de l'adresse d'arrivée
+                if (courseDto.getLatitudeArrivee() == null || courseDto.getLongitudeArrivee() == null) {
+                    GeoPoint arriveePoint = geoService.geocodeAddress(courseDto.getAdresseArrivee());
+                    courseDto.setLatitudeArrivee(arriveePoint.getLatitude());
+                    courseDto.setLongitudeArrivee(arriveePoint.getLongitude());
+                }
+                
+                // Calcul de la distance et du temps estimé
+                if (courseDto.getDistanceEstimee() == null || courseDto.getTempsTrajetEstime() == null) {
+                    RouteInfo routeInfo = geoService.calculateRoute(
+                        courseDto.getLatitudeDepart(), courseDto.getLongitudeDepart(),
+                        courseDto.getLatitudeArrivee(), courseDto.getLongitudeArrivee()
+                    );
+                    
+                    courseDto.setDistanceEstimee(new BigDecimal(routeInfo.getDistance()));
+                    courseDto.setTempsTrajetEstime(routeInfo.getDurationMinutes());
+                }
+            }
+        } catch (Exception e) {
+            // Log l'erreur mais ne pas bloquer la création de la course
+            System.err.println("Erreur lors du calcul des coordonnées ou de la distance: " + e.getMessage());
         }
     
         // Création de l'entité course et association avec le planning existant
