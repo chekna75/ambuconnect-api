@@ -1,6 +1,7 @@
 package fr.ambuconnect.rh.ressources;
 
 import java.util.UUID;
+import java.util.List;
 
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.rh.dto.FichePaieDTO;
@@ -16,6 +17,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.NotFoundException;
@@ -99,6 +101,70 @@ public class PaieResource {
             LOG.error("Erreur lors de la génération du PDF", e);
             return Response.serverError()
                           .entity("Erreur lors de la génération du PDF: " + e.getMessage())
+                          .build();
+        }
+    }
+    
+    @GET
+    @Path("/chauffeur/{chauffeurId}")
+    public Response getBulletinsByChauffeur(@PathParam("chauffeurId") UUID chauffeurId) {
+        try {
+            List<FichePaieDTO> bulletins = bulletinPaieService.getBulletinsByChauffeur(chauffeurId);
+            return Response.ok(bulletins).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                          .entity(e.getMessage())
+                          .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération des bulletins de paie", e);
+            return Response.serverError()
+                          .entity("Erreur lors de la récupération des bulletins: " + e.getMessage())
+                          .build();
+        }
+    }
+    
+    @GET
+    @Path("/chauffeur/{chauffeurId}/actuel")
+    public Response getActualBulletin(@PathParam("chauffeurId") UUID chauffeurId) {
+        try {
+            FichePaieDTO bulletin = bulletinPaieService.getActualBulletin(chauffeurId);
+            return Response.ok(bulletin).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                          .entity(e.getMessage())
+                          .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération du bulletin de paie actuel", e);
+            return Response.serverError()
+                          .entity("Erreur lors de la récupération du bulletin: " + e.getMessage())
+                          .build();
+        }
+    }
+    
+    @GET
+    @Path("/entreprise/{entrepriseId}")
+    public Response getBulletinsByEntreprise(
+            @PathParam("entrepriseId") UUID entrepriseId,
+            @QueryParam("mois") Integer mois,
+            @QueryParam("annee") Integer annee) {
+        try {
+            List<FichePaieDTO> bulletins;
+            
+            if (mois != null && annee != null) {
+                bulletins = bulletinPaieService.getBulletinsByEntrepriseAndPeriode(entrepriseId, mois, annee);
+            } else {
+                bulletins = bulletinPaieService.getBulletinsByEntreprise(entrepriseId);
+            }
+            
+            return Response.ok(bulletins).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                          .entity(e.getMessage())
+                          .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération des bulletins de paie de l'entreprise", e);
+            return Response.serverError()
+                          .entity("Erreur lors de la récupération des bulletins: " + e.getMessage())
                           .build();
         }
     }

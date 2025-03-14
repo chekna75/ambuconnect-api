@@ -297,4 +297,72 @@ public class BulletinPaieService {
             .map(fichePaieMapper::toDTO)
             .collect(Collectors.toList());
     }
+
+    @Transactional
+    public FichePaieDTO getActualBulletin(UUID chauffeurId) {
+        ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
+        if (chauffeur == null) {
+            throw new NotFoundException("Chauffeur non trouvé");
+        }
+        
+        // Récupérer le bulletin de paie le plus récent pour ce chauffeur
+        FichePaieEntity bulletin = FichePaieEntity.find("chauffeur.id = ?1 ORDER BY periodeDebut DESC", chauffeurId)
+            .firstResult();
+            
+        if (bulletin == null) {
+            throw new NotFoundException("Aucun bulletin de paie trouvé pour ce chauffeur");
+        }
+        
+        return fichePaieMapper.toDTO(bulletin);
+    }
+    
+    @Transactional
+    public List<FichePaieDTO> getBulletinsByChauffeur(UUID chauffeurId) {
+        ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
+        if (chauffeur == null) {
+            throw new NotFoundException("Chauffeur non trouvé");
+        }
+        
+        List<FichePaieEntity> bulletins = FichePaieEntity.find("chauffeur.id", chauffeurId)
+            .list();
+            
+        return bulletins.stream()
+            .map(fichePaieMapper::toDTO)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional
+    public List<FichePaieDTO> getBulletinsByEntreprise(UUID entrepriseId) {
+        EntrepriseEntity entreprise = entrepriseService.findById(entrepriseId);
+        if (entreprise == null) {
+            throw new NotFoundException("Entreprise non trouvée");
+        }
+        
+        List<FichePaieEntity> bulletins = FichePaieEntity.find("entreprise.id", entrepriseId)
+            .list();
+            
+        return bulletins.stream()
+            .map(fichePaieMapper::toDTO)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional
+    public List<FichePaieDTO> getBulletinsByEntrepriseAndPeriode(UUID entrepriseId, int mois, int annee) {
+        EntrepriseEntity entreprise = entrepriseService.findById(entrepriseId);
+        if (entreprise == null) {
+            throw new NotFoundException("Entreprise non trouvée");
+        }
+        
+        LocalDate debut = LocalDate.of(annee, mois, 1);
+        LocalDate fin = debut.plusMonths(1).minusDays(1);
+        
+        List<FichePaieEntity> bulletins = FichePaieEntity
+            .find("entreprise.id = ?1 AND periodeDebut >= ?2 AND periodeFin <= ?3", 
+                  entrepriseId, debut, fin)
+            .list();
+            
+        return bulletins.stream()
+            .map(fichePaieMapper::toDTO)
+            .collect(Collectors.toList());
+    }
 }
