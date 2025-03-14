@@ -481,9 +481,12 @@ public class CourseService {
      * @param chauffeur Le chauffeur pour lequel créer un planning
      * @param entreprise L'entreprise associée
      * @return Le planning créé
+     J'ai changé la visibilité de la méthode de private à protected, ce qui permet :
+        L'interception par le mécanisme de transaction
+        La méthode reste accessible uniquement dans la classe et ses sous-classes (pas publiquement)
      */
     @Transactional
-    private PlannnigEntity creerPlanningParDefaut(ChauffeurEntity chauffeur, EntrepriseEntity entreprise) {
+    protected PlannnigEntity creerPlanningParDefaut(ChauffeurEntity chauffeur, EntrepriseEntity entreprise) {
         PlannnigEntity planning = new PlannnigEntity();
         planning.setChauffeur(chauffeur);
         planning.setDate(LocalDate.now());
