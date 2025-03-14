@@ -20,12 +20,16 @@ import fr.ambuconnect.courses.dto.CourseStatistiquesDto;
 import fr.ambuconnect.geolocalisation.service.GeoService;
 import fr.ambuconnect.geolocalisation.dto.GeoPoint;
 import fr.ambuconnect.geolocalisation.dto.RouteInfo;
+import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @ApplicationScoped
 public class CourseService {
@@ -64,7 +68,8 @@ public class CourseService {
         // Récupération du planning à partir du chauffeur
         PlannnigEntity planning = PlannnigEntity.find("chauffeur.id", courseDto.getChauffeurId()).firstResult();
         if (planning == null) {
-            throw new IllegalArgumentException("Aucun planning trouvé pour ce chauffeur");
+            // Créer un planning par défaut pour ce chauffeur
+            planning = creerPlanningParDefaut(chauffeur, administrateur.getEntreprise());
         }
 
         PatientEntity patientEntity = PatientEntity.findById(courseDto.getPatientId());
@@ -468,5 +473,26 @@ public class CourseService {
 
         stats.setAnalyseSynthese(analyse.toString());
         return stats;
+    }
+
+    /**
+     * Crée un planning par défaut pour un chauffeur
+     * 
+     * @param chauffeur Le chauffeur pour lequel créer un planning
+     * @param entreprise L'entreprise associée
+     * @return Le planning créé
+     */
+    @Transactional
+    private PlannnigEntity creerPlanningParDefaut(ChauffeurEntity chauffeur, EntrepriseEntity entreprise) {
+        PlannnigEntity planning = new PlannnigEntity();
+        planning.setChauffeur(chauffeur);
+        planning.setDate(LocalDate.now());
+        planning.setHeureDebut(LocalTime.now());
+        planning.setHeureFin(LocalTime.now().plusHours(8));
+        planning.setStatut(StatutEnum.EN_ATTENTE);
+        // Les courses seront ajoutées automatiquement
+        
+        entityManager.persist(planning);
+        return planning;
     }
 }
