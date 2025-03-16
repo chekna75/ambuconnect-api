@@ -309,4 +309,33 @@ public class AmbulanceService {
         return dto;
     }
 
+    /**
+     * Récupère les équipements d'une ambulance à partir de l'ID du véhicule
+     * 
+     * @param vehiculeId L'ID du véhicule
+     * @return La liste des équipements de l'ambulance associée au véhicule
+     */
+    @Transactional
+    public List<EquipmentDTO> getEquipementsByVehicule(UUID vehiculeId) {
+        // Récupérer le véhicule
+        VehicleEntity vehicule = VehicleEntity.findById(vehiculeId);
+        if (vehicule == null) {
+            throw new NotFoundException("Véhicule non trouvé");
+        }
+        
+        // Récupérer l'ambulance associée au véhicule
+        AmbulanceEntity ambulance = vehicule.getAmbulance();
+        if (ambulance == null) {
+            throw new NotFoundException("Aucune ambulance associée à ce véhicule");
+        }
+        
+        // Récupérer les équipements de l'ambulance
+        List<EquipmentEntity> equipments = EquipmentEntity.list("ambulance.id", ambulance.getId());
+        
+        // Retourner une liste vide si aucun équipement n'est trouvé (au lieu de lancer une exception)
+        return equipments.stream()
+                .map(this::mapEquipmentToDto)
+                .collect(Collectors.toList());
+    }
+
 }

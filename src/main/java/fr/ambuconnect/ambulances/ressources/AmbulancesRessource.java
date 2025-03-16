@@ -215,4 +215,16 @@ public class AmbulancesRessource {
         List<VehicleDTO> vehicules = ambulanceService.getAllVehicules(ambulanceId);
         return Response.ok(vehicules).build();
     }
+
+    @GET
+    @Path("/vehicule/{vehiculeId}/equipements")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getEquipementsByVehicule(@PathParam("vehiculeId") UUID vehiculeId) {
+        try {
+            List<EquipmentDTO> equipements = ambulanceService.getEquipementsByVehicule(vehiculeId);
+            return Response.ok(equipements).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        }
+    }
 }
