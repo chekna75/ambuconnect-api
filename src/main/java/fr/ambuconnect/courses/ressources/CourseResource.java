@@ -15,6 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/courses")
@@ -45,8 +46,18 @@ public class CourseResource {
 
     @POST
     public Response createCourse(CourseDto courseDto, @QueryParam("adminId") UUID adminId) {
-        CourseDto createdCourse = courseService.creerCourse(courseDto, adminId);
-        return Response.status(Response.Status.CREATED).entity(createdCourse).build();
+        try {
+            CourseDto createdCourse = courseService.creerCourse(courseDto, adminId);
+            return Response.status(Response.Status.CREATED).entity(createdCourse).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Une erreur est survenue lors de la création de la course: " + e.getMessage())
+                .build();
+        }
     }
 
     @PUT
@@ -170,6 +181,219 @@ public class CourseResource {
                     .entity(e.getMessage())
                     .build();
             }
+        }
+    }
+
+    /**
+     * Récupère les courses à venir pour un chauffeur (statut EN_ATTENTE)
+     * 
+     * @param chauffeurId L'ID du chauffeur
+     * @return La liste des courses à venir triées par date de départ
+     */
+    @GET
+    @Path("/chauffeur/{id}/a-venir")
+    @Operation(
+        summary = "Récupérer les courses à venir d'un chauffeur",
+        description = "Récupère toutes les courses avec le statut EN_ATTENTE pour un chauffeur spécifique, triées par date de départ"
+    )
+    @APIResponses(value = {
+        @APIResponse(
+            responseCode = "200",
+            description = "Liste des courses à venir",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = CourseDto.class)
+            )
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Chauffeur non trouvé"
+        )
+    })
+    public Response getCoursesAVenirByChauffeurId(@PathParam("id") UUID chauffeurId) {
+        try {
+            List<CourseDto> courses = courseService.recupererCoursesAVenirParChauffeur(chauffeurId);
+            return Response.ok(courses).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Une erreur est survenue: " + e.getMessage())
+                .build();
+        }
+    }
+
+    /**
+     * Récupère les courses triées par priorité pour un administrateur
+     * 
+     * @param adminId L'ID de l'administrateur
+     * @return La liste des courses triées par priorité
+     */
+    @GET
+    @Path("/priorite")
+    @Operation(
+        summary = "Récupérer les courses par priorité",
+        description = "Récupère toutes les courses triées par priorité (EN_COURS, EN_ATTENTE, TERMINE, ANNULER) et par date de départ"
+    )
+    @APIResponses(value = {
+        @APIResponse(
+            responseCode = "200",
+            description = "Liste des courses par priorité",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = CourseDto.class)
+            )
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Administrateur non trouvé"
+        )
+    })
+    public Response getCoursesByPriority(@QueryParam("adminId") UUID adminId) {
+        try {
+            List<CourseDto> courses = courseService.recupererCoursesParPriorite(adminId);
+            return Response.ok(courses).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Une erreur est survenue: " + e.getMessage())
+                .build();
+        }
+    }
+    
+    /**
+     * Récupère les courses urgentes (qui commencent bientôt)
+     * 
+     * @param adminId L'ID de l'administrateur
+     * @param minutesThreshold Le seuil en minutes pour considérer une course comme urgente (défaut: 60)
+     * @return La liste des courses urgentes
+     */
+    @GET
+    @Path("/urgentes")
+    @Operation(
+        summary = "Récupérer les courses urgentes",
+        description = "Récupère les courses qui commencent dans moins de X minutes (par défaut 60 minutes)"
+    )
+    @APIResponses(value = {
+        @APIResponse(
+            responseCode = "200",
+            description = "Liste des courses urgentes",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = CourseDto.class)
+            )
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Administrateur non trouvé"
+        )
+    })
+    public Response getUrgentCourses(
+        @QueryParam("adminId") UUID adminId,
+        @QueryParam("minutesThreshold") @DefaultValue("60") int minutesThreshold
+    ) {
+        try {
+            List<CourseDto> courses = courseService.recupererCoursesUrgentes(adminId, minutesThreshold);
+            return Response.ok(courses).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Une erreur est survenue: " + e.getMessage())
+                .build();
+        }
+    }
+
+    /**
+     * Vérifie si un chauffeur a une course en cours
+     * 
+     * @param chauffeurId L'ID du chauffeur
+     * @return true si le chauffeur a une course en cours, false sinon
+     */
+    @GET
+    @Path("/chauffeur/{id}/en-cours/status")
+    @Operation(
+        summary = "Vérifier si un chauffeur a une course en cours",
+        description = "Vérifie si un chauffeur spécifique a une course avec le statut EN_COURS"
+    )
+    @APIResponses(value = {
+        @APIResponse(
+            responseCode = "200",
+            description = "Statut de la course en cours",
+            content = @Content(
+                mediaType = "application/json"
+            )
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "ID du chauffeur invalide"
+        )
+    })
+    public Response chauffeurHasOngoingCourse(@PathParam("id") UUID chauffeurId) {
+        try {
+            boolean hasOngoingCourse = courseService.chauffeurACourseEnCours(chauffeurId);
+            return Response.ok(Map.of("hasOngoingCourse", hasOngoingCourse)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Une erreur est survenue: " + e.getMessage())
+                .build();
+        }
+    }
+    
+    /**
+     * Récupère la course en cours d'un chauffeur
+     * 
+     * @param chauffeurId L'ID du chauffeur
+     * @return La course en cours ou 404 si aucune course en cours
+     */
+    @GET
+    @Path("/chauffeur/{id}/en-cours")
+    @Operation(
+        summary = "Récupérer la course en cours d'un chauffeur",
+        description = "Récupère la course avec le statut EN_COURS pour un chauffeur spécifique"
+    )
+    @APIResponses(value = {
+        @APIResponse(
+            responseCode = "200",
+            description = "Course en cours",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = CourseDto.class)
+            )
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Aucune course en cours"
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "ID du chauffeur invalide"
+        )
+    })
+    public Response getOngoingCourseByChauffeurId(@PathParam("id") UUID chauffeurId) {
+        try {
+            CourseDto course = courseService.recupererCourseEnCoursParChauffeur(chauffeurId);
+            if (course == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Aucune course en cours pour ce chauffeur")
+                    .build();
+            }
+            return Response.ok(course).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Une erreur est survenue: " + e.getMessage())
+                .build();
         }
     }
 }

@@ -64,6 +64,25 @@ public class CourseService {
         if (!chauffeur.getEntreprise().equals(administrateur.getEntreprise())) {
             throw new IllegalArgumentException("Le chauffeur n'appartient pas à votre entreprise");
         }
+        
+        // Nous ne bloquons plus la création de courses si le chauffeur a déjà une course en cours
+        // Cela permet de planifier des courses futures
+        
+        // Vérifier si l'ambulance est spécifiée
+        if (courseDto.getAmbulanceId() == null) {
+            throw new IllegalArgumentException("L'ID de l'ambulance est requis");
+        }
+        
+        // Vérifier si le patient est spécifié
+        if (courseDto.getPatientId() == null) {
+            throw new IllegalArgumentException("L'ID du patient est requis");
+        }
+        
+        // Récupération de l'ambulance
+        AmbulanceEntity ambulance = AmbulanceEntity.findById(courseDto.getAmbulanceId());
+        if (ambulance == null) {
+            throw new IllegalArgumentException("Ambulance non trouvée");
+        }
     
         // Récupération du planning à partir du chauffeur
         PlannnigEntity planning = PlannnigEntity.find("chauffeur.id", courseDto.getChauffeurId()).firstResult();
@@ -230,6 +249,123 @@ public class CourseService {
         return courses.stream()
                 .map(courseMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Récupère les courses à venir pour un chauffeur (statut EN_ATTENTE)
+     * 
+     * @param chauffeurId L'ID du chauffeur
+     * @return La liste des courses à venir
+     */
+    public List<CourseDto> recupererCoursesAVenirParChauffeur(UUID chauffeurId) {
+        List<CoursesEntity> courses = CoursesEntity.find(
+            "chauffeur.id = ?1 AND statut = ?2 ORDER BY dateHeureDepart", 
+            chauffeurId, 
+            StatutEnum.EN_ATTENTE
+        ).list();
+        
+        return courses.stream()
+                .map(courseMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Récupère les courses par priorité pour un administrateur
+     * La priorité est basée sur l'heure de départ (les plus proches en premier)
+     * 
+     * @param adminId L'ID de l'administrateur
+     * @return La liste des courses triées par priorité
+     */
+    public List<CourseDto> recupererCoursesParPriorite(UUID adminId) {
+        if (adminId == null) {
+            throw new NotFoundException("L'ID de l'administrateur est requis");
+        }
+
+        AdministrateurEntity admin = AdministrateurEntity.findById(adminId);
+        if (admin == null) {
+            throw new NotFoundException("Administrateur non trouvé avec l'ID: " + adminId);
+        }
+
+        // Récupérer les courses de l'entreprise de l'administrateur
+        // Trier par statut (EN_COURS en premier, puis EN_ATTENTE) et par date de départ
+        List<CoursesEntity> courses = CoursesEntity.find(
+            "entreprise = ?1 ORDER BY CASE statut " +
+            "WHEN 'EN_COURS' THEN 0 " +
+            "WHEN 'EN_ATTENTE' THEN 1 " +
+            "WHEN 'TERMINE' THEN 2 " +
+            "WHEN 'ANNULER' THEN 3 END, dateHeureDepart", 
+            admin.getEntreprise()
+        ).list();
+        
+        return courses.stream()
+                .map(courseMapper::toDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Récupère les courses urgentes (qui commencent dans moins de X minutes)
+     * 
+     * @param adminId L'ID de l'administrateur
+     * @param minutesThreshold Le seuil en minutes pour considérer une course comme urgente
+     * @return La liste des courses urgentes
+     */
+    public List<CourseDto> recupererCoursesUrgentes(UUID adminId, int minutesThreshold) {
+        if (adminId == null) {
+            throw new NotFoundException("L'ID de l'administrateur est requis");
+        }
+
+        AdministrateurEntity admin = AdministrateurEntity.findById(adminId);
+        if (admin == null) {
+            throw new NotFoundException("Administrateur non trouvé avec l'ID: " + adminId);
+        }
+        
+        LocalDateTime thresholdTime = LocalDateTime.now().plusMinutes(minutesThreshold);
+        
+        // Récupérer les courses EN_ATTENTE qui commencent bientôt
+        List<CoursesEntity> courses = CoursesEntity.find(
+            "entreprise = ?1 AND statut = ?2 AND dateHeureDepart <= ?3 ORDER BY dateHeureDepart", 
+            admin.getEntreprise(),
+            StatutEnum.EN_ATTENTE,
+            thresholdTime
+        ).list();
+        
+        return courses.stream()
+                .map(courseMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Vérifie si un chauffeur a une course en cours
+     * 
+     * @param chauffeurId L'ID du chauffeur
+     * @return true si le chauffeur a une course en cours, false sinon
+     */
+    public boolean chauffeurACourseEnCours(UUID chauffeurId) {
+        if (chauffeurId == null) {
+            throw new IllegalArgumentException("L'ID du chauffeur est requis");
+        }
+        
+        long count = CoursesEntity.count("chauffeur.id = ?1 AND statut = ?2", 
+                chauffeurId, StatutEnum.EN_COURS);
+        
+        return count > 0;
+    }
+    
+    /**
+     * Récupère la course en cours d'un chauffeur
+     * 
+     * @param chauffeurId L'ID du chauffeur
+     * @return La course en cours ou null si aucune course en cours
+     */
+    public CourseDto recupererCourseEnCoursParChauffeur(UUID chauffeurId) {
+        if (chauffeurId == null) {
+            throw new IllegalArgumentException("L'ID du chauffeur est requis");
+        }
+        
+        CoursesEntity course = CoursesEntity.find("chauffeur.id = ?1 AND statut = ?2", 
+                chauffeurId, StatutEnum.EN_COURS).firstResult();
+        
+        return course != null ? courseMapper.toDto(course) : null;
     }
 
     @Transactional
