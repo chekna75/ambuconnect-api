@@ -92,11 +92,6 @@
     <artifactId>quarkus-scheduler</artifactId>
 </dependency>
         <dependency>
-            
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-mailer</artifactId>
-        </dependency>
-     <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
