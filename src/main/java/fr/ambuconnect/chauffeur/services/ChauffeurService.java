@@ -92,4 +92,16 @@ public class ChauffeurService {
             throw e;
         }
     }
+
+    /**
+     * Récupère tous les chauffeurs d'une entreprise spécifique
+     * @param entrepriseId L'ID de l'entreprise
+     * @return Liste des chauffeurs de l'entreprise
+     */
+    public List<ChauffeurDto> getChauffeursByEntreprise(UUID entrepriseId) {
+        List<ChauffeurEntity> chauffeurs = ChauffeurEntity.findByEntrepriseId(entrepriseId);
+        return chauffeurs.stream()
+                .map(chauffeurMapper::chauffeurToDto)
+                .collect(Collectors.toList());
+    }
 }

@@ -49,12 +49,13 @@ public class PerformanceRessource {
     }
 
     @GET
-    @Path("/rapports/mensuel")
+    @Path("/rapports/mensuel/{entrepriseId}")
     @Operation(summary = "Récupérer tous les rapports mensuels")
     @APIResponse(responseCode = "200", description = "Liste des rapports mensuels")
     public Response getAllRapportsMensuels(
+            @PathParam("entrepriseId") UUID entrepriseId,
             @QueryParam("mois") LocalDateTime mois) {
-        List<RapportMensuelDto> rapports = performanceService.getAllRapportsMensuels(mois);
+        List<RapportMensuelDto> rapports = performanceService.getAllRapportsMensuels(mois, entrepriseId);
         return Response.ok(rapports).build();
     }
 

@@ -135,9 +135,9 @@ public class PerformanceChauffeurService {
         return recommandations.length() > 0 ? recommandations.toString() : "Continuer sur cette voie";
     }
 
-    public List<RapportMensuelDto> getAllRapportsMensuels(LocalDateTime mois) {
-        // Récupérer tous les chauffeurs actifs
-        List<ChauffeurDto> chauffeurs = chauffeurService.findAll().stream()
+    public List<RapportMensuelDto> getAllRapportsMensuels(LocalDateTime mois, UUID entrepriseId) {
+        // Récupérer tous les chauffeurs actifs de l'entreprise
+        List<ChauffeurDto> chauffeurs = chauffeurService.getChauffeursByEntreprise(entrepriseId).stream()
             .filter(c -> c.isIndicActif())
             .collect(Collectors.toList());
 
