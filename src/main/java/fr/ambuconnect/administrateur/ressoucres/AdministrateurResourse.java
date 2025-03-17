@@ -11,7 +11,6 @@ import fr.ambuconnect.administrateur.dto.AdministrateurDto;
 import fr.ambuconnect.administrateur.services.AdministrateurService;
 import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
-import io.quarkus.oidc.IdToken;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -33,34 +32,25 @@ import jakarta.ws.rs.core.Response;
 @Path("/administrateur")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-
 @Valid
 public class AdministrateurResourse {
 
     private final AdministrateurService administrateurService;
-
-    
-
-    private AuthenService authenService;
-
+    private final AuthenService authenService;
     private final SecurityIdentity securityIdentity;
 
     @Inject
-    public AdministrateurResourse(AuthenService authenService, SecurityIdentity securityIdentity, AdministrateurService administrateurService){
+    public AdministrateurResourse(AuthenService authenService, SecurityIdentity securityIdentity, AdministrateurService administrateurService) {
         this.authenService = authenService;
         this.securityIdentity = securityIdentity;
-        this.administrateurService= administrateurService;
+        this.administrateurService = administrateurService;
     }
 
-    @Inject
-    @IdToken                                        
-    JsonWebToken idToken;
-
     @GET
-    @Authenticated                                  
+    @Authenticated
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "Hello, " + idToken.getName();
+        return "Hello, " + securityIdentity.getPrincipal().getName();
     }
 
     @GET

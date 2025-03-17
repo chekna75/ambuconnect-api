@@ -12,6 +12,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.authentification.mapper.AuthentificationMapper;
+import fr.ambuconnect.authentification.utils.JwtUtils;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -25,19 +26,15 @@ import jakarta.ws.rs.NotFoundException;
 public class AuthenService {
     
     private final AuthentificationMapper authentificationMapper;
+    private final JwtUtils jwtUtils;
 
-    @ConfigProperty(name = "jwt.secret")
-    String jwtSecret;
 
-    @ConfigProperty(name = "jwt.expiration")
-    private long jwtExpiration;
 
-    @ConfigProperty(name = "jwt.issuer")
-    String jwtIssuer;
 
     @Inject
-    public AuthenService(AuthentificationMapper authentificationMapper) {
+    public AuthenService(AuthentificationMapper authentificationMapper, JwtUtils jwtUtils) {
         this.authentificationMapper = authentificationMapper;
+        this.jwtUtils = jwtUtils;
     }
 
     /**
@@ -118,19 +115,19 @@ public class AuthenService {
         }
     }
 
-
     @Transactional
     public String connexionAdmin(String email, String motDePasse, Boolean isAdmin) {
         try {
             System.out.println("Tentative de connexion admin - Email: " + email);
             
-            UUID userId = verifierIdentifiantsAdmin(email, motDePasse);
-            System.out.println("Résultat vérification - UserId: " + userId);
-            
-            if (userId != null) {
-                String token = generateJWT(userId, isAdmin);
-                System.out.println("Token généré avec succès");
-                return token;
+            AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
+            if (admin != null && verifierMotDePasse(motDePasse, admin.getMotDePasse())) {
+                return jwtUtils.generateToken(
+                    admin.getId(),
+                    admin.getEmail(),
+                    "ADMIN",
+                    admin.getEntreprise().getId()
+                );
             }
             throw new IllegalArgumentException("Identifiants invalides");
         } catch (Exception e) {
@@ -143,114 +140,22 @@ public class AuthenService {
     public String connexionChauffeur(String email, String motDePasse, Boolean isAdmin) {
         try {
             System.out.println("=== Début connexion chauffeur ===");
-            System.out.println("Email reçu: " + email);
-            System.out.println("Mot de passe reçu (longueur): " + (motDePasse != null ? motDePasse.length() : "null"));
             
-            UUID userId = verifierIdentifiantsChauffeur(email, motDePasse);
-            System.out.println("Résultat vérification - UserId: " + userId);
-            
-            if (userId != null) {
-                System.out.println("Génération du token pour userId: " + userId);
-                String token = generateJWT(userId, isAdmin);
-                System.out.println("Token généré avec succès (longueur): " + token.length());
-                return token;
+            ChauffeurEntity chauffeur = ChauffeurEntity.findByEmail(email);
+            if (chauffeur != null && verifierMotDePasse(motDePasse, chauffeur.getMotDePasse())) {
+                return jwtUtils.generateToken(
+                    chauffeur.getId(),
+                    chauffeur.getEmail(),
+                    "CHAUFFEUR",
+                    chauffeur.getEntreprise().getId()
+                );
             }
-            System.out.println("!!! Échec de la vérification des identifiants !!!");
             throw new IllegalArgumentException("Identifiants invalides");
         } catch (Exception e) {
-            System.out.println("!!! Erreur lors de la connexion !!!");
-            System.out.println("Type d'erreur: " + e.getClass().getName());
-            System.out.println("Message d'erreur: " + e.getMessage());
+            System.out.println("Erreur lors de la connexion: " + e.getMessage());
             e.printStackTrace();
             throw e;
         }
-    }
-
-    private String generateJWT(UUID userId, Boolean isAdmin) {
-        try {
-            System.out.println("Génération du JWT pour l'utilisateur: " + userId);
-            
-            if (isAdmin) {
-                AdministrateurEntity admin = AdministrateurEntity.findById(userId);
-                if (admin == null) {
-                    throw new NotFoundException("Administrateur non trouvé");
-                }
-                return Jwt.claims()
-                    .subject(userId.toString())
-                    .issuer("ambuconnect-api-recette.up.railway.app")
-                    .issuedAt(System.currentTimeMillis())
-                    .expiresIn(Duration.ofHours(1))
-                    .groups(new HashSet<>(Arrays.asList("admin")))
-                    .claim("id", admin.getId().toString())
-                    .claim("nom", admin.getNom())
-                    .claim("prenom", admin.getPrenom())
-                    .claim("email", admin.getEmail())
-                    .claim("telephone", admin.getTelephone())
-                    .claim("entrepriseId", admin.getEntreprise().getId().toString())
-                    .claim("entrepriseNom", admin.getEntreprise().getNom())
-                    .sign();
-            } else {
-                ChauffeurEntity chauffeur = ChauffeurEntity.findById(userId);
-                if (chauffeur == null) {
-                    throw new NotFoundException("Chauffeur non trouvé");
-                }
-                return Jwt.claims()
-                    .subject(userId.toString())
-                    .issuer("ambuconnect-api-recette.up.railway.app")
-                    .issuedAt(System.currentTimeMillis())
-                    .expiresIn(Duration.ofHours(1))
-                    .groups(new HashSet<>(Arrays.asList("chauffeur")))
-                    .claim("id", chauffeur.getId().toString())
-                    .claim("nom", chauffeur.getNom())
-                    .claim("prenom", chauffeur.getPrenom())
-                    .claim("email", chauffeur.getEmail())
-                    .claim("telephone", chauffeur.getTelephone())
-                    .claim("entrepriseId", chauffeur.getEntreprise().getId().toString())
-                    .claim("entrepriseNom", chauffeur.getEntreprise().getNom())
-                    .sign();
-            }
-        } catch (Exception e) {
-            System.out.println("Erreur lors de la génération du JWT: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Erreur lors de la génération du token: " + e.getMessage());
-        }
-    }
-
-    private UUID verifierIdentifiantsAdmin(String email, String motDePasse) {
-        System.out.println("Vérification des identifiants admin");
-        AdministrateurEntity administrateurEntity = AdministrateurEntity.findByEmail(email);
-        
-        if (administrateurEntity != null) {
-            System.out.println("Administrateur trouvé avec l'ID: " + administrateurEntity.getId());
-            boolean motDePasseValide = verifierMotDePasse(motDePasse, administrateurEntity.getMotDePasse());
-            System.out.println("Mot de passe valide: " + motDePasseValide);
-            
-            if (motDePasseValide) {
-                return administrateurEntity.getId();
-            }
-        } else {
-            System.out.println("Aucun administrateur trouvé pour l'email: " + email);
-        }
-        return null;
-    }
-
-    private UUID verifierIdentifiantsChauffeur(String email, String motDePasse) {
-        System.out.println("Vérification des identifiants chauffeur - Email: " + email);
-        
-        ChauffeurEntity chauffeurEntity = ChauffeurEntity.findByEmail(email);
-        
-        if (chauffeurEntity != null) {
-            System.out.println("Chauffeur trouvé avec l'ID: " + chauffeurEntity.getId());
-            boolean motDePasseValide = verifierMotDePasse(motDePasse, chauffeurEntity.getMotDePasse());
-            System.out.println("Mot de passe valide: " + motDePasseValide);
-            
-            if (motDePasseValide) {
-                return chauffeurEntity.getId();
-            }
-        } else {
-            System.out.println("Aucun chauffeur trouvé pour l'email: " + email);
-        }
-        return null;
     }
 
     @Transactional
