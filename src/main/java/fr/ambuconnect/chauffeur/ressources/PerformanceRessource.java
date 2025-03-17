@@ -19,7 +19,6 @@ import jakarta.ws.rs.core.Response;
 @Path("/performances")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Authenticated
 public class PerformanceRessource {
 
     @Inject
