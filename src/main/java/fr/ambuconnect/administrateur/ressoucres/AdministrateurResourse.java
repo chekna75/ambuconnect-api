@@ -34,7 +34,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/administrateur")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
+@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR", "superadmin", "SUPERADMIN"})
 @Valid
 public class AdministrateurResourse {
 
@@ -186,6 +186,20 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
                 .entity("Erreur lors de la récupération des chauffeurs: " + e.getMessage())
                 .build();
         }
+    }
+
+    /**
+     * Création d'un superadmin
+     * Cet endpoint permet de créer un compte superadmin
+     */
+    @POST
+    @Path("/createSuperAdmin")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "ADMIN", "superadmin", "SUPERADMIN"})
+    public RestResponse<AdministrateurDto> createSuperAdmin(@RequestBody @Valid AdministrateurDto administrateurDto) throws Exception {
+        AdministrateurDto dto = administrateurService.createSuperAdmin(administrateurDto);
+        return RestResponse.ok(dto);
     }
 
 }

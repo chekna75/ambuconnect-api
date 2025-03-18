@@ -397,4 +397,65 @@ public class AdministrateurService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Création d'un superadmin
+     * 
+     * @param administrateurDto Les informations du superadmin à créer
+     * @return Le DTO du superadmin créé
+     */
+    @Transactional
+    public AdministrateurDto createSuperAdmin(AdministrateurDto administrateurDto) {
+        LOG.debug("Début création superadmin avec email: " + administrateurDto.getEmail());
+        
+        // Vérifier si l'email est correct pour un superadmin
+        if (!administrateurDto.getEmail().equals("superadmin@ambuconnect.fr")) {
+            LOG.error("L'email n'est pas celui attendu pour un superadmin");
+            throw new BadRequestException("L'email d'un superadmin doit être superadmin@ambuconnect.fr");
+        }
+        
+        // Vérifier si l'email existe déjà
+        if (AdministrateurEntity.findByEmail(administrateurDto.getEmail()) != null) {
+            LOG.error("Un superadmin avec cet email existe déjà");
+            throw new BadRequestException("Un superadmin avec cet email existe déjà");
+        }
+        
+        try {
+            // Récupérer le rôle ADMIN (le rôle SUPERADMIN est attribué au niveau du service d'authentification)
+            RoleEntity roleAdmin = RoleEntity.findByName("ADMIN");
+            if (roleAdmin == null) {
+                LOG.error("Rôle ADMIN non trouvé");
+                throw new NotFoundException("Le rôle ADMIN n'existe pas");
+            }
+            
+            // Forcer le rôle à ADMIN (sera converti en SUPERADMIN lors de la connexion)
+            administrateurDto.setRole(roleAdmin.getNom());
+            
+            // Hasher le mot de passe
+            String hashedPassword = authenService.hasherMotDePasse(administrateurDto.getMotDePasse());
+            administrateurDto.setMotDePasse(hashedPassword);
+            
+            // Convertir DTO en entité
+            AdministrateurEntity superAdmin = administrateurMapper.toEntity(administrateurDto);
+            
+            // Définir le rôle
+            superAdmin.setRole(roleAdmin);
+            
+            // Persister l'entité
+            entityManager.persist(superAdmin);
+            entityManager.flush();
+            
+            LOG.info("Superadmin créé avec succès: " + administrateurDto.getEmail());
+            
+            // Retourner le DTO du superadmin créé
+            return administrateurMapper.toDto(superAdmin);
+            
+        } catch (PersistenceException e) {
+            LOG.error("Erreur lors de la persistance du superadmin", e);
+            throw new BadRequestException("Erreur lors de la création du superadmin: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("Erreur inattendue lors de la création du superadmin", e);
+            throw new InternalServerErrorException("Une erreur inattendue est survenue");
+        }
+    }
+
 }
