@@ -34,6 +34,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/administrateur")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN"})
 @Valid
 public class AdministrateurResourse {
 
