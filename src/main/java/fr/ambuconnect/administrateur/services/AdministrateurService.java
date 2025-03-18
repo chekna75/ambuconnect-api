@@ -458,4 +458,31 @@ public class AdministrateurService {
         }
     }
 
+    public AdministrateurDto updateAdministrateur(UUID id, AdministrateurDto administrateurDto) {
+        AdministrateurEntity administrateur = AdministrateurEntity.findById(id);
+        if (administrateur == null) {
+            throw new NotFoundException("Administrateur non trouvé");
+        }
+
+        try {
+            // Mettre à jour les champs
+            administrateur.setNom(administrateurDto.getNom());
+            administrateur.setPrenom(administrateurDto.getPrenom());
+            administrateur.setEmail(administrateurDto.getEmail());
+            administrateur.setTelephone(administrateurDto.getTelephone());
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la mise à jour de l'administrateur", e);
+            throw new InternalServerErrorException("Erreur lors de la mise à jour de l'administrateur: " + e.getMessage());
+        }
+        return administrateurMapper.toDto(administrateur);
+    }
+
+    public void deleteAdministrateur(UUID id) {
+        AdministrateurEntity administrateur = AdministrateurEntity.findById(id);
+        if (administrateur == null) {
+            throw new NotFoundException("Administrateur non trouvé");
+        }
+        entityManager.remove(administrateur);
+    }
+
 }

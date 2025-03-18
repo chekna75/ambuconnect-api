@@ -18,6 +18,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -190,6 +191,25 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
     public RestResponse<AdministrateurDto> createSuperAdmin(@RequestBody @Valid AdministrateurDto administrateurDto) throws Exception {
         AdministrateurDto dto = administrateurService.createSuperAdmin(administrateurDto);
         return RestResponse.ok(dto);
+    }
+
+    @PUT
+    @Path("/{id}/update")
+    @RolesAllowed({"ADMIN", "SUPERADMIN"})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public RestResponse<AdministrateurDto> updateAdministrateur(@PathParam("id") UUID id, @RequestBody @Valid AdministrateurDto administrateurDto) {
+        AdministrateurDto dto = administrateurService.updateAdministrateur(id, administrateurDto);
+        return RestResponse.ok(dto);
+    }
+
+    @DELETE
+    @Path("/{id}/delete")
+    @RolesAllowed({"ADMIN", "SUPERADMIN"})
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public void deleteAdministrateur(@PathParam("id") UUID id) {
+        administrateurService.deleteAdministrateur(id);
     }
 
 }
