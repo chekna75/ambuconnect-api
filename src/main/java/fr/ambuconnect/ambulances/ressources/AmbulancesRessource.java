@@ -9,7 +9,6 @@ import fr.ambuconnect.ambulances.dto.EquipmentDTO;
 import fr.ambuconnect.ambulances.dto.VehicleDTO;
 import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 import fr.ambuconnect.ambulances.services.AmbulanceService;
-import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

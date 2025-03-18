@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
 import fr.ambuconnect.notification.dto.NotificationDto;
 import fr.ambuconnect.notification.service.NotificationService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,27 +33,79 @@ public class NotificationWebSocket {
     
     @Inject
     private NotificationService notificationService;
+    
+    @Inject
+    private WebSocketTokenAuthenticator tokenAuthenticator;
 
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userId) {
-        UUID userUUID = UUID.fromString(userId);
-        sessions.put(userUUID, session);
-        logger.info("Nouvelle connexion WebSocket - UserId: " + userId);
-        logger.info("Sessions actives pour les notifications: " + sessions.size());
+        try {
+            logger.info("Tentative de connexion WebSocket pour les notifications - UserId: " + userId);
+            
+            // Authentification via token JWT dans les paramètres d'URL
+            if (!tokenAuthenticator.authenticate(session)) {
+                logger.warning("Authentification échouée - Fermeture de la connexion WebSocket de notification");
+                session.close();
+                return;
+            }
+            
+            UUID userUUID = UUID.fromString(userId);
+            sessions.put(userUUID, session);
+            logger.info("Connexion WebSocket établie pour les notifications - UserId: " + userId);
+            logger.info("Sessions actives pour les notifications: " + sessions.size());
+            
+            // Note: Si vous souhaitez envoyer des notifications non lues, implémentez 
+            // la méthode getUnreadNotifications dans le service NotificationService
+        } catch (Exception e) {
+            logger.severe("Erreur lors de l'ouverture de la connexion WebSocket de notification: " + e.getMessage());
+        }
     }
 
     @OnClose
     public void onClose(Session session, @PathParam("userId") String userId) {
-        UUID userUUID = UUID.fromString(userId);
-        sessions.remove(userUUID);
-        logger.info("Fermeture de la connexion WebSocket - UserId: " + userId);
+        try {
+            UUID userUUID = UUID.fromString(userId);
+            sessions.remove(userUUID);
+            logger.info("Fermeture de la connexion WebSocket - UserId: " + userId);
+        } catch (Exception e) {
+            logger.severe("Erreur lors de la fermeture de la connexion WebSocket: " + e.getMessage());
+        }
     }
 
     @OnError
     public void onError(Session session, @PathParam("userId") String userId, Throwable throwable) {
-        UUID userUUID = UUID.fromString(userId);
-        sessions.remove(userUUID);
-        logger.severe("Erreur WebSocket pour l'utilisateur " + userId + ": " + throwable.getMessage());
+        try {
+            UUID userUUID = UUID.fromString(userId);
+            sessions.remove(userUUID);
+            logger.severe("Erreur WebSocket pour l'utilisateur " + userId + ": " + throwable.getMessage());
+        } catch (Exception e) {
+            logger.severe("Erreur lors du traitement d'une erreur WebSocket: " + e.getMessage());
+        }
+    }
+    
+    private void sendNotification(Session session, NotificationDto notification) {
+        try {
+            String notificationJson = objectMapper.writeValueAsString(notification);
+            session.getAsyncRemote().sendText(notificationJson);
+        } catch (Exception e) {
+            logger.severe("Erreur lors de l'envoi d'une notification: " + e.getMessage());
+        }
+    }
+
+    // Méthode pour envoyer une notification à un utilisateur spécifique
+    public void sendNotificationToUser(UUID userId, NotificationDto notification) {
+        Session session = sessions.get(userId);
+        if (session != null && session.isOpen()) {
+            sendNotification(session, notification);
+        }
+    }
+    
+    // Méthode pour maintenir la compatibilité avec le service de notification existant
+    public void envoyerNotification(NotificationDto notification) {
+        UUID destinataireId = notification.getDestinataireId();
+        if (destinataireId != null) {
+            sendNotificationToUser(destinataireId, notification);
+        }
     }
 
     @OnMessage
@@ -113,24 +166,6 @@ public class NotificationWebSocket {
             }
         } catch (Exception e) {
             logger.severe("Erreur lors du traitement du message: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    // Méthode pour envoyer une notification à un utilisateur spécifique
-    public void envoyerNotification(NotificationDto notification) {
-        try {
-            Session session = sessions.get(notification.getDestinataireId());
-            if (session != null && session.isOpen()) {
-                String notificationJson = objectMapper.writeValueAsString(notification);
-                session.getAsyncRemote().sendText(notificationJson);
-                logger.info("Notification envoyée à l'utilisateur: " + notification.getDestinataireId());
-            } else {
-                logger.info("Utilisateur non connecté ou session fermée: " + notification.getDestinataireId());
-                // La notification reste enregistrée en BDD même si l'utilisateur n'est pas connecté
-            }
-        } catch (Exception e) {
-            logger.severe("Erreur lors de l'envoi de la notification: " + e.getMessage());
             e.printStackTrace();
         }
     }

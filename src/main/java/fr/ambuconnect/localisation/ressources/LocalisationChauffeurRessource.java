@@ -2,6 +2,7 @@ package fr.ambuconnect.localisation.ressources;
 
 import java.util.UUID;
 
+import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
 import fr.ambuconnect.localisation.service.LocalisationService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -26,10 +27,12 @@ public class LocalisationChauffeurRessource {
 
     private static final Logger LOG = Logger.getLogger(LocalisationChauffeurRessource.class);
     private final LocalisationService localisationService;
+    private final WebSocketTokenAuthenticator tokenAuthenticator;
 
     @Inject
-    public LocalisationChauffeurRessource(LocalisationService localisationService) {
+    public LocalisationChauffeurRessource(LocalisationService localisationService, WebSocketTokenAuthenticator tokenAuthenticator) {
         this.localisationService = localisationService;
+        this.tokenAuthenticator = tokenAuthenticator;
     }
 
     @OnOpen
@@ -38,7 +41,15 @@ public class LocalisationChauffeurRessource {
                       @PathParam("chauffeurId") String chauffeurIdStr,
                       @PathParam("role") String role) {
         try {
-            LOG.info("Nouvelle connexion WebSocket pour suivre le chauffeur: " + chauffeurIdStr);
+            LOG.info("Tentative de connexion WebSocket pour suivre le chauffeur: " + chauffeurIdStr);
+            
+            // Authentification via token JWT dans les paramètres d'URL
+            if (!tokenAuthenticator.authenticate(session)) {
+                LOG.warn("Authentification échouée - Fermeture de la connexion WebSocket");
+                session.close();
+                return;
+            }
+            
             UUID entrepriseId = UUID.fromString(entrepriseIdStr);
             UUID chauffeurId = UUID.fromString(chauffeurIdStr);
             
@@ -47,6 +58,8 @@ public class LocalisationChauffeurRessource {
             
             // Envoyer immédiatement la dernière position connue du chauffeur
             localisationService.sendChauffeurLocalisation(chauffeurId, session);
+            
+            LOG.info("Connexion WebSocket établie pour suivre le chauffeur: " + chauffeurIdStr);
         } catch (Exception e) {
             LOG.error("Erreur lors de l'ouverture de la connexion WebSocket", e);
         }

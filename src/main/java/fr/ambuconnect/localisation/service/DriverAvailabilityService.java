@@ -10,9 +10,7 @@ import jakarta.inject.Inject;
 
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.courses.entity.CoursesEntity;
-import fr.ambuconnect.planning.entity.PlannnigEntity;
 import fr.ambuconnect.localisation.entity.LocalisationEntity;
-import fr.ambuconnect.localisation.service.GeocodingService;
 
 @ApplicationScoped
 public class DriverAvailabilityService {

@@ -3,7 +3,6 @@ package fr.ambuconnect.chauffeur.dto;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import fr.ambuconnect.rh.enums.TypeContratEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

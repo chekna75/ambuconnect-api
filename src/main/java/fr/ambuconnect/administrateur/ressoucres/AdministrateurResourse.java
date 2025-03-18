@@ -3,14 +3,12 @@ package fr.ambuconnect.administrateur.ressoucres;
 import java.util.List;
 import java.util.UUID;
 
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.administrateur.services.AdministrateurService;
-import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
@@ -39,12 +37,10 @@ import jakarta.ws.rs.core.Response;
 public class AdministrateurResourse {
 
     private final AdministrateurService administrateurService;
-    private final AuthenService authenService;
     private final SecurityIdentity securityIdentity;
 
     @Inject
-    public AdministrateurResourse(AuthenService authenService, SecurityIdentity securityIdentity, AdministrateurService administrateurService) {
-        this.authenService = authenService;
+    public AdministrateurResourse(SecurityIdentity securityIdentity, AdministrateurService administrateurService) {
         this.securityIdentity = securityIdentity;
         this.administrateurService = administrateurService;
     }
@@ -151,12 +147,6 @@ public class AdministrateurResourse {
         }
     }
 
-    private void checkAutorization(){
-        AdministrateurDto dto = authenService.validateAdministrateur(securityIdentity);
-        if(!"ADMINISTRATEUR".equals(dto.getRole())){
-            throw new ForbiddenException("Votre Compte n'est pas habilité");
-        }
-    }
 
     @GET
 @Path("/entreprise/{identreprise}")

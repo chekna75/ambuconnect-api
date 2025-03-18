@@ -10,7 +10,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import fr.ambuconnect.chauffeur.dto.PerformanceChauffeurDto;
 import fr.ambuconnect.chauffeur.dto.RapportMensuelDto;
 import fr.ambuconnect.chauffeur.services.PerformanceChauffeurService;
-import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;

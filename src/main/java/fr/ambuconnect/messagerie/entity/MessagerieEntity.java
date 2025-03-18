@@ -2,12 +2,9 @@ package fr.ambuconnect.messagerie.entity;
 
 import java.util.UUID;
 import java.time.LocalDateTime;
-import fr.ambuconnect.messagerie.enums.UserType;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;

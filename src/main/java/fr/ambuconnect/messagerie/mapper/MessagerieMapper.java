@@ -1,12 +1,10 @@
 package fr.ambuconnect.messagerie.mapper;
 
-import jakarta.enterprise.context.ApplicationScoped;
 
 import org.mapstruct.Mapper;
 
 import fr.ambuconnect.messagerie.dto.MessageDTO;
 import fr.ambuconnect.messagerie.entity.MessagerieEntity;
-import fr.ambuconnect.messagerie.enums.UserType;
 
 
 @Mapper(componentModel = "cdi")
