@@ -8,12 +8,14 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
+import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.administrateur.services.AdministrateurService;
 import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.SecurityIdentity;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -66,6 +68,7 @@ public class AdministrateurResourse {
     @Path("/{id}/allchauffeur")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR"})
     public Response getAllChauffeur(@PathParam("id") UUID id){
         List<ChauffeurDto> chauffeurDtos = administrateurService.findAll(id);
         return Response.ok(chauffeurDtos).build();
@@ -145,6 +148,29 @@ public class AdministrateurResourse {
 @Produces(MediaType.APPLICATION_JSON)
 public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") UUID identreprise) {
         return administrateurService.findByEntreprise(identreprise);
+    }
+
+    @GET
+    @Path("/email/{email}/allchauffeur")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR"})
+    public Response getAllChauffeurByEmail(@PathParam("email") String email){
+        try {
+            AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
+            if (admin == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Administrateur non trouvé avec l'email: " + email)
+                    .build();
+            }
+            
+            List<ChauffeurDto> chauffeurDtos = administrateurService.findAll(admin.getId());
+            return Response.ok(chauffeurDtos).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Erreur lors de la récupération des chauffeurs: " + e.getMessage())
+                .build();
+        }
     }
 
 }

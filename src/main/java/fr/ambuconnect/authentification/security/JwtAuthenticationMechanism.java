@@ -20,11 +20,15 @@ import java.util.HashSet;
 import java.util.Set;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Alternative
 @Priority(1)
 @ApplicationScoped
 public class JwtAuthenticationMechanism implements IdentityProvider<TokenAuthenticationRequest> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(JwtAuthenticationMechanism.class);
 
     @Inject
     JWTParser parser;
@@ -39,6 +43,7 @@ public class JwtAuthenticationMechanism implements IdentityProvider<TokenAuthent
             AuthenticationRequestContext context) {
         return Uni.createFrom().item(() -> {
             try {
+                LOG.debug("Token reçu: {}", request.getToken().getToken().substring(0, 20) + "...");
                 JsonWebToken jwt = parser.parse(request.getToken().getToken());
                 
                 Set<String> roles = new HashSet<>(jwt.getGroups());
@@ -55,6 +60,7 @@ public class JwtAuthenticationMechanism implements IdentityProvider<TokenAuthent
                 return builder.build();
                 
             } catch (ParseException e) {
+                LOG.error("Erreur de parsing JWT: {}", e.getMessage(), e);
                 throw new SecurityException("Failed to parse JWT", e);
             }
         });
