@@ -1,5 +1,6 @@
 package fr.ambuconnect.rh.ressources;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -15,6 +16,7 @@ import fr.ambuconnect.rh.dto.FichePaieDTO;
 @Path("/bulletins")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class BulletinPaieRessource {
 
     @Inject

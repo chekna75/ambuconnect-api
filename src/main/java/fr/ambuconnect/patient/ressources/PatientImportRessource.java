@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.ambuconnect.patient.dto.PatientDto;
 import fr.ambuconnect.patient.services.PatientImportService;
 import fr.ambuconnect.patient.services.PatientImportService.ImportResult;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -27,6 +28,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 @Path("/patient/import")
+@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
 public class PatientImportRessource {
 
     private static final Logger LOG = Logger.getLogger(PatientImportRessource.class);

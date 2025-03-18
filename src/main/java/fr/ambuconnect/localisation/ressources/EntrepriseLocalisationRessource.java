@@ -3,6 +3,7 @@ package fr.ambuconnect.localisation.ressources;
 import java.util.UUID;
 
 import fr.ambuconnect.localisation.service.LocalisationService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
@@ -19,6 +20,7 @@ import jakarta.ws.rs.core.MediaType;
 @ServerEndpoint("/localisation-entreprise/{entrepriseId}/{role}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
 public class EntrepriseLocalisationRessource {
 
     private final LocalisationService localisationService;

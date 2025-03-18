@@ -2,7 +2,7 @@ package fr.ambuconnect.ambulances.ressources;
 
 import fr.ambuconnect.ambulances.dto.*;
 import fr.ambuconnect.ambulances.services.GestionFlotteService;
-
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -13,6 +13,7 @@ import java.util.UUID;
 @Path("gestionflotte")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class GestionFlotteRessource {
 
     @Inject

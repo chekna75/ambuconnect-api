@@ -8,6 +8,7 @@ import fr.ambuconnect.ambulances.dto.AttributionVehiculeDTO;
 import fr.ambuconnect.ambulances.entity.AttributionVehiculeEntity;
 import fr.ambuconnect.ambulances.services.AttributionVehiculeService;
 import fr.ambuconnect.security.annotations.AdminOnly;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.SecurityContext;
 @Path("/api/attributions-vehicules")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class AttributionVehiculeRessource {
 
     @Inject

@@ -19,6 +19,7 @@ import fr.ambuconnect.chauffeur.dto.PerformanceChauffeurDto;
 import fr.ambuconnect.chauffeur.services.ChauffeurService;
 import fr.ambuconnect.chauffeur.services.PerformanceChauffeurService;
 import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -29,7 +30,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/chauffeurs")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class ChauffeurRessource {
 
     @Inject

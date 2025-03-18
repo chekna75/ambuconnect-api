@@ -1,6 +1,7 @@
 package fr.ambuconnect.notification.resource;
 
 import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Path("/notifications")
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class NotificationResource {
 
     @Inject

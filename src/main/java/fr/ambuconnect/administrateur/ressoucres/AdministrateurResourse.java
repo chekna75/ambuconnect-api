@@ -34,7 +34,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/administrateur")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN"})
+@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
 @Valid
 public class AdministrateurResourse {
 
@@ -95,6 +95,20 @@ public class AdministrateurResourse {
     @Consumes(MediaType.APPLICATION_JSON)
     public RestResponse<AdministrateurDto> createAdmin(@RequestBody @Valid AdministrateurDto administrateurDto) throws Exception {
         AdministrateurDto dto = administrateurService.creationAdmin(administrateurDto);
+        return RestResponse.ok(dto);
+    }
+
+    /**
+     * Création d'un régulateur
+     * Cet endpoint permet de créer un administrateur avec le rôle Régulateur
+     */
+    @POST
+    @Path("/createRegulateur")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
+    public RestResponse<AdministrateurDto> createRegulateur(@RequestBody @Valid AdministrateurDto administrateurDto) throws Exception {
+        AdministrateurDto dto = administrateurService.createRegulateur(administrateurDto);
         return RestResponse.ok(dto);
     }
 

@@ -11,6 +11,7 @@ import fr.ambuconnect.chauffeur.dto.PerformanceChauffeurDto;
 import fr.ambuconnect.chauffeur.dto.RapportMensuelDto;
 import fr.ambuconnect.chauffeur.services.PerformanceChauffeurService;
 import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -19,6 +20,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/performances")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class PerformanceRessource {
 
     @Inject

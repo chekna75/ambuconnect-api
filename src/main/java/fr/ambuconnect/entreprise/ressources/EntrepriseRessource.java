@@ -2,6 +2,7 @@ package fr.ambuconnect.entreprise.ressources;
 
 import fr.ambuconnect.entreprise.dto.EntrepriseDto;
 import fr.ambuconnect.entreprise.services.EntrepriseService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Path("/entreprises")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
 public class EntrepriseRessource {
 
     @Inject

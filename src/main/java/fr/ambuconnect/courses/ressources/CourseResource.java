@@ -4,6 +4,7 @@ import fr.ambuconnect.courses.dto.CourseDto;
 import fr.ambuconnect.courses.dto.CourseStatistiquesDto;
 import fr.ambuconnect.courses.services.CourseService;
 import fr.ambuconnect.planning.enums.StatutEnum;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @Path("/courses")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class CourseResource {
 
     

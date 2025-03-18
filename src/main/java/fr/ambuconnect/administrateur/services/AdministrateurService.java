@@ -104,6 +104,62 @@ public class AdministrateurService {
     }
 
     /**
+     * Création d'un administrateur
+     * 
+     * @param administrateurDto
+     * @return
+     * @throws Exception
+     */
+    @Transactional
+    public AdministrateurDto createRegulateur(AdministrateurDto administrateurDto) throws Exception {
+        LOG.debug("Début création administrateur régulateur avec email: " + administrateurDto.getEmail());
+        
+        // Vérifier si l'email existe déjà
+        if (AdministrateurEntity.findByEmail(administrateurDto.getEmail()) != null) {
+            LOG.error("Email déjà utilisé: " + administrateurDto.getEmail());
+            throw new Exception("Un administrateur avec cet email existe déjà");
+        }
+        
+        try {
+            // Récupérer le rôle régulateur
+            RoleEntity roleRegulateur = RoleEntity.findById(UUID.fromString("d0fb8849-f8da-4f8a-8cb2-6ccc9f61ed24"));
+            if (roleRegulateur == null) {
+                LOG.error("Rôle régulateur non trouvé");
+                throw new NotFoundException("Le rôle régulateur n'existe pas");
+            }
+            
+            // Forcer le rôle à REGULATEUR
+            administrateurDto.setRole(roleRegulateur.getNom());
+            
+            // Hasher le mot de passe
+            String hashedPassword = authenService.hasherMotDePasse(administrateurDto.getMotDePasse());
+            administrateurDto.setMotDePasse(hashedPassword);
+            
+            // Convertir DTO en entité
+            AdministrateurEntity nouvelAdministrateur = administrateurMapper.toEntity(administrateurDto);
+            
+            // Définir le rôle
+            nouvelAdministrateur.setRole(roleRegulateur);
+            
+            // Persister l'entité
+            entityManager.persist(nouvelAdministrateur);
+            entityManager.flush(); // Forcer la persistence pour détecter les erreurs potentielles
+            
+            LOG.info("Régulateur créé avec succès: " + administrateurDto.getEmail());
+            
+            // Retourner le DTO de l'administrateur créé
+            return administrateurMapper.toDto(nouvelAdministrateur);
+            
+        } catch (PersistenceException e) {
+            LOG.error("Erreur lors de la persistance du régulateur", e);
+            throw new BadRequestException("Erreur lors de la création du régulateur: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("Erreur inattendue lors de la création du régulateur", e);
+            throw new InternalServerErrorException("Une erreur inattendue est survenue");
+        }
+    }
+
+    /**
      * Création d'un chauffeur
      * 
      * @param chauffeurDto

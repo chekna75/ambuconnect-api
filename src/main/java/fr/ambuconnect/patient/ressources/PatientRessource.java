@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import fr.ambuconnect.patient.dto.PatientDto;
 import fr.ambuconnect.patient.services.PatientService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.server.PathParam;
 import jakarta.ws.rs.Consumes;
@@ -19,6 +20,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/patient")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class PatientRessource {
 
     private final PatientService patientService;

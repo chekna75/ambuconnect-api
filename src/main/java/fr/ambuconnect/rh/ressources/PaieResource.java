@@ -24,10 +24,12 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.annotation.security.RolesAllowed;
 
 @Path("/api/paie")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class PaieResource {
     
     private static final Logger LOG = LoggerFactory.getLogger(PaieResource.class);

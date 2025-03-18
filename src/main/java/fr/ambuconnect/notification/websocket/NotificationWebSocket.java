@@ -16,9 +16,11 @@ import jakarta.inject.Inject;
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import jakarta.annotation.security.RolesAllowed;
 
 @ServerEndpoint("/notifications/{userId}")
 @ApplicationScoped
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class NotificationWebSocket {
 
     private static final Logger logger = Logger.getLogger(NotificationWebSocket.class.getName());
