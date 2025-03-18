@@ -25,6 +25,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
@@ -35,6 +37,8 @@ import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthentificationResourse {
 
+    private static final Logger LOG = LoggerFactory.getLogger(AuthentificationResourse.class);
+
     @Inject
     AuthenService authenService;
 
@@ -42,39 +46,18 @@ public class AuthentificationResourse {
     @Path("/admin/login")
     @PermitAll
     public Response loginAdmin(@Valid LoginRequestDto loginRequest) {
-        Boolean isAdmin = true;
         try {
-            String token = authenService.connexionAdmin(loginRequest.getEmail(), loginRequest.getMotDePasse(), isAdmin);
-            if (token != null && !token.isEmpty()) {
-                // Récupérer les informations de l'administrateur
-                AdministrateurEntity admin = AdministrateurEntity.findByEmail(loginRequest.getEmail());
-                if (admin == null) {
-                    return Response.status(Response.Status.UNAUTHORIZED).entity("Administrateur non trouvé").build();
-                }
-                
-                // Créer une réponse enrichie avec plus d'informations
-                Map<String, Object> response = new HashMap<>();
-                response.put("token", token);
-                response.put("userId", admin.getId().toString());
-                response.put("nom", admin.getNom());
-                response.put("prenom", admin.getPrenom());
-                response.put("email", admin.getEmail());
-                response.put("role", admin.getRole() != null ? admin.getRole().getNom() : null);
-                response.put("entrepriseId", admin.getEntreprise() != null ? admin.getEntreprise().getId().toString() : null);
-                
-                return Response.ok(response).build();
-            }
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity("Échec de la génération du token")
+            return Response.ok(authenService.connexionAdmin(loginRequest.getEmail(), loginRequest.getMotDePasse(), true))
                 .build();
         } catch (IllegalArgumentException e) {
+            LOG.error("Erreur d'authentification pour {}: {}", loginRequest.getEmail(), e.getMessage());
             return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new ForbiddenException("Identifiants invalides"))
+                .entity(new ErrorResponse("Identifiants invalides"))
                 .build();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Erreur inattendue pour {}: {}", loginRequest.getEmail(), e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ForbiddenException("Erreur lors de la connexion :: " + e.getMessage()))
+                .entity(new ErrorResponse("Erreur interne du serveur"))
                 .build();
         }
     }
@@ -82,40 +65,20 @@ public class AuthentificationResourse {
 
     @POST
     @Path("/chauffeur/login")
-    public Response loginChauffeur(LoginRequestDto loginRequest) {
-        Boolean isAdmin = false;
+    @PermitAll
+    public Response loginChauffeur(@Valid LoginRequestDto loginRequest) {
         try {
-            String token = authenService.connexionChauffeur(loginRequest.getEmail(), loginRequest.getMotDePasse(), isAdmin);
-            if (token != null && !token.isEmpty()) {
-                // Récupérer les informations du chauffeur
-                ChauffeurEntity chauffeur = ChauffeurEntity.findByEmail(loginRequest.getEmail());
-                if (chauffeur == null) {
-                    return Response.status(Response.Status.UNAUTHORIZED).entity("Chauffeur non trouvé").build();
-                }
-                
-                // Créer une réponse enrichie avec plus d'informations
-                Map<String, Object> response = new HashMap<>();
-                response.put("token", token);
-                response.put("userId", chauffeur.getId().toString());
-                response.put("nom", chauffeur.getNom());
-                response.put("prenom", chauffeur.getPrenom());
-                response.put("email", chauffeur.getEmail());
-                response.put("role", chauffeur.getRole() != null ? chauffeur.getRole().getNom() : null);
-                response.put("entrepriseId", chauffeur.getEntreprise() != null ? chauffeur.getEntreprise().getId().toString() : null);
-                
-                return Response.ok(response).build();
-            }
-            return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new ForbiddenException("Échec de la génération du token"))
+            return Response.ok(authenService.connexionChauffeur(loginRequest.getEmail(), loginRequest.getMotDePasse(), false))
                 .build();
         } catch (IllegalArgumentException e) {
+            LOG.error("Erreur d'authentification pour {}: {}", loginRequest.getEmail(), e.getMessage());
             return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new ForbiddenException("Identifiants invalides"))
+                .entity(new ErrorResponse("Identifiants invalides"))
                 .build();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Erreur inattendue pour {}: {}", loginRequest.getEmail(), e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ForbiddenException("Erreur lors de la connexion: " + e.getMessage()))
+                .entity(new ErrorResponse("Erreur interne du serveur"))
                 .build();
         }
     }
