@@ -1,6 +1,5 @@
-package fr.ambuconnect.authentification.websocket;
+package fr.ambuconnect.authentification.filter;
 
-import fr.ambuconnect.authentification.utils.JwtUtils;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -10,7 +9,6 @@ import jakarta.websocket.Session;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
-import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 
 import java.util.HashSet;
@@ -19,22 +17,19 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Utilitaire pour authentifier les WebSockets en récupérant le token JWT
- * depuis les paramètres de requête.
+ * Utilitaire d'authentification WebSocket pour extraire et valider les tokens JWT
+ * à partir des paramètres de requête.
  */
 @ApplicationScoped
-public class WebSocketTokenAuthenticator {
+public class WebSocketSecurityFilter {
     
-    private static final Logger LOG = Logger.getLogger(WebSocketTokenAuthenticator.class);
+    private static final Logger LOG = Logger.getLogger(WebSocketSecurityFilter.class);
     
     @Inject
     JWTParser parser;
     
-    @Inject
-    JwtUtils jwtUtils;
-    
     /**
-     * Extrait et valide le token JWT des paramètres de requête WebSocket
+     * Authentifie une session WebSocket en utilisant un token JWT passé en paramètre d'URL
      * 
      * @param session La session WebSocket
      * @return true si l'authentification a réussi, false sinon
@@ -50,67 +45,51 @@ public class WebSocketTokenAuthenticator {
                 try {
                     JsonWebToken jwt = parser.parse(token);
                     if (jwt != null && jwt.getExpirationTime() > (System.currentTimeMillis() / 1000)) {
-                        // Stocker le JWT dans la session pour utilisation ultérieure
+                        // Stocker le JWT dans les propriétés de session
                         session.getUserProperties().put("jwt", jwt);
                         session.getUserProperties().put("authenticated", true);
                         
-                        // Créer l'identité de sécurité pour l'accès aux annotations @RolesAllowed
+                        // Créer l'identité de sécurité
                         Set<String> roles = new HashSet<>(jwt.getGroups());
                         QuarkusSecurityIdentity identity = QuarkusSecurityIdentity.builder()
                             .setPrincipal(jwt)
                             .addRoles(roles)
                             .build();
                         
-                        // Stocker l'identité dans les propriétés de la session
+                        // Stocker l'identité et les rôles dans les propriétés
                         session.getUserProperties().put("identity", identity);
+                        session.getUserProperties().put("roles", roles);
                         
                         LOG.info("JWT authentifié avec succès pour la connexion WebSocket avec rôles: " + roles);
                         return true;
                     }
                 } catch (ParseException e) {
                     LOG.error("Erreur lors du parsing du JWT pour WebSocket", e);
-                    return false;
                 }
             } else {
                 LOG.warn("Aucun token trouvé dans les paramètres de la requête WebSocket");
-                return false;
             }
         } catch (Exception e) {
             LOG.error("Erreur lors de l'authentification WebSocket", e);
-            return false;
         }
         
         return false;
     }
     
     /**
-     * Vérifie si une session WebSocket est authentifiée
+     * Vérifie si une session possède un rôle spécifique
      * 
      * @param session La session WebSocket
-     * @return true si la session est authentifiée, false sinon
+     * @param role Le rôle à vérifier
+     * @return true si la session possède le rôle, false sinon
      */
-    public boolean isAuthenticated(Session session) {
-        Object auth = session.getUserProperties().get("authenticated");
-        return auth != null && (Boolean) auth;
-    }
-    
-    /**
-     * Récupère le token JWT stocké dans la session
-     * 
-     * @param session La session WebSocket
-     * @return Le token JWT ou null s'il n'existe pas
-     */
-    public JsonWebToken getJwt(Session session) {
-        return (JsonWebToken) session.getUserProperties().get("jwt");
-    }
-    
-    /**
-     * Récupère l'identité de sécurité stockée dans la session
-     * 
-     * @param session La session WebSocket
-     * @return L'identité de sécurité ou null si elle n'existe pas
-     */
-    public SecurityIdentity getSecurityIdentity(Session session) {
-        return (SecurityIdentity) session.getUserProperties().get("identity");
+    public boolean hasRole(Session session, String role) {
+        Object rolesObj = session.getUserProperties().get("roles");
+        if (rolesObj instanceof Set) {
+            @SuppressWarnings("unchecked")
+            Set<String> roles = (Set<String>) rolesObj;
+            return roles.contains(role);
+        }
+        return false;
     }
 } 

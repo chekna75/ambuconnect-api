@@ -2,6 +2,7 @@ package fr.ambuconnect.localisation.ressources;
 
 import java.util.UUID;
 
+import fr.ambuconnect.authentification.filter.WebSocketSecurityFilter;
 import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
 import fr.ambuconnect.localisation.service.LocalisationService;
 import jakarta.annotation.security.RolesAllowed;
@@ -27,12 +28,12 @@ public class EntrepriseLocalisationRessource {
 
     private static final Logger LOG = Logger.getLogger(EntrepriseLocalisationRessource.class);
     private final LocalisationService localisationService;
-    private final WebSocketTokenAuthenticator tokenAuthenticator;
+    private final WebSocketSecurityFilter securityFilter;
 
     @Inject
-    public EntrepriseLocalisationRessource(LocalisationService localisationService, WebSocketTokenAuthenticator tokenAuthenticator) {
+    public EntrepriseLocalisationRessource(LocalisationService localisationService, WebSocketSecurityFilter securityFilter) {
         this.localisationService = localisationService;
-        this.tokenAuthenticator = tokenAuthenticator;
+        this.securityFilter = securityFilter;
     }
 
     @OnOpen
@@ -43,7 +44,7 @@ public class EntrepriseLocalisationRessource {
             LOG.info("Tentative de connexion WebSocket pour l'entreprise: " + entrepriseIdStr);
             
             // Authentification via token JWT dans les paramètres d'URL
-            if (!tokenAuthenticator.authenticate(session)) {
+            if (!securityFilter.authenticate(session)) {
                 LOG.warn("Authentification échouée - Fermeture de la connexion WebSocket");
                 session.close();
                 return;
