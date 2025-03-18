@@ -66,7 +66,7 @@ public class JwtKeyProvider {
             KeyFactory kf = KeyFactory.getInstance("RSA");
             X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.getDecoder().decode(PUBLIC_KEY));
             RSAPublicKey key = (RSAPublicKey) kf.generatePublic(spec);
-            LOG.info("Clé publique RSA chargée avec succès");
+            LOG.info("Clé publique RSA chargée avec succès: {}", key.getAlgorithm());
             return key;
         } catch (Exception e) {
             LOG.error("Erreur lors du chargement de la clé publique RSA", e);
@@ -82,7 +82,7 @@ public class JwtKeyProvider {
             KeyFactory kf = KeyFactory.getInstance("RSA");
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(PRIVATE_KEY));
             RSAPrivateKey key = (RSAPrivateKey) kf.generatePrivate(spec);
-            LOG.info("Clé privée RSA chargée avec succès");
+            LOG.info("Clé privée RSA chargée avec succès: {}", key.getAlgorithm());
             return key;
         } catch (Exception e) {
             LOG.error("Erreur lors du chargement de la clé privée RSA", e);
