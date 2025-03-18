@@ -10,7 +10,9 @@ import fr.ambuconnect.authentification.dto.MotDePasseRequestDto;
 import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.utils.ErrorResponse;
 import io.quarkus.security.ForbiddenException;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -28,6 +30,7 @@ import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 
 @Path("/auth")
+@ApplicationScoped
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthentificationResourse {
@@ -37,7 +40,8 @@ public class AuthentificationResourse {
 
     @POST
     @Path("/admin/login")
-    public Response loginAdmin(LoginRequestDto loginRequest) {
+    @PermitAll
+    public Response loginAdmin(@Valid LoginRequestDto loginRequest) {
         Boolean isAdmin = true;
         try {
             String token = authenService.connexionAdmin(loginRequest.getEmail(), loginRequest.getMotDePasse(), isAdmin);
@@ -60,7 +64,9 @@ public class AuthentificationResourse {
                 
                 return Response.ok(response).build();
             }
-            return Response.status(Response.Status.UNAUTHORIZED).entity("Token generation failed").build();
+            return Response.status(Response.Status.UNAUTHORIZED)
+                .entity("Échec de la génération du token")
+                .build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.UNAUTHORIZED)
                 .entity(new ForbiddenException("Identifiants invalides"))
@@ -150,6 +156,13 @@ public class AuthentificationResourse {
                          .entity(new ErrorResponse("Erreur lors de la réinitialisation"))
                          .build();
         }
+    }
+
+    @OPTIONS
+    @Path("/admin/login")
+    @PermitAll
+    public Response optionsAdminLogin() {
+        return Response.ok().build();
     }
 
     @OPTIONS
