@@ -470,6 +470,7 @@ public class AdministrateurService {
             administrateur.setPrenom(administrateurDto.getPrenom());
             administrateur.setEmail(administrateurDto.getEmail());
             administrateur.setTelephone(administrateurDto.getTelephone());
+            administrateur.setActif(administrateurDto.isActif());
         } catch (Exception e) {
             LOG.error("Erreur lors de la mise à jour de l'administrateur", e);
             throw new InternalServerErrorException("Erreur lors de la mise à jour de l'administrateur: " + e.getMessage());
