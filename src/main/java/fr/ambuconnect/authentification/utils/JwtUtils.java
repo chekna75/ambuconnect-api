@@ -46,6 +46,10 @@ public class JwtUtils {
             RSAPrivateKey privateKey = keyProvider.privateKey();
             LOG.debug("Clé privée récupérée avec succès: {}", privateKey != null);
             
+            // S'assurer que les IDs sont bien UUID et non des emails
+            String userIdStr = userId != null ? userId.toString() : "";
+            String entrepriseIdStr = entrepriseId != null ? entrepriseId.toString() : "";
+            
             String token = Jwt.claims()
                     .issuer(issuer)
                     .subject(email)
@@ -54,11 +58,12 @@ public class JwtUtils {
                     .issuedAt(now)
                     .expiresAt(expiration)
                     .claim(Claims.jti.name(), UUID.randomUUID().toString())
-                    .claim("user_id", userId.toString())
-                    .claim("id", userId.toString()) // Utiliser l'UUID et non l'email
+                    .claim("user_id", userIdStr)
+                    .claim("id", userIdStr)         // ID explicitement comme UUID
+                    .claim("uuid", userIdStr)       // Ajout d'un champ uuid pour clarté
                     .claim("email", email)
-                    .claim("role", role) // S'assurer que le rôle est cohérent avec les groupes
-                    .claim("entrepriseId", entrepriseId != null ? entrepriseId.toString() : "")
+                    .claim("role", role)           // S'assurer que le rôle est cohérent avec les groupes
+                    .claim("entrepriseId", entrepriseIdStr)
                     .sign(privateKey);
                     
             LOG.debug("Token JWT généré avec succès, expiration: {}", expiration);
@@ -96,6 +101,10 @@ public class JwtUtils {
             
             RSAPrivateKey privateKey = keyProvider.privateKey();
             
+            // S'assurer que les IDs sont bien UUID et non des emails
+            String userIdStr = userId != null ? userId.toString() : "";
+            String entrepriseIdStr = entrepriseId != null ? entrepriseId.toString() : "";
+            
             String token = Jwt.claims()
                     .issuer(issuer)
                     .subject(email)
@@ -104,14 +113,15 @@ public class JwtUtils {
                     .issuedAt(now)
                     .expiresAt(expiration)
                     .claim(Claims.jti.name(), UUID.randomUUID().toString())
-                    .claim("id", userId.toString())
-                    .claim("user_id", userId.toString())
+                    .claim("id", userIdStr)               // ID explicitement comme UUID
+                    .claim("user_id", userIdStr)
+                    .claim("uuid", userIdStr)             // Ajout d'un champ uuid pour clarté
                     .claim("email", email)
                     .claim("role", role)
                     .claim("nom", nom)
                     .claim("prenom", prenom)
                     .claim("telephone", telephone)
-                    .claim("entrepriseId", entrepriseId != null ? entrepriseId.toString() : "")
+                    .claim("entrepriseId", entrepriseIdStr)
                     .claim("entrepriseNom", entrepriseNom)
                     .claim("entrepriseSiret", entrepriseSiret)
                     .claim("entrepriseAdresse", entrepriseAdresse)
