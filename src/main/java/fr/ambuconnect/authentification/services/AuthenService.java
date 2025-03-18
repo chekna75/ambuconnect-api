@@ -122,11 +122,29 @@ public class AuthenService {
             
             AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
             if (admin != null && verifierMotDePasse(motDePasse, admin.getMotDePasse())) {
-                return jwtUtils.generateToken(
+                // Déterminer le rôle correct
+                String role = "ADMIN";
+                if (email.equals("superadmin@ambuconnect.fr")) {
+                    role = "SUPERADMIN";
+                }
+                
+                // Vérifier si l'entreprise a un abonnement actif
+                boolean abonnementActif = true; // Par défaut, tous les utilisateurs ont un abonnement actif
+                String planType = "PREMIUM"; // Par défaut, tous les utilisateurs ont un plan PREMIUM
+                
+                return jwtUtils.generateCompleteToken(
                     admin.getId(),
                     admin.getEmail(),
-                    "ADMIN",
-                    admin.getEntreprise().getId()
+                    role,
+                    admin.getEntreprise().getId(),
+                    admin.getNom(),
+                    admin.getPrenom(),
+                    admin.getTelephone(),
+                    admin.getEntreprise().getNom(),
+                    admin.getEntreprise().getSiret(),
+                    admin.getEntreprise().getAdresse(),
+                    abonnementActif,
+                    planType
                 );
             }
             throw new IllegalArgumentException("Identifiants invalides");
@@ -143,11 +161,26 @@ public class AuthenService {
             
             ChauffeurEntity chauffeur = ChauffeurEntity.findByEmail(email);
             if (chauffeur != null && verifierMotDePasse(motDePasse, chauffeur.getMotDePasse())) {
-                return jwtUtils.generateToken(
+                // Déterminer le rôle correct
+                String role = "CHAUFFEUR";
+                
+                // Vérifier si l'entreprise a un abonnement actif
+                boolean abonnementActif = true; // Par défaut, tous les utilisateurs ont un abonnement actif
+                String planType = "PREMIUM"; // Par défaut, tous les utilisateurs ont un plan PREMIUM
+                
+                return jwtUtils.generateCompleteToken(
                     chauffeur.getId(),
                     chauffeur.getEmail(),
-                    "CHAUFFEUR",
-                    chauffeur.getEntreprise().getId()
+                    role,
+                    chauffeur.getEntreprise().getId(),
+                    chauffeur.getNom(),
+                    chauffeur.getPrenom(),
+                    chauffeur.getTelephone(),
+                    chauffeur.getEntreprise().getNom(),
+                    chauffeur.getEntreprise().getSiret(),
+                    chauffeur.getEntreprise().getAdresse(),
+                    abonnementActif,
+                    planType
                 );
             }
             throw new IllegalArgumentException("Identifiants invalides");
