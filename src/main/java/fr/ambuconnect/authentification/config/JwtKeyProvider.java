@@ -45,13 +45,14 @@ public class JwtKeyProvider {
             + "kRcHN3m3kRLV/r2ius6gjR7Ef0GlhhG3f7TzpNHrLzYHu0AMp3mdfNKyoBcBOmF4"
             + "B0uaVcGGCOsOcOWC6RII8g==";
     
-    private static final String PUBLIC_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAw/pTLb4rod53T03QmpH3"
-            + "WbB72zaT2B1erOpZkcwMFHydnSWPQ426naiNoes/Sf9lcfnzoIuEzzYkXUKiJpcn"
-            + "OSbhWmohMwslTz5b6l+fNBok3CICHjuLSPHlvA93SXkIQxem/SMgvRBEQCV2BJto"
-            + "aCnCF6PrsCBXFQnuGfR6+O8l4L/4depIPRIhAI6RD8IxLakJaMCD0iEcmEnpYvZh"
-            + "4Uq0YiZ7lRud2vfxRBjVDP/cRlJ0ENAUNWJjMagSRDkj0qUUbwGdDXEWo0vUBLel"
-            + "gSiOAWyYvBxatTKeV08bh5VIadk8oKEADkG88UPu4nRUFLQiSQX3axRc/8/WeDoF"
-            + "7wIDAQAB";
+    // Clé publique correspondant à la clé privée ci-dessus
+    private static final String PUBLIC_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9k+gMQ8U0DVubwo1G8NU"
+            + "UrTwMDJrbUMH22pS7v98P2g2xWDd7fkru2e/88so2zo3yrbz4H4y6nNMf3L3icx3"
+            + "lIswjbxQ8RNjpiHOXpiklKABZ+37UVuUuht305fNfka77wI2+wU3AWZLnACBUYKb"
+            + "iZENd+cAd/EgWeZlJRf3iQweOrLytlmG7V4tbbS1JP4F6PvnWg3ZWKfDjK3d0ty7"
+            + "cJYD15xC+NAmUcaHj0+YvGCwG/xdRuG9CLOVjYaYrTpEIJxC63dM3DxiXl9he+QW"
+            + "aDKPcu9oIloOztlcO4jV3Kem2LZP5TO8o7Njbrffj/TP5XIwQ42Ee/q/Q3Fjux74"
+            + "AQIDAQAB";
     
     @Inject
     @ConfigProperty(name = "mp.jwt.verify.issuer", defaultValue = "ambuconnect-api-recette.up.railway.app")
