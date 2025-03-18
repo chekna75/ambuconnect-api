@@ -10,6 +10,7 @@ import fr.ambuconnect.ambulances.dto.VehicleDTO;
 import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 import fr.ambuconnect.ambulances.services.AmbulanceService;
 import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
@@ -30,6 +31,7 @@ import jakarta.ws.rs.core.Response;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Valid
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR"})
 public class AmbulancesRessource {
 
     @Inject
