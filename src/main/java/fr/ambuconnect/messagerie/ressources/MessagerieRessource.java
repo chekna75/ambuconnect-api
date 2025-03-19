@@ -15,18 +15,25 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
+import fr.ambuconnect.messagerie.dto.ErrorDTO;
 import fr.ambuconnect.messagerie.dto.MessageDTO;
+import fr.ambuconnect.messagerie.mapper.MessagerieMapper;
 import fr.ambuconnect.messagerie.services.MessagerieService;
+import fr.ambuconnect.messagerie.services.WebSocketService;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 import java.util.logging.Logger;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/message")
 @ServerEndpoint("/chat/{userId}")
@@ -49,103 +56,186 @@ public class MessagerieRessource {
 
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userIdStr) {
-        try {
-            logger.info("Tentative de connexion WebSocket pour le chat - UserId: " + userIdStr);
-            
-            // Authentification via token JWT dans les paramètres d'URL
-            if (!tokenAuthenticator.authenticate(session)) {
-                logger.warning("Authentification échouée - Fermeture de la connexion WebSocket de chat");
-                session.close();
-                return;
-            }
-            
-            UUID userId = UUID.fromString(userIdStr);
-            sessions.put(userId, session);
-            logger.info("Connexion WebSocket de chat établie pour l'utilisateur " + userId);
-            
-            // Envoyer les messages non lus si nécessaire
-        } catch (Exception e) {
-            logger.severe("Erreur lors de l'ouverture de la connexion WebSocket de chat: " + e.getMessage());
+        try{
+                     // Authentification via token JWT dans les paramètres d'URL
+         if (!tokenAuthenticator.authenticate(session)) {
+            logger.warning("Authentification échouée - Fermeture de la connexion WebSocket de chat");
+            session.close();
+            return;
+         }
+        UUID userId = UUID.fromString(userIdStr);
+        sessions.put(userId, session);
+        System.out.println("User " + userId + " connected.");
         }
-    }
-
-    @OnClose
-    public void onClose(Session session, @PathParam("userId") String userIdStr) {
-        try {
-            UUID userId = UUID.fromString(userIdStr);
-            sessions.remove(userId);
-            logger.info("Fermeture de la connexion WebSocket de chat - UserId: " + userIdStr);
-        } catch (Exception e) {
-            logger.severe("Erreur lors de la fermeture de la connexion WebSocket de chat: " + e.getMessage());
-        }
-    }
-
-    @OnError
-    public void onError(Session session, @PathParam("userId") String userIdStr, Throwable throwable) {
-        try {
-            UUID userId = UUID.fromString(userIdStr);
-            sessions.remove(userId);
-            logger.severe("Erreur WebSocket de chat pour l'utilisateur " + userIdStr + ": " + throwable.getMessage());
-        } catch (Exception e) {
-            logger.severe("Erreur lors du traitement d'une erreur WebSocket de chat: " + e.getMessage());
+        catch(IOException e){
+            logger.warning("pas de connexion");
         }
     }
 
     @OnMessage
-    public void onMessage(String message, Session session, @PathParam("userId") String userIdStr) {
+    public void onMessage(String messageContent, @PathParam("userId") String userIdStr, Session session) {
+        UUID userId = UUID.fromString(userIdStr);
+
+
         try {
-            // Vérifier l'authentification
-            if (!tokenAuthenticator.isAuthenticated(session)) {
-                sendError(session, "Authentification requise");
+                     // Authentification via token JWT dans les paramètres d'URL
+         if (!tokenAuthenticator.authenticate(session)) {
+            logger.warning("Authentification échouée - Fermeture de la connexion WebSocket de chat");
+            session.close();
+            return;
+         }
+            // Parse le message JSON
+            JsonNode jsonNode = objectMapper.readTree(messageContent);
+            String type = jsonNode.get("type").asText();
+            
+            // Gestion du type GET_CONVERSATION
+            if ("GET_CONVERSATION".equals(type)) {
+                // Extraction de l'ID de l'autre utilisateur
+                UUID otherUserId = UUID.fromString(jsonNode.get("otherUserId").asText());
+                
+                // Récupération directe des messages entre les deux utilisateurs (triés chronologiquement)
+                List<MessageDTO> messages = messagerieService.getConversation(userId, otherUserId);
+                
+                // Préparer la réponse
+                Map<String, Object> response = new HashMap<>();
+                response.put("type", "CONVERSATION");
+                response.put("userId", userId.toString());
+                response.put("otherUserId", otherUserId.toString());
+                response.put("messages", messages);
+                
+                // Envoyer la réponse à l'expéditeur de la demande
+                session.getAsyncRemote().sendText(objectMapper.writeValueAsString(response));
+                
+                // Marquer la conversation comme lue
+                messagerieService.markConversationAsRead(userId, otherUserId);
+                
                 return;
             }
             
-            UUID senderUserId = UUID.fromString(userIdStr);
-            JsonNode jsonMessage = objectMapper.readTree(message);
-            
-            if (jsonMessage.has("receiverId") && jsonMessage.has("content")) {
-                String receiverIdStr = jsonMessage.get("receiverId").asText();
-                UUID receiverId = UUID.fromString(receiverIdStr);
-                String content = jsonMessage.get("content").asText();
-                
-                // Créer et sauvegarder le message
-                MessageDTO messageDTO = new MessageDTO();
-                messageDTO.setSenderId(senderUserId);
-                messageDTO.setReceiverId(receiverId);
-                messageDTO.setContent(content);
-                messageDTO.setTimestamp(LocalDateTime.now());
-                messageDTO.setIsRead(false);
-                
-                // Persister le message
-                MessageDTO savedMessage = messagerieService.sendMessage(messageDTO);
-                
-                // Envoyer au destinataire s'il est connecté
+            // Gestion spéciale pour les messages de frappe (pas de persistance)
+            if ("TYPING".equals(type)) {
+                UUID receiverId = UUID.fromString(jsonNode.get("receiverId").asText());
                 Session receiverSession = sessions.get(receiverId);
                 if (receiverSession != null && receiverSession.isOpen()) {
-                    receiverSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(savedMessage));
+                    receiverSession.getAsyncRemote().sendText(messageContent);
+                }
+                return;
+            }
+            
+            // Pour tous les autres types de messages (avec persistance)
+            MessageDTO messageDto = new MessageDTO();
+            
+            // Détermine l'expéditeur et le destinataire
+            UUID senderId = userId; // Par défaut, l'ID de la session WebSocket
+            UUID receiverId = null;
+            
+            // Extrait le contenu à stocker en base (selon le format)
+            String contentToStore = "";
+            
+            if ("SEND_MESSAGE".equals(type) && jsonNode.has("message")) {
+                // Format structuré avec un objet message
+                JsonNode messageNode = jsonNode.get("message");
+                
+                // Récupère le contenu du message
+                if (messageNode.has("content")) {
+                    contentToStore = messageNode.get("content").asText();
                 }
                 
-                // Confirmation à l'expéditeur
-                session.getAsyncRemote().sendText(objectMapper.writeValueAsString(savedMessage));
+                // Récupère les IDs si présents
+                if (messageNode.has("senderId")) {
+                    senderId = UUID.fromString(messageNode.get("senderId").asText());
+                }
+                
+                if (messageNode.has("receiverId")) {
+                    receiverId = UUID.fromString(messageNode.get("receiverId").asText());
+                }
             } else {
-                sendError(session, "Format de message invalide");
+                // Autres formats
+                if (jsonNode.has("content")) {
+                    contentToStore = jsonNode.get("content").asText();
+                } else if (jsonNode.has("message") && jsonNode.get("message").isTextual()) {
+                    contentToStore = jsonNode.get("message").asText();
+                }
+                
+                // Cherche receiverId dans le message
+                if (jsonNode.has("receiverId")) {
+                    receiverId = UUID.fromString(jsonNode.get("receiverId").asText());
+                }
             }
-        } catch (Exception e) {
-            logger.severe("Erreur lors du traitement d'un message: " + e.getMessage());
-            try {
-                sendError(session, "Erreur lors du traitement du message");
-            } catch (Exception ex) {
-                logger.severe("Erreur lors de l'envoi du message d'erreur: " + ex.getMessage());
+            
+            // Si receiverId n'est pas trouvé, utilise la méthode par défaut
+            if (receiverId == null) {
+                receiverId = getReceiverId(userId);
+            }
+            
+            // Création et sauvegarde du message
+            messageDto.setSenderId(senderId);
+            messageDto.setReceiverId(receiverId);
+            messageDto.setContent(contentToStore);
+            messageDto.setTimestamp(LocalDateTime.now());
+            
+            // Sauvegarde en base
+            MessageDTO savedMessage = messagerieService.sendMessage(messageDto);
+            
+            // 1. Envoie le message au destinataire
+            Session receiverSession = sessions.get(receiverId);
+            if (receiverSession != null && receiverSession.isOpen()) {
+                receiverSession.getAsyncRemote().sendText(messageContent);
+            }
+            
+            // 2. Envoie une confirmation à l'expéditeur (sauf si c'est le même que le destinataire)
+            Session senderSession = sessions.get(senderId);
+            if (senderSession != null && senderSession.isOpen() && !senderId.equals(receiverId)) {
+                // Option 1: Renvoie le même message pour confirmer l'envoi
+                senderSession.getAsyncRemote().sendText(messageContent);
+                
+                // Option 2 (alternative): Envoie une réponse de type "MESSAGE_SENT" avec l'ID du message
+                // Map<String, Object> confirmation = Map.of(
+                //     "type", "MESSAGE_SENT",
+                //     "messageId", savedMessage.getId(),
+                //     "timestamp", LocalDateTime.now().toString()
+                // );
+                // senderSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(confirmation));
             }
         }
+        
+        catch (Exception e) {
+            handleError(userId, e);
+        }
+    }
+        
+
+    @OnClose
+    public void onClose(Session session, @PathParam("userId") String userIdStr) {
+        UUID userId = UUID.fromString(userIdStr);
+        sessions.remove(userId);
+    }
+
+    private UUID getReceiverId(UUID senderId) {
+        // Logique pour récupérer l'ID du destinataire. Peut-être basé sur une relation d'utilisateur.
+        UUID id1 = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        UUID id2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        return senderId.equals(id1) ? id2 : id1; // Exemple simple pour les utilisateurs 1 et 2
     }
     
-    private void sendError(Session session, String message) {
+    private void handleError(UUID userId, Exception e) {
         try {
-            Map<String, String> error = Map.of("type", "ERROR", "message", message);
-            session.getAsyncRemote().sendText(objectMapper.writeValueAsString(error));
-        } catch (Exception e) {
-            logger.severe("Erreur lors de l'envoi du message d'erreur: " + e.getMessage());
+            // Log the error for debugging purposes
+            logger.severe("Erreur lors du traitement du message pour l'utilisateur " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+
+            // Send an error message back to the user
+            Session session = sessions.get(userId);
+            if (session != null && session.isOpen()) {
+                ErrorDTO errorDTO = new ErrorDTO("ERROR", e.getMessage());
+                session.getAsyncRemote().sendText(
+                    objectMapper.writeValueAsString(errorDTO)
+                );
+            }
+        } catch (Exception ex) {
+            // Log any additional errors that occur while handling the original error
+            logger.severe("Erreur lors de l'envoi du message d'erreur à l'utilisateur " + userId + ": " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 }
