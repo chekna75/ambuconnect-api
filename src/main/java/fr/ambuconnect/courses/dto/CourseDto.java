@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import fr.ambuconnect.finance.enums.TypeCourse;
 import fr.ambuconnect.planning.enums.StatutEnum;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -42,4 +43,7 @@ public class CourseDto {
     private Double longitudeDepart;
     private Double latitudeArrivee;
     private Double longitudeArrivee;
+    @Enumerated(EnumType.STRING)
+    private TypeCourse typeCourse;
+    private BigDecimal prix;
 }

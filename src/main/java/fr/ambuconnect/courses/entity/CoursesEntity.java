@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import fr.ambuconnect.ambulances.entity.AmbulanceEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
+import fr.ambuconnect.finance.enums.TypeCourse;
 import fr.ambuconnect.patient.entity.PatientEntity;
 import fr.ambuconnect.planning.entity.PlannnigEntity;
 import fr.ambuconnect.planning.enums.StatutEnum;
@@ -81,6 +82,13 @@ public class CoursesEntity  extends PanacheEntityBase{
 
     @Column(name = "longitude_arrivee")
     private Double longitudeArrivee;
+
+    @Column(name = "type_course")
+    @Enumerated(EnumType.STRING)
+    private TypeCourse typeCourse;
+
+    @Column(name = "prix")
+    private BigDecimal prix;
 
     @ManyToOne
     @JoinColumn(name = "chauffeur_id")
