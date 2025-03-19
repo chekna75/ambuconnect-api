@@ -1,8 +1,12 @@
 package fr.ambuconnect.localisation.ressources;
 
 import java.util.UUID;
-
+import java.io.IOException;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.CloseReason.CloseCodes;
+import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
 import fr.ambuconnect.localisation.service.LocalisationService;
+import fr.ambuconnect.messagerie.services.WebSocketService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.OnClose;
@@ -24,6 +28,10 @@ import jakarta.ws.rs.core.MediaType;
 public class AdminChauffeurLocalisationRessource {
 
     private final LocalisationService localisationService;
+    @Inject
+    private WebSocketTokenAuthenticator securityService;
+    @Inject
+    private WebSocketService webSocketService;
 
     @Inject
     public AdminChauffeurLocalisationRessource(LocalisationService localisationService) {
@@ -38,14 +46,33 @@ public class AdminChauffeurLocalisationRessource {
         UUID entrepriseId = UUID.fromString(entrepriseIdStr);
         UUID chauffeurId = UUID.fromString(chauffeurIdStr);
         
-        // Ajouter la session à la liste des observateurs pour ce chauffeur spécifique
-        localisationService.addAdminChauffeurSession(entrepriseId, chauffeurId, role, session);
-        
-        // Envoyer immédiatement la dernière position connue du chauffeur
-        localisationService.sendChauffeurLocalisation(chauffeurId, session);
+        try {
+            // Vérification de token simplifiée
+            if (session.getRequestParameterMap().containsKey("token")) {
+                String token = session.getRequestParameterMap().get("token").get(0);
+                // Authentification simplifiée pour l'instant
+                securityService.authenticate(session);
+            }
+            
+            // Ajouter la session sans la partie webSocketService pour l'instant
+            localisationService.addAdminChauffeurSession(entrepriseId, chauffeurId, role, session);
+            
+            // Envoyer la position
+            localisationService.sendChauffeurLocalisation(chauffeurId, session);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, 
+                             "Erreur: " + e.getMessage()));
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     @OnClose
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
     public void onClose(Session session, 
                        @PathParam("entrepriseId") String entrepriseIdStr,
                        @PathParam("chauffeurId") String chauffeurIdStr,
