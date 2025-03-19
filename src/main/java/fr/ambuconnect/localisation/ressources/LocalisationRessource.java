@@ -9,7 +9,6 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import fr.ambuconnect.localisation.dto.LocalisationDto;
 import fr.ambuconnect.localisation.service.LocalisationService;
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
@@ -33,7 +32,6 @@ import jakarta.ws.rs.core.Response;
 @ServerEndpoint("/localisation/{chauffeurId}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class LocalisationRessource {
 
      private final LocalisationService localisationService;

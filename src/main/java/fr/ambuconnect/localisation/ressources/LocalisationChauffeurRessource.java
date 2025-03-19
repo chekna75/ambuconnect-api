@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
 import fr.ambuconnect.localisation.service.LocalisationService;
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
@@ -22,7 +21,6 @@ import org.jboss.logging.Logger;
 @ServerEndpoint("/localisation-chauffeur/{entrepriseId}/{chauffeurId}/{role}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class LocalisationChauffeurRessource {
 
     private static final Logger LOG = Logger.getLogger(LocalisationChauffeurRessource.class);

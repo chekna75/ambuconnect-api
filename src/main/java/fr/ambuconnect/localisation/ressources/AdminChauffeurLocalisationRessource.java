@@ -6,8 +6,6 @@ import jakarta.websocket.CloseReason;
 import jakarta.websocket.CloseReason.CloseCodes;
 import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
 import fr.ambuconnect.localisation.service.LocalisationService;
-import fr.ambuconnect.messagerie.services.WebSocketService;
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
@@ -24,14 +22,11 @@ import jakarta.ws.rs.core.MediaType;
 @ServerEndpoint("/admin-chauffeur-localisation/{entrepriseId}/{chauffeurId}/{role}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class AdminChauffeurLocalisationRessource {
 
     private final LocalisationService localisationService;
     @Inject
     private WebSocketTokenAuthenticator securityService;
-    @Inject
-    private WebSocketService webSocketService;
 
     @Inject
     public AdminChauffeurLocalisationRessource(LocalisationService localisationService) {
@@ -72,7 +67,6 @@ public class AdminChauffeurLocalisationRessource {
     }
 
     @OnClose
-    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
     public void onClose(Session session, 
                        @PathParam("entrepriseId") String entrepriseIdStr,
                        @PathParam("chauffeurId") String chauffeurIdStr,

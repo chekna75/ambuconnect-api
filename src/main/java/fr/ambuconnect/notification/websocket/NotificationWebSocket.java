@@ -21,7 +21,6 @@ import jakarta.annotation.security.RolesAllowed;
 
 @ServerEndpoint("/notifications/{userId}")
 @ApplicationScoped
-@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class NotificationWebSocket {
 
     private static final Logger logger = Logger.getLogger(NotificationWebSocket.class.getName());

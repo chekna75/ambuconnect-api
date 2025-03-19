@@ -1,6 +1,5 @@
 package fr.ambuconnect.messagerie.ressources;
 
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
@@ -22,20 +21,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
-import fr.ambuconnect.messagerie.dto.ErrorDTO;
 import fr.ambuconnect.messagerie.dto.MessageDTO;
 import fr.ambuconnect.messagerie.services.MessagerieService;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
-import java.util.List;
 
 @Path("/message")
 @ServerEndpoint("/chat/{userId}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class MessagerieRessource {
 
     private final ObjectMapper objectMapper;

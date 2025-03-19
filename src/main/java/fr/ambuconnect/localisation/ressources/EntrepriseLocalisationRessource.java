@@ -3,9 +3,7 @@ package fr.ambuconnect.localisation.ressources;
 import java.util.UUID;
 
 import fr.ambuconnect.authentification.filter.WebSocketSecurityFilter;
-import fr.ambuconnect.authentification.websocket.WebSocketTokenAuthenticator;
 import fr.ambuconnect.localisation.service.LocalisationService;
-import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
@@ -23,7 +21,6 @@ import org.jboss.logging.Logger;
 @ServerEndpoint("/localisation-entreprise/{entrepriseId}/{role}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
 public class EntrepriseLocalisationRessource {
 
     private static final Logger LOG = Logger.getLogger(EntrepriseLocalisationRessource.class);
