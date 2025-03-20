@@ -4,6 +4,7 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -53,6 +54,21 @@ public class NotificationResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(Map.of("message", "Erreur lors de la récupération des notifications: " + e.getMessage()))
                 .build();
+        }
+    }
+
+    @POST
+    @Path("/{notificationId}/read")
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
+    public Response markNotificationAsRead(@PathParam("notificationId") UUID notificationId) {
+        try {
+            notificationService.marquerCommeLue(notificationId);
+            return Response.ok(Map.of("success", true, "message", "Notification marquée comme lue")).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                    .entity(Map.of("error", "Erreur lors du marquage de la notification", 
+                                   "message", e.getMessage()))
+                    .build();
         }
     }
     
