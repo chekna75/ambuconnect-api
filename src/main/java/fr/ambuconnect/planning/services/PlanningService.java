@@ -252,12 +252,14 @@ public class PlanningService {
     }
 
     public PlannigDto recupererPlanningParChauffeur(UUID chauffeurId) {
+        // Vérifie d'abord si le chauffeur existe
         ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
         if (chauffeur == null) {
             throw new IllegalArgumentException("Chauffeur non trouvé");
         }
         
-        PlannnigEntity planning = PlannnigEntity.find("chauffeur", chauffeur).firstResult();
+        // Utilise chauffeur.id pour la recherche au lieu de l'objet chauffeur
+        PlannnigEntity planning = PlannnigEntity.find("chauffeur.id", chauffeurId).firstResult();
         if (planning == null) {
             throw new IllegalArgumentException("Aucun planning trouvé pour ce chauffeur");
         }
