@@ -14,6 +14,7 @@ import fr.ambuconnect.notification.dto.NotificationDto;
 import fr.ambuconnect.notification.service.NotificationService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/notifications")
@@ -38,5 +39,35 @@ public class NotificationResource {
     public Response marquerCommeLue(@PathParam("notificationId") UUID notificationId) {
         notificationService.marquerCommeLue(notificationId);
         return Response.ok().build();
+    }
+
+    @GET
+    @Path("/unread/{userId}")
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
+    public Response getUnreadNotifications(@PathParam("userId") String userIdStr) {
+        try {
+            UUID userId = UUID.fromString(userIdStr);
+            List<NotificationDto> notifications = notificationService.recupererNotificationsNonLues(userId);
+            return Response.ok(notifications).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(Map.of("message", "Erreur lors de la récupération des notifications: " + e.getMessage()))
+                .build();
+        }
+    }
+    
+    @GET
+    @Path("/mark-read/{notificationId}")
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
+    public Response markAsRead(@PathParam("notificationId") String notificationIdStr) {
+        try {
+            UUID notificationId = UUID.fromString(notificationIdStr);
+            notificationService.marquerCommeLue(notificationId);
+            return Response.ok(Map.of("success", true)).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(Map.of("message", "Erreur lors du marquage de la notification: " + e.getMessage()))
+                .build();
+        }
     }
 } 
