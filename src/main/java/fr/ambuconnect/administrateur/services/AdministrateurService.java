@@ -71,7 +71,7 @@ public class AdministrateurService {
             RoleEntity roleDefault = RoleEntity.findByName(administrateurDto.getRole());
             if (roleDefault == null) {
                 LOG.error("Rôle non trouvé: " + administrateurDto.getRole());
-                throw new NotFoundException("Le rôle spécifié n'existe pas");
+                throw new BadRequestException("Le rôle spécifié n'existe pas");
             }
             administrateurDto.setRole(roleDefault.getNom());
             

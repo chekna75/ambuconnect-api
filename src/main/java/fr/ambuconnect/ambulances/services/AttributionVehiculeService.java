@@ -10,8 +10,8 @@ import fr.ambuconnect.ambulances.entity.VehicleEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
 public class AttributionVehiculeService {
@@ -20,17 +20,17 @@ public class AttributionVehiculeService {
     public AttributionVehiculeEntity attribuerVehicule(UUID vehiculeId, UUID chauffeurId, LocalDate dateAttribution, Integer kilometrageDepart) {
         VehicleEntity vehicule = VehicleEntity.findById(vehiculeId);
         if (vehicule == null) {
-            throw new NotFoundException("Véhicule non trouvé");
+            throw new WebApplicationException("Véhicule non trouvé", Response.Status.BAD_REQUEST);
         }
 
         ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
         if (chauffeur == null) {
-            throw new NotFoundException("Chauffeur non trouvé");
+            throw new WebApplicationException("Chauffeur non trouvé", Response.Status.BAD_REQUEST);
         }
 
         // Vérifier si le véhicule n'est pas déjà attribué pour cette date
         if (isVehiculeDejaAttribue(vehiculeId, dateAttribution)) {
-            throw new BadRequestException("Le véhicule est déjà attribué pour cette date");
+            throw new WebApplicationException("Le véhicule est déjà attribué pour cette date", Response.Status.CONFLICT);
         }
 
         AttributionVehiculeEntity attribution = new AttributionVehiculeEntity();
@@ -48,7 +48,7 @@ public class AttributionVehiculeService {
     public AttributionVehiculeEntity terminerAttribution(UUID attributionId, Integer kilometrageRetour, String commentaire) {
         AttributionVehiculeEntity attribution = AttributionVehiculeEntity.findById(attributionId);
         if (attribution == null) {
-            throw new NotFoundException("Attribution non trouvée");
+            throw new WebApplicationException("Attribution non trouvée", Response.Status.BAD_REQUEST);
         }
 
         attribution.setKilometrageRetour(kilometrageRetour);
