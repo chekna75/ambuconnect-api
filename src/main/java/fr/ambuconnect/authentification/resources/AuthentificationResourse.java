@@ -28,8 +28,6 @@ import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
-import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 
 @Path("/auth")
 @ApplicationScoped
@@ -85,6 +83,7 @@ public class AuthentificationResourse {
 
     @PUT
     @Path("/{id}/reinitialiser-mot-de-passe")
+    @PermitAll
     public Response reinitialiserMotDePasse(
             @PathParam("id") String chauffeurEmail,
             @Valid MotDePasseRequestDto request) {
