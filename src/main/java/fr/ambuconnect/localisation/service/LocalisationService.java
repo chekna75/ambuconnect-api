@@ -15,6 +15,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.localisation.dto.LocalisationDto;
 import fr.ambuconnect.localisation.entity.LocalisationEntity;
 import fr.ambuconnect.localisation.mapper.LocalisationMapper;
@@ -99,17 +100,46 @@ public class LocalisationService {
         dernieresLocalisations.remove(chauffeurId);
     }
 
-    public void sendLocalisationUpdate(UUID chauffeurId, LocalisationDto dto) {
-        Session session = sessions.get(chauffeurId);
-        if (session != null && session.isOpen()) {
-            try {
-                String message = localisationMapper.toEntity(dto).toString();
-                session.getBasicRemote().sendText(message);
-            } catch (IOException e) {
-                // Gérer l'exception ici
-                e.printStackTrace(); // Ajout d'un traitement d'exception simple
-            }
+    public void sendLocalisationUpdate(UUID chauffeurId, LocalisationDto localisation) {
+        // Mettre à jour le cache des dernières localisations
+        dernieresLocalisations.put(chauffeurId, localisation);
+        
+        // Récupérer l'entreprise du chauffeur (nous devons connaître l'entrepriseId)
+        ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
+        if (chauffeur == null) {
+            return;
         }
+        
+        UUID entrepriseId = chauffeur.getEntreprise().getId();
+        
+        // Notifier les observateurs spécifiques à ce chauffeur
+        notifyAdminChauffeurObservers(entrepriseId, chauffeurId, localisation);
+        
+        // Notifier tous les observateurs de l'entreprise
+        notifyEntrepriseObservers(entrepriseId, localisation);
+    }
+
+    @Transactional
+    public void updateChauffeurPosition(UUID chauffeurId, LocalisationDto localisation) {
+        // Créer ou mettre à jour la position en base de données
+        LocalisationEntity entity = new LocalisationEntity();
+        entity.setLatitude(localisation.getLatitude());
+        entity.setLongitude(localisation.getLongitude());
+        entity.setDateHeure(LocalDateTime.now());
+        
+        // Configurer la référence au chauffeur
+        ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
+        if (chauffeur == null) {
+            return;
+        }
+        entity.setChauffeur(chauffeur);
+        
+        // Persister l'entité
+        entity.persist();
+        
+        // Mettre à jour le cache des dernières localisations
+        localisation.setId(entity.getId());
+        dernieresLocalisations.put(chauffeurId, localisation);
     }
 
     @Transactional
