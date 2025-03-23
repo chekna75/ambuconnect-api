@@ -80,4 +80,23 @@ public class AttributionVehiculeService {
                   chauffeur.getId(), date)
             .firstResult();
     }
+    
+    /**
+     * Récupère l'attribution de véhicule pour un chauffeur à une date spécifique
+     * à partir de l'ID du chauffeur
+     * 
+     * @param chauffeurId L'identifiant unique du chauffeur
+     * @param date La date d'attribution à vérifier
+     * @return L'attribution correspondante ou null si aucune n'existe
+     */
+    public AttributionVehiculeEntity getAttributionChauffeurJour(UUID chauffeurId, LocalDate date) {
+        if (chauffeurId == null) {
+            throw new BadRequestException("L'identifiant du chauffeur ne peut pas être null");
+        }
+        
+        return AttributionVehiculeEntity
+            .find("chauffeur.id = ?1 and dateAttribution = ?2", 
+                  chauffeurId, date)
+            .firstResult();
+    }
 } 
