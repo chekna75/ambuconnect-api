@@ -47,7 +47,7 @@ public class LocalisationEntity extends PanacheEntityBase{
     private LocalDateTime dateHeure;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chauffeur_id", insertable = false, updatable = false)
+    @JoinColumn(name = "chauffeur_id")
     private ChauffeurEntity chauffeur;
 
     public static List<LocalisationEntity> findByChauffeurId(UUID id) {

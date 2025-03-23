@@ -25,9 +25,13 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.websocket.Session;
 import jakarta.ws.rs.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class LocalisationService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LocalisationService.class);
 
     private final LocalisationMapper localisationMapper;
     private final Map<UUID, Session> sessions = new ConcurrentHashMap<>();
@@ -121,25 +125,30 @@ public class LocalisationService {
 
     @Transactional
     public void updateChauffeurPosition(UUID chauffeurId, LocalisationDto localisation) {
-        // Créer ou mettre à jour la position en base de données
+        // Récupérer le chauffeur d'abord
+        ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
+        if (chauffeur == null) {
+            LOG.warn("Tentative de mise à jour de position pour un chauffeur inexistant: " + chauffeurId);
+            return;
+        }
+        
+        // Créer la nouvelle entité de localisation
         LocalisationEntity entity = new LocalisationEntity();
         entity.setLatitude(localisation.getLatitude());
         entity.setLongitude(localisation.getLongitude());
         entity.setDateHeure(LocalDateTime.now());
-        
-        // Configurer la référence au chauffeur
-        ChauffeurEntity chauffeur = ChauffeurEntity.findById(chauffeurId);
-        if (chauffeur == null) {
-            return;
-        }
-        entity.setChauffeur(chauffeur);
+        entity.setChauffeur(chauffeur); // Définir la relation une seule fois
         
         // Persister l'entité
         entity.persist();
         
         // Mettre à jour le cache des dernières localisations
         localisation.setId(entity.getId());
+        localisation.setChauffeurId(chauffeurId); // S'assurer que l'ID du chauffeur est correctement défini dans le DTO
         dernieresLocalisations.put(chauffeurId, localisation);
+        
+        LOG.info("Position mise à jour pour le chauffeur: " + chauffeurId + 
+                " (lat: " + localisation.getLatitude() + ", lng: " + localisation.getLongitude() + ")");
     }
 
     @Transactional
