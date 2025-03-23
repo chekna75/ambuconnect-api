@@ -158,7 +158,6 @@ public class LocalisationService {
      * Supprime toutes les anciennes positions d'un chauffeur
      * @param chauffeurId identifiant du chauffeur
      */
-    @Transactional
     private void deleteOldPositions(UUID chauffeurId) {
         long deleted = LocalisationEntity.delete("chauffeur.id", chauffeurId);
         if (deleted > 0) {
