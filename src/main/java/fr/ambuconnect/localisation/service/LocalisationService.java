@@ -132,6 +132,9 @@ public class LocalisationService {
             return;
         }
         
+        // Supprimer les anciennes positions du chauffeur
+        deleteOldPositions(chauffeurId);
+        
         // Créer la nouvelle entité de localisation
         LocalisationEntity entity = new LocalisationEntity();
         entity.setLatitude(localisation.getLatitude());
@@ -149,6 +152,18 @@ public class LocalisationService {
         
         LOG.info("Position mise à jour pour le chauffeur: " + chauffeurId + 
                 " (lat: " + localisation.getLatitude() + ", lng: " + localisation.getLongitude() + ")");
+    }
+    
+    /**
+     * Supprime toutes les anciennes positions d'un chauffeur
+     * @param chauffeurId identifiant du chauffeur
+     */
+    @Transactional
+    private void deleteOldPositions(UUID chauffeurId) {
+        long deleted = LocalisationEntity.delete("chauffeur.id", chauffeurId);
+        if (deleted > 0) {
+            LOG.info("Suppression de {} anciennes positions pour le chauffeur: {}", deleted, chauffeurId);
+        }
     }
 
     @Transactional
