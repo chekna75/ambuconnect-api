@@ -86,4 +86,58 @@ public class NotificationResource {
                 .build();
         }
     }
+
+    /**
+     * Marque une notification spécifique comme lue
+     * 
+     * @param notificationId L'identifiant de la notification
+     * @return Réponse HTTP indiquant le succès de l'opération
+     */
+    @POST
+    @Path("/mark-read/{notificationId}")
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
+    public Response markSingleAsRead(@PathParam("notificationId") String notificationIdStr) {
+        try {
+            UUID notificationId = UUID.fromString(notificationIdStr);
+            notificationService.marquerCommeLue(notificationId);
+            return Response.ok(Map.of(
+                "success", true, 
+                "message", "Notification marquée comme lue"
+            )).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity(Map.of(
+                    "error", "Erreur lors du marquage de la notification", 
+                    "message", e.getMessage()
+                ))
+                .build();
+        }
+    }
+
+    /**
+     * Marque toutes les notifications non lues d'un utilisateur comme lues
+     * 
+     * @param userId L'identifiant de l'utilisateur
+     * @return Réponse HTTP avec le nombre de notifications marquées comme lues
+     */
+    @POST
+    @Path("/mark-all-read/{userId}")
+    @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
+    public Response markAllAsRead(@PathParam("userId") UUID userId) {
+        try {
+            int count = notificationService.marquerToutesCommeLues(userId);
+            return Response.ok(Map.of(
+                "success", true, 
+                "message", count + " notification(s) marquée(s) comme lue(s)",
+                "count", count
+            )).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity(Map.of(
+                    "error", "Erreur lors du marquage des notifications", 
+                    "message", e.getMessage()
+                ))
+                .build();
+        }
+    }
 } 

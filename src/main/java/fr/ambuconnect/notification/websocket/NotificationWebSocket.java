@@ -150,6 +150,26 @@ public class NotificationWebSocket {
                     notificationService.marquerCommeLue(notificationId);
                     break;
                     
+                case "MARK_ALL_AS_READ":
+                    // Marquer toutes les notifications de l'utilisateur comme lues
+                    UUID userId = UUID.fromString(jsonNode.get("userId").asText());
+                    int count = notificationService.marquerToutesCommeLues(userId);
+                    
+                    // Préparation de la réponse
+                    Map<String, Object> markAllReadResponse = Map.of(
+                        "type", "ALL_NOTIFICATIONS_READ",
+                        "count", count,
+                        "message", count + " notification(s) marquée(s) comme lue(s)"
+                    );
+                    
+                    // Envoi de la réponse
+                    Session markAllSession = sessions.get(expediteurId);
+                    if (markAllSession != null && markAllSession.isOpen()) {
+                        markAllSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(markAllReadResponse));
+                        logger.info("Toutes les notifications marquées comme lues pour l'utilisateur: " + userId);
+                    }
+                    break;
+                    
                 case "GET_UNREAD_NOTIFICATIONS":
                     // Récupération des notifications non lues
                     destinataireId = UUID.fromString(jsonNode.get("destinataireId").asText());

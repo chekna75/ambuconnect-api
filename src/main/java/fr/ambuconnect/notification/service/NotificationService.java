@@ -202,4 +202,24 @@ public class NotificationService {
             .count("destinataireId = ?1 AND lue = false", userId);
         return (int) count;
     }
+
+    /**
+     * Marque toutes les notifications non lues d'un utilisateur comme lues
+     * 
+     * @param userId L'identifiant de l'utilisateur
+     * @return Le nombre de notifications marquées comme lues
+     */
+    @Transactional
+    public int marquerToutesCommeLues(UUID userId) {
+        List<NotificationEntity> notifications = NotificationEntity
+            .find("destinataireId = ?1 AND lue = false", userId)
+            .list();
+            
+        for (NotificationEntity notification : notifications) {
+            notification.setLue(true);
+            entityManager.merge(notification);
+        }
+        
+        return notifications.size();
+    }
 } 
