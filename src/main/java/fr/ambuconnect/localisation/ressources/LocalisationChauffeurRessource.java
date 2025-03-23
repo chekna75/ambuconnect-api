@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @ServerEndpoint("/localisation-chauffeur/{entrepriseId}/{chauffeurId}/{role}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class LocalisationChauffeurRessource {
 
     private static final Logger LOG = Logger.getLogger(LocalisationChauffeurRessource.class);

@@ -17,7 +17,6 @@ import jakarta.inject.Inject;
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
-import jakarta.annotation.security.RolesAllowed;
 
 @ServerEndpoint("/notifications/{userId}")
 @ApplicationScoped
@@ -119,6 +118,16 @@ public class NotificationWebSocket {
             
             // Traiter différents types de messages
             switch (type) {
+                case "PING":
+                    // Répondre avec un PONG pour maintenir la connexion active
+                    Map<String, String> pongResponse = Map.of("type", "PONG");
+                    Session pingSession = sessions.get(expediteurId);
+                    if (pingSession != null && pingSession.isOpen()) {
+                        pingSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(pongResponse));
+                        logger.fine("PONG envoyé à l'utilisateur: " + expediteurId);
+                    }
+                    break;
+                    
                 case "SEND_NOTIFICATION":
                     // Envoyer une notification à un utilisateur spécifique
                     UUID destinataireId = UUID.fromString(jsonNode.get("destinataireId").asText());
