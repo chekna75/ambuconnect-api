@@ -21,7 +21,10 @@ public class CorsFilter implements ContainerResponseFilter {
         "http://localhost:3000",
         "http://localhost:5173",
         "https://ambuconnect-frontend.vercel.app",
-        "http://localhost:8085"
+        "http://localhost:8085",
+        "https://ambuconnect-driver.vercel.app",
+        "wss://ambuconnect-driver.vercel.app",
+        "https://ambuconnect-driver-cmjbwleql-chekna75s-projects.vercel.app"
     );
 
     @Override
