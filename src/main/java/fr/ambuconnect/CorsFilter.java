@@ -17,13 +17,7 @@ public class CorsFilter implements ContainerResponseFilter {
     
     // Liste des origines autorisées
     private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://ambuconnect-frontend.vercel.app",
-        "http://localhost:8085",
-        "https://ambuconnect-driver.vercel.app",
-        "https://ambuconnect-driver-cmjbwleql-chekna75s-projects.vercel.app"
+        "http://localhost:8080"
     );
 
     @Override
