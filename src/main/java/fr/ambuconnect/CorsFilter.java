@@ -23,7 +23,6 @@ public class CorsFilter implements ContainerResponseFilter {
         "https://ambuconnect-frontend.vercel.app",
         "http://localhost:8085",
         "https://ambuconnect-driver.vercel.app",
-        "wss://ambuconnect-driver.vercel.app",
         "https://ambuconnect-driver-cmjbwleql-chekna75s-projects.vercel.app"
     );
 
@@ -31,38 +30,30 @@ public class CorsFilter implements ContainerResponseFilter {
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         LOG.debug("Exécution du filtre CORS");
         
-        final MultivaluedMap<String, Object> headers = responseContext.getHeaders();
-        
-        // Supprimer tout en-tête CORS existant
-        headers.remove("Access-Control-Allow-Origin");
-        headers.remove("Access-Control-Allow-Credentials");
-        headers.remove("Access-Control-Allow-Methods");
-        headers.remove("Access-Control-Allow-Headers");
-        headers.remove("Access-Control-Expose-Headers");
-        
-        // Récupérer l'origine de la requête
         String origin = requestContext.getHeaderString("Origin");
         LOG.debug("Origine de la requête: " + origin);
         
-        // Vérifier si l'origine est autorisée
+        // Si c'est une requête préflight OPTIONS ou une requête normale
         if (origin != null && ALLOWED_ORIGINS.contains(origin)) {
             LOG.debug("Origine autorisée: " + origin);
-            headers.add("Access-Control-Allow-Origin", origin);
+            
+            MultivaluedMap<String, Object> headers = responseContext.getHeaders();
+            headers.putSingle("Access-Control-Allow-Origin", origin);
+            headers.putSingle("Access-Control-Allow-Credentials", "true");
+            headers.putSingle("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+            headers.putSingle("Access-Control-Max-Age", "1209600"); // 2 semaines en secondes
+            headers.putSingle("Access-Control-Allow-Headers", 
+                "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, " +
+                "Access-Control-Request-Headers, Authorization");
+            
+            // Si c'est une requête préflight OPTIONS
+            if (requestContext.getRequest().getMethod().equalsIgnoreCase("OPTIONS")) {
+                LOG.debug("Requête préflight OPTIONS détectée");
+            }
         } else if (origin != null) {
-            LOG.debug("Origine non autorisée: " + origin);
-            // Ne pas ajouter d'en-tête si l'origine n'est pas autorisée
+            LOG.warn("Origine non autorisée: " + origin);
         } else {
             LOG.debug("Aucune origine spécifiée");
-            // Si aucune origine n'est spécifiée, on ne fait rien
         }
-        
-        headers.add("Access-Control-Allow-Credentials", "true");
-        headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        headers.add("Access-Control-Allow-Headers", 
-            "Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
-        headers.add("Access-Control-Expose-Headers", "Content-Disposition");
-        
-        // Journalisation des en-têtes CORS
-        LOG.debug("En-têtes CORS appliqués: " + headers.keySet());
     }
 } 
