@@ -39,7 +39,7 @@ public class PerformanceRessource {
     }
 
     @GET
-    @Path("/rapports/mensuel/{chauffeurId}")
+    @Path("/rapports/mensuel/chauffeur/{chauffeurId}")
     @Operation(summary = "Récupérer le rapport mensuel d'un chauffeur")
     @APIResponse(responseCode = "200", description = "Rapport mensuel")
     public Response getRapportMensuel(
@@ -50,7 +50,7 @@ public class PerformanceRessource {
     }
 
     @GET
-    @Path("/rapports/mensuel/{entrepriseId}")
+    @Path("/rapports/mensuel/entreprise/{entrepriseId}")
     @Operation(summary = "Récupérer tous les rapports mensuels")
     @APIResponse(responseCode = "200", description = "Liste des rapports mensuels")
     public Response getAllRapportsMensuels(
