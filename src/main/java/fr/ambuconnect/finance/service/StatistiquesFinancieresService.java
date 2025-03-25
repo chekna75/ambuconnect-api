@@ -56,10 +56,8 @@ public class StatistiquesFinancieresService {
         
         // 1. Récupération des transactions sur la période
         List<TransactionFinanciere> transactions = TransactionFinanciere.find(
-            "entrepriseId = :entrepriseId AND dateTransaction >= :debut AND dateTransaction <= :fin",
-            Parameters.with("entrepriseId", entrepriseId)
-                     .and("debut", dateDebut.atStartOfDay())
-                     .and("fin", dateFin.plusDays(1).atStartOfDay().minusNanos(1))
+            "entrepriseId = ?1 AND dateTransaction >= ?2 AND dateTransaction <= ?3",
+            entrepriseId, dateDebut.atStartOfDay(), dateFin.plusDays(1).atStartOfDay().minusNanos(1)
         ).list();
         
         if (transactions.isEmpty()) {
