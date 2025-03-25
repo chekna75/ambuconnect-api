@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import fr.ambuconnect.courses.entity.CoursesEntity;
+import fr.ambuconnect.finance.dto.ConfigurationCalculsDTO;
 import fr.ambuconnect.finance.dto.StatistiquesFinancieresDTO;
 import fr.ambuconnect.finance.dto.StatistiquesFinancieresDTO.CategorieFinanciereDTO;
 import fr.ambuconnect.finance.entity.TransactionFinanciere;
@@ -40,10 +41,11 @@ public class StatistiquesFinancieresService {
      * @param entrepriseId ID de l'entreprise
      * @param dateDebut Date de début (incluse)
      * @param dateFin Date de fin (incluse)
+     * @param config Configuration des calculs
      * @return DTO contenant toutes les statistiques financières
      */
     @Transactional
-    public StatistiquesFinancieresDTO calculerStatistiques(UUID entrepriseId, LocalDate dateDebut, LocalDate dateFin) {
+    public StatistiquesFinancieresDTO calculerStatistiques(UUID entrepriseId, LocalDate dateDebut, LocalDate dateFin, ConfigurationCalculsDTO config) {
         LOG.info("Calcul des statistiques financières pour l'entreprise " + entrepriseId + 
                  " du " + dateDebut + " au " + dateFin);
                  
@@ -64,38 +66,53 @@ public class StatistiquesFinancieresService {
             LOG.info("Aucune transaction trouvée pour cette période");
             return initialiserStatsVides(stats);
         }
-        
-        // 2. Calcul des totaux
-        BigDecimal totalRevenus = calculerTotal(transactions, TypeTransaction.REVENU);
-        BigDecimal totalDepenses = calculerTotal(transactions, TypeTransaction.DEPENSE);
-        
-        stats.setTotalRevenus(totalRevenus);
-        stats.setTotalDepenses(totalDepenses);
-        stats.setResultatNet(totalRevenus.subtract(totalDepenses));
-        
-        // Calcul du taux de rentabilité
-        if (totalRevenus.compareTo(BigDecimal.ZERO) > 0) {
-            stats.setTauxRentabilite(
-                stats.getResultatNet().divide(totalRevenus, 4, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_UP)
-            );
-        } else {
-            stats.setTauxRentabilite(BigDecimal.ZERO);
+
+        // Filtrer les transactions par catégories si spécifié
+        if (config.getCategoriesIncluses() != null && !config.getCategoriesIncluses().isEmpty()) {
+            transactions = transactions.stream()
+                .filter(t -> config.getCategoriesIncluses().contains(t.getCategorie()))
+                .collect(Collectors.toList());
         }
         
-        // 3. Statistiques par catégorie
-        stats.setRevenus(calculerStatistiquesParCategorie(transactions, TypeTransaction.REVENU, totalRevenus));
-        stats.setDepenses(calculerStatistiquesParCategorie(transactions, TypeTransaction.DEPENSE, totalDepenses));
+        // 2. Calcul des totaux si demandé
+        if (config.isInclureTotaux()) {
+            BigDecimal totalRevenus = calculerTotal(transactions, TypeTransaction.REVENU);
+            BigDecimal totalDepenses = calculerTotal(transactions, TypeTransaction.DEPENSE);
+            
+            stats.setTotalRevenus(totalRevenus);
+            stats.setTotalDepenses(totalDepenses);
+            stats.setResultatNet(totalRevenus.subtract(totalDepenses));
+            
+            // Calcul du taux de rentabilité si demandé
+            if (config.isInclureTauxRentabilite() && totalRevenus.compareTo(BigDecimal.ZERO) > 0) {
+                stats.setTauxRentabilite(
+                    stats.getResultatNet().divide(totalRevenus, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_UP)
+                );
+            }
+        }
         
-        // 4. Évolution temporelle
-        stats.setEvolutionRevenus(calculerEvolutionMensuelle(transactions, TypeTransaction.REVENU, dateDebut, dateFin));
-        stats.setEvolutionDepenses(calculerEvolutionMensuelle(transactions, TypeTransaction.DEPENSE, dateDebut, dateFin));
+        // 3. Statistiques par catégorie si demandé
+        if (config.isInclureStatistiquesParCategorie()) {
+            stats.setRevenus(calculerStatistiquesParCategorie(transactions, TypeTransaction.REVENU, stats.getTotalRevenus()));
+            stats.setDepenses(calculerStatistiquesParCategorie(transactions, TypeTransaction.DEPENSE, stats.getTotalDepenses()));
+        }
         
-        // 5. Calcul des indicateurs de performance
-        calculerIndicateursPerformance(stats, transactions, entrepriseId, dateDebut, dateFin);
+        // 4. Évolution temporelle si demandé
+        if (config.isInclureEvolutionTemporelle()) {
+            stats.setEvolutionRevenus(calculerEvolutionMensuelle(transactions, TypeTransaction.REVENU, dateDebut, dateFin));
+            stats.setEvolutionDepenses(calculerEvolutionMensuelle(transactions, TypeTransaction.DEPENSE, dateDebut, dateFin));
+        }
         
-        // 6. Analyses supplémentaires
-        calculerAnalysesSupplementaires(stats, transactions);
+        // 5. Calcul des indicateurs de performance si demandé
+        if (config.isInclureIndicateursPerformance()) {
+            calculerIndicateursPerformance(stats, transactions, entrepriseId, dateDebut, dateFin, config);
+        }
+        
+        // 6. Analyses supplémentaires si demandé
+        if (config.isInclureAnalysesSupplementaires()) {
+            calculerAnalysesSupplementaires(stats, transactions);
+        }
         
         return stats;
     }
@@ -206,75 +223,83 @@ public class StatistiquesFinancieresService {
             List<TransactionFinanciere> transactions,
             UUID entrepriseId,
             LocalDate dateDebut,
-            LocalDate dateFin) {
+            LocalDate dateFin,
+            ConfigurationCalculsDTO config) {
             
-        // Obtenir le nombre de courses pour la période
-        Long nombreCourses = CoursesEntity.count(
-            "entrepriseId = ?1 AND dateCreation >= ?2 AND dateCreation <= ?3",
-            entrepriseId, 
-            dateDebut.atStartOfDay(), 
-            dateFin.plusDays(1).atStartOfDay().minusNanos(1)
-        );
-        stats.setNombreCourses(nombreCourses.intValue());
-        
-        // Revenus liés aux courses
-        BigDecimal revenusCourses = transactions.stream()
-            .filter(t -> t.getType() == TypeTransaction.REVENU && 
-                  (t.getCategorie() == CategorieTransaction.COURSE_PATIENT || 
-                   t.getCategorie() == CategorieTransaction.TRANSPORT_MEDICAL || 
-                   t.getCategorie() == CategorieTransaction.URGENCE))
-            .map(TransactionFinanciere::getMontant)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-            
-        // Revenu moyen par course
-        if (nombreCourses > 0) {
-            stats.setRevenuMoyenParCourse(
-                revenusCourses.divide(new BigDecimal(nombreCourses), 2, RoundingMode.HALF_UP)
+        if (config.isCalculerNombreCourses()) {
+            // Obtenir le nombre de courses pour la période
+            Long nombreCourses = CoursesEntity.count(
+                "entrepriseId = ?1 AND dateCreation >= ?2 AND dateCreation <= ?3",
+                entrepriseId, 
+                dateDebut.atStartOfDay(), 
+                dateFin.plusDays(1).atStartOfDay().minusNanos(1)
             );
-        } else {
-            stats.setRevenuMoyenParCourse(BigDecimal.ZERO);
+            stats.setNombreCourses(nombreCourses.intValue());
         }
-        
-        // Calcul des kilomètres parcourus (à partir des courses)
-        // Note: ceci nécessite que les distances soient stockées dans les courses
-        BigDecimal kilometresParcourus = BigDecimal.ZERO;
-        try {
-            Double totalKm = (Double) entityManager.createQuery(
-                "SELECT SUM(c.distanceKm) FROM CoursesEntity c " +
-                "WHERE c.entrepriseId = :entrepriseId " +
-                "AND c.dateCreation >= :debut " +
-                "AND c.dateCreation <= :fin")
-                .setParameter("entrepriseId", entrepriseId)
-                .setParameter("debut", dateDebut.atStartOfDay())
-                .setParameter("fin", dateFin.plusDays(1).atStartOfDay().minusNanos(1))
-                .getSingleResult();
-                
-            if (totalKm != null) {
-                kilometresParcourus = new BigDecimal(totalKm).setScale(2, RoundingMode.HALF_UP);
-            }
-        } catch (Exception e) {
-            LOG.warn("Impossible de calculer les kilomètres parcourus: " + e.getMessage());
-        }
-        stats.setKilometresParcourus(kilometresParcourus);
-        
-        // Coût par kilomètre et revenu par kilomètre
-        if (kilometresParcourus.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal coutCarburant = transactions.stream()
-                .filter(t -> t.getType() == TypeTransaction.DEPENSE && 
-                      t.getCategorie() == CategorieTransaction.CARBURANT)
+
+        if (config.isCalculerRevenuMoyenParCourse() && stats.getNombreCourses() > 0) {
+            // Revenus liés aux courses
+            BigDecimal revenusCourses = transactions.stream()
+                .filter(t -> t.getType() == TypeTransaction.REVENU && 
+                      (t.getCategorie() == CategorieTransaction.COURSE_PATIENT || 
+                       t.getCategorie() == CategorieTransaction.TRANSPORT_MEDICAL || 
+                       t.getCategorie() == CategorieTransaction.URGENCE))
                 .map(TransactionFinanciere::getMontant)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
                 
-            stats.setCoutParKilometre(
-                coutCarburant.divide(kilometresParcourus, 2, RoundingMode.HALF_UP)
+            stats.setRevenuMoyenParCourse(
+                revenusCourses.divide(new BigDecimal(stats.getNombreCourses()), 2, RoundingMode.HALF_UP)
             );
+        }
+
+        if (config.isCalculerKilometresParcourus()) {
+            try {
+                Double totalKm = (Double) entityManager.createQuery(
+                    "SELECT SUM(c.distanceKm) FROM CoursesEntity c " +
+                    "WHERE c.entrepriseId = :entrepriseId " +
+                    "AND c.dateCreation >= :debut " +
+                    "AND c.dateCreation <= :fin")
+                    .setParameter("entrepriseId", entrepriseId)
+                    .setParameter("debut", dateDebut.atStartOfDay())
+                    .setParameter("fin", dateFin.plusDays(1).atStartOfDay().minusNanos(1))
+                    .getSingleResult();
+                    
+                if (totalKm != null) {
+                    stats.setKilometresParcourus(new BigDecimal(totalKm).setScale(2, RoundingMode.HALF_UP));
+                }
+            } catch (Exception e) {
+                LOG.warn("Impossible de calculer les kilomètres parcourus: " + e.getMessage());
+            }
+        }
+
+        if ((config.isCalculerCoutParKilometre() || config.isCalculerRevenuParKilometre()) 
+            && stats.getKilometresParcourus().compareTo(BigDecimal.ZERO) > 0) {
             
-            stats.setRevenuParKilometre(
-                revenusCourses.divide(kilometresParcourus, 2, RoundingMode.HALF_UP)
-            );
-        } else {
-            stats.setCoutParKilometre(BigDecimal.ZERO);
-            stats.setRevenuParKilometre(BigDecimal.ZERO);
+            if (config.isCalculerCoutParKilometre()) {
+                BigDecimal coutCarburant = transactions.stream()
+                    .filter(t -> t.getType() == TypeTransaction.DEPENSE && 
+                          t.getCategorie() == CategorieTransaction.CARBURANT)
+                    .map(TransactionFinanciere::getMontant)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    
+                stats.setCoutParKilometre(
+                    coutCarburant.divide(stats.getKilometresParcourus(), 2, RoundingMode.HALF_UP)
+                );
+            }
+            
+            if (config.isCalculerRevenuParKilometre()) {
+                BigDecimal revenusCourses = transactions.stream()
+                    .filter(t -> t.getType() == TypeTransaction.REVENU && 
+                          (t.getCategorie() == CategorieTransaction.COURSE_PATIENT || 
+                           t.getCategorie() == CategorieTransaction.TRANSPORT_MEDICAL || 
+                           t.getCategorie() == CategorieTransaction.URGENCE))
+                    .map(TransactionFinanciere::getMontant)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+                stats.setRevenuParKilometre(
+                    revenusCourses.divide(stats.getKilometresParcourus(), 2, RoundingMode.HALF_UP)
+                );
+            }
         }
     }
     
@@ -318,5 +343,11 @@ public class StatistiquesFinancieresService {
         } else {
             stats.setTaux_remboursement_assurance(BigDecimal.ZERO);
         }
+    }
+
+    @Transactional
+    public StatistiquesFinancieresDTO calculerStatistiques(UUID entrepriseId, LocalDate dateDebut, LocalDate dateFin) {
+        ConfigurationCalculsDTO configParDefaut = new ConfigurationCalculsDTO();
+        return calculerStatistiques(entrepriseId, dateDebut, dateFin, configParDefaut);
     }
 } 

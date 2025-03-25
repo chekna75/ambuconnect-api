@@ -30,6 +30,7 @@ import fr.ambuconnect.finance.dto.TransactionFinanciereDTO;
 import fr.ambuconnect.finance.entity.TransactionFinanciere;
 import fr.ambuconnect.finance.service.TransactionFinanciereService;
 import jakarta.ws.rs.Consumes;
+import fr.ambuconnect.finance.dto.ConfigurationCalculsDTO;
 
 @Path("/finances")
 @Produces(MediaType.APPLICATION_JSON)
@@ -97,7 +98,7 @@ public class FinanceRessource {
     @POST
     @Path("/statistiques/{entrepriseId}/calcul")
     @RolesAllowed({"admin", "ADMIN", "SUPERADMIN"})
-    @Operation(summary = "Calcule les statistiques financières pour une entreprise")
+    @Operation(summary = "Calcule les statistiques financières pour une entreprise avec configuration personnalisée")
     @APIResponses({
         @APIResponse(responseCode = "200", description = "Calcul effectué avec succès", 
                     content = @Content(schema = @Schema(implementation = StatistiquesFinancieresDTO.class))),
@@ -107,7 +108,8 @@ public class FinanceRessource {
     })
     public Response calculerStatistiquesFinancieres(
             @PathParam("entrepriseId") UUID entrepriseId,
-            @QueryParam("mois") @DefaultValue("") String moisStr) {
+            @QueryParam("mois") @DefaultValue("") String moisStr,
+            ConfigurationCalculsDTO configuration) {
             
         try {
             LocalDate dateDebut;
@@ -129,7 +131,7 @@ public class FinanceRessource {
                      " pour la période du " + dateDebut + " au " + dateFin);
             
             StatistiquesFinancieresDTO stats = statistiquesService.calculerStatistiques(
-                entrepriseId, dateDebut, dateFin
+                entrepriseId, dateDebut, dateFin, configuration
             );
             
             return Response.ok(stats).build();
@@ -193,33 +195,43 @@ public class FinanceRessource {
     
     @POST
     @Path("/transactions")
-    @RolesAllowed({"admin", "ADMIN"})
-    @Operation(summary = "Enregistre une nouvelle transaction financière")
-    public Response creerTransaction(TransactionFinanciereDTO dto) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "ADMIN", "SUPERADMIN"})
+    @Operation(summary = "Créer une nouvelle transaction financière")
+    @APIResponses({
+        @APIResponse(responseCode = "201", description = "Transaction créée avec succès"),
+        @APIResponse(responseCode = "400", description = "Données invalides"),
+        @APIResponse(responseCode = "500", description = "Erreur serveur")
+    })
+    public Response creerTransaction(TransactionFinanciereDTO transaction) {
         try {
-            TransactionFinanciere transaction = transactionService.creerTransaction(
-                dto.getEntrepriseId(),
-                dto.getMontant(),
-                dto.getType(),
-                dto.getCategorie(),
-                dto.getDescription(),
-                dto.getStatutPaiement(),
-                dto.getCourseId()
+            TransactionFinanciere nouvelleTransaction = transactionService.creerTransaction(
+                transaction.getEntrepriseId(),
+                transaction.getMontant(),
+                transaction.getType(),
+                transaction.getCategorie(),
+                transaction.getDescription(),
+                transaction.getStatutPaiement(),
+                transaction.getCourseId()
             );
             
-            if (dto.getNumeroFacture() != null) {
-                transaction.setNumeroFacture(dto.getNumeroFacture());
+            if (transaction.getNumeroFacture() != null) {
+                nouvelleTransaction.setNumeroFacture(transaction.getNumeroFacture());
             }
             
-            if (dto.getReferenceAssurance() != null) {
-                transaction.setReferenceAssurance(dto.getReferenceAssurance());
+            if (transaction.getReferenceAssurance() != null) {
+                nouvelleTransaction.setReferenceAssurance(transaction.getReferenceAssurance());
             }
             
-            return Response.status(Response.Status.CREATED).entity(transaction).build();
+            return Response.status(Response.Status.CREATED)
+                         .entity(nouvelleTransaction)
+                         .build();
+                         
         } catch (Exception e) {
+            LOG.error("Erreur lors de la création de la transaction", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(Map.of("message", "Erreur lors de la création de la transaction: " + e.getMessage()))
-                .build();
+                         .entity(Map.of("message", "Erreur lors de la création de la transaction: " + e.getMessage()))
+                         .build();
         }
     }
 
