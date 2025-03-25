@@ -227,7 +227,7 @@ public class StatistiquesFinancieresService {
         if (config.isCalculerNombreCourses()) {
             // Obtenir le nombre de courses pour la période
             Long nombreCourses = CoursesEntity.count(
-                "entrepriseId = ?1 AND dateCreation >= ?2 AND dateCreation <= ?3",
+                "entreprise.id = ?1 AND dateCreation >= ?2 AND dateCreation <= ?3",
                 entrepriseId, 
                 dateDebut.atStartOfDay(), 
                 dateFin.plusDays(1).atStartOfDay().minusNanos(1)
