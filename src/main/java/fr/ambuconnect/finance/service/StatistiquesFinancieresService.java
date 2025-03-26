@@ -224,6 +224,13 @@ public class StatistiquesFinancieresService {
             LocalDate dateFin,
             ConfigurationCalculsDTO config) {
             
+        // Initialiser les valeurs par défaut
+        stats.setKilometresParcourus(BigDecimal.ZERO);
+        stats.setCoutParKilometre(BigDecimal.ZERO);
+        stats.setRevenuParKilometre(BigDecimal.ZERO);
+        stats.setRevenuMoyenParCourse(BigDecimal.ZERO);
+        stats.setNombreCourses(0);
+
         if (config.isCalculerNombreCourses()) {
             // Obtenir le nombre de courses pour la période
             Long nombreCourses = CoursesEntity.count(
@@ -232,7 +239,7 @@ public class StatistiquesFinancieresService {
                 dateDebut.atStartOfDay(), 
                 dateFin.plusDays(1).atStartOfDay().minusNanos(1)
             );
-            stats.setNombreCourses(nombreCourses.intValue());
+            stats.setNombreCourses(nombreCourses != null ? nombreCourses.intValue() : 0);
         }
 
         if (config.isCalculerRevenuMoyenParCourse() && stats.getNombreCourses() > 0) {
@@ -253,50 +260,57 @@ public class StatistiquesFinancieresService {
         if (config.isCalculerKilometresParcourus()) {
             try {
                 Double totalKm = (Double) entityManager.createQuery(
-                    "SELECT SUM(c.distanceKm) FROM CoursesEntity c " +
-                    "WHERE c.entrepriseId = :entrepriseId " +
-                    "AND c.dateCreation >= :debut " +
-                    "AND c.dateCreation <= :fin")
+                    "SELECT COALESCE(SUM(c.distance), 0.0) FROM CoursesEntity c " +
+                    "WHERE c.entreprise.id = :entrepriseId " +
+                    "AND c.dateHeureDepart >= :debut " +
+                    "AND c.dateHeureDepart <= :fin")
                     .setParameter("entrepriseId", entrepriseId)
                     .setParameter("debut", dateDebut.atStartOfDay())
                     .setParameter("fin", dateFin.plusDays(1).atStartOfDay().minusNanos(1))
                     .getSingleResult();
                     
-                if (totalKm != null) {
-                    stats.setKilometresParcourus(new BigDecimal(totalKm).setScale(2, RoundingMode.HALF_UP));
-                }
+                stats.setKilometresParcourus(totalKm != null ? 
+                    new BigDecimal(totalKm).setScale(2, RoundingMode.HALF_UP) : 
+                    BigDecimal.ZERO);
             } catch (Exception e) {
                 LOG.warn("Impossible de calculer les kilomètres parcourus: " + e.getMessage());
+                stats.setKilometresParcourus(BigDecimal.ZERO);
             }
         }
 
-        if ((config.isCalculerCoutParKilometre() || config.isCalculerRevenuParKilometre()) 
-            && stats.getKilometresParcourus().compareTo(BigDecimal.ZERO) > 0) {
-            
-            if (config.isCalculerCoutParKilometre()) {
-                BigDecimal coutCarburant = transactions.stream()
-                    .filter(t -> t.getType() == TypeTransaction.DEPENSE && 
-                          t.getCategorie() == CategorieTransaction.CARBURANT)
-                    .map(TransactionFinanciere::getMontant)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    
-                stats.setCoutParKilometre(
-                    coutCarburant.divide(stats.getKilometresParcourus(), 2, RoundingMode.HALF_UP)
-                );
+        if (config.isCalculerCoutParKilometre() || config.isCalculerRevenuParKilometre()) {
+            BigDecimal kilometresParcourus = stats.getKilometresParcourus();
+            if (kilometresParcourus == null) {
+                kilometresParcourus = BigDecimal.ZERO;
+                stats.setKilometresParcourus(kilometresParcourus);
             }
             
-            if (config.isCalculerRevenuParKilometre()) {
-                BigDecimal revenusCourses = transactions.stream()
-                    .filter(t -> t.getType() == TypeTransaction.REVENU && 
-                          (t.getCategorie() == CategorieTransaction.COURSE_PATIENT || 
-                           t.getCategorie() == CategorieTransaction.TRANSPORT_MEDICAL || 
-                           t.getCategorie() == CategorieTransaction.URGENCE))
-                    .map(TransactionFinanciere::getMontant)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (kilometresParcourus.compareTo(BigDecimal.ZERO) > 0) {
+                if (config.isCalculerCoutParKilometre()) {
+                    BigDecimal coutCarburant = transactions.stream()
+                        .filter(t -> t.getType() == TypeTransaction.DEPENSE && 
+                              t.getCategorie() == CategorieTransaction.CARBURANT)
+                        .map(TransactionFinanciere::getMontant)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        
+                    stats.setCoutParKilometre(
+                        coutCarburant.divide(kilometresParcourus, 2, RoundingMode.HALF_UP)
+                    );
+                }
                 
-                stats.setRevenuParKilometre(
-                    revenusCourses.divide(stats.getKilometresParcourus(), 2, RoundingMode.HALF_UP)
-                );
+                if (config.isCalculerRevenuParKilometre()) {
+                    BigDecimal revenusCourses = transactions.stream()
+                        .filter(t -> t.getType() == TypeTransaction.REVENU && 
+                              (t.getCategorie() == CategorieTransaction.COURSE_PATIENT || 
+                               t.getCategorie() == CategorieTransaction.TRANSPORT_MEDICAL || 
+                               t.getCategorie() == CategorieTransaction.URGENCE))
+                        .map(TransactionFinanciere::getMontant)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    
+                    stats.setRevenuParKilometre(
+                        revenusCourses.divide(kilometresParcourus, 2, RoundingMode.HALF_UP)
+                    );
+                }
             }
         }
     }
