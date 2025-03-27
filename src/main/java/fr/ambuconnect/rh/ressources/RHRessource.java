@@ -1,6 +1,7 @@
 package fr.ambuconnect.rh.ressources;
 
 import java.util.UUID;
+import java.util.List;
 
 import fr.ambuconnect.rh.dto.CongeDTO;
 import fr.ambuconnect.rh.dto.ContratDTO;
@@ -55,6 +56,7 @@ public class RHRessource {
     @GET
     @Path("/conges/{id}")
     public Response getCongeByIdChauffeur(@PathParam("id") UUID chauffeurId) {
-        return Response.ok(rhService.getCongeDTOByIdChauffeur(chauffeurId)).build();
+        List<CongeDTO> conges = rhService.getCongeDTOByIdChauffeur(chauffeurId);
+        return Response.ok(conges).build();
     }
 }

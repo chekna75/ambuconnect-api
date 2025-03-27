@@ -11,6 +11,8 @@ import fr.ambuconnect.rh.mapper.RHMapper;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class RHService {
@@ -24,9 +26,11 @@ public class RHService {
     }
 
     @Transactional
-    public CongeDTO getCongeDTOByIdChauffeur(UUID chauffeurId) {
-        CongeEntity conge = CongeEntity.find("chauffeur.id", chauffeurId).firstResult();
-        return rhMapper.toDTO(conge);
+    public List<CongeDTO> getCongeDTOByIdChauffeur(UUID chauffeurId) {
+        List<CongeEntity> conges = CongeEntity.list("chauffeur.id", chauffeurId);
+        return conges.stream()
+                    .map(rhMapper::toDTO)
+                    .collect(Collectors.toList());
     }
     
     @Transactional
