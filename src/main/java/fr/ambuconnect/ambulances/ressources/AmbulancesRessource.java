@@ -30,7 +30,7 @@ import jakarta.ws.rs.core.Response;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Valid
-@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR"})
+@RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class AmbulancesRessource {
 
     @Inject
@@ -227,5 +227,13 @@ public class AmbulancesRessource {
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
+    }
+
+    @GET
+    @Path("/ambulance-par-entreprise/{entrepriseId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getAmbulanceByEntrepriseId(@PathParam("entrepriseId") UUID entrepriseId) {
+        AmbulanceDTO ambulance = ambulanceService.getAmbulanceByEntrepriseId(entrepriseId);
+        return Response.ok(ambulance).build();
     }
 }

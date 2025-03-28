@@ -2,6 +2,7 @@ package fr.ambuconnect.ambulances.ressources;
 
 import fr.ambuconnect.ambulances.dto.*;
 import fr.ambuconnect.ambulances.services.GestionFlotteService;
+import fr.ambuconnect.utils.ErrorResponse;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -9,6 +10,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("gestionflotte")
 @Produces(MediaType.APPLICATION_JSON)
@@ -16,14 +19,40 @@ import java.util.UUID;
 @RolesAllowed({"admin", "ADMIN", "chauffeur", "CHAUFFEUR", "regulateur", "REGULATEUR"})
 public class GestionFlotteRessource {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GestionFlotteRessource.class);
+
     @Inject
     GestionFlotteService gestionFlotteService;
 
     @POST
     @Path("/vehicles")
     public Response addVehicle(VehicleDTO vehicleDTO) {
-        VehicleDTO addedVehicle = gestionFlotteService.addVehicle(vehicleDTO);
-        return Response.status(Response.Status.CREATED).entity(addedVehicle).build();
+        try {
+            if (vehicleDTO == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorResponse("Les données du véhicule sont requises"))
+                    .build();
+            }
+
+            if (vehicleDTO.getAmbulanceId() == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorResponse("L'ID de l'ambulance est requis"))
+                    .build();
+            }
+
+            VehicleDTO addedVehicle = gestionFlotteService.addVehicle(vehicleDTO);
+            return Response.status(Response.Status.CREATED).entity(addedVehicle).build();
+        } catch (IllegalArgumentException e) {
+            LOG.error("Erreur de validation lors de l'ajout du véhicule: {}", e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de l'ajout du véhicule", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Une erreur interne est survenue lors de l'ajout du véhicule"))
+                .build();
+        }
     }
 
     @GET

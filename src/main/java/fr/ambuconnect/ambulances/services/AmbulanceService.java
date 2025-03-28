@@ -338,4 +338,12 @@ public class AmbulanceService {
                 .collect(Collectors.toList());
     }
 
+    public AmbulanceDTO getAmbulanceByEntrepriseId(UUID entrepriseId) {
+        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(entrepriseId);
+        if (ambulance == null) {
+            throw new NotFoundException("Ambulance non trouvée pour cette entreprise");
+        }
+        return mapToDto(ambulance);
+    }
+
 }
