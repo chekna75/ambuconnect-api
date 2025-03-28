@@ -20,6 +20,14 @@ public class GestionFlotteService {
 
     @Transactional
     public VehicleDTO addVehicle(VehicleDTO vehicleDTO) {
+        // Vérifier si l'ambulance existe
+        if (vehicleDTO.getAmbulanceId() != null) {
+            AmbulanceEntity ambulance = AmbulanceEntity.findById(vehicleDTO.getAmbulanceId());
+            if (ambulance == null) {
+                throw new IllegalArgumentException("L'ambulance spécifiée n'existe pas");
+            }
+        }
+
         VehicleEntity vehicle = fleetMapper.toEntity(vehicleDTO);
         vehicle.persist();
         return fleetMapper.toDto(vehicle);
@@ -134,23 +142,20 @@ public class GestionFlotteService {
         }
 
         vehicle.setAmbulance(ambulance);
-        ambulance.setVehicle(vehicle);
+        ambulance.getVehicules().add(vehicle);
         
         return fleetMapper.toDto(vehicle);
     }
 
     @Transactional
-    public VehicleDTO getVehiculeByAmbulance(UUID ambulanceId) {
+    public List<VehicleDTO> getVehiculesByAmbulance(UUID ambulanceId) {
         AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
         if (ambulance == null) {
             throw new NotFoundException("Ambulance non trouvée");
         }
         
-        VehicleEntity vehicle = ambulance.getVehicle();
-        if (vehicle == null) {
-            throw new NotFoundException("Aucun véhicule associé à cette ambulance");
-        }
-        
-        return fleetMapper.toDto(vehicle);
+        return ambulance.getVehicules().stream()
+            .map(fleetMapper::toDto)
+            .toList();
     }
 }

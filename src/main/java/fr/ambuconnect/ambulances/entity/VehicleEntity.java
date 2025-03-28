@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 
 import java.util.UUID;
 
@@ -54,7 +54,7 @@ public class VehicleEntity extends PanacheEntityBase{
     @OneToMany(mappedBy = "vehicle")
     private List<FuelConsumptionEntity> fuelConsumptions;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "ambulance_id")
     private AmbulanceEntity ambulance;
     

@@ -136,8 +136,8 @@ public class GestionFlotteRessource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getVehiculeByAmbulance(@PathParam("ambulanceId") UUID ambulanceId) {
         try {
-            VehicleDTO vehicle = gestionFlotteService.getVehiculeByAmbulance(ambulanceId);
-            return Response.ok(vehicle).build();
+            List<VehicleDTO> vehicles = gestionFlotteService.getVehiculesByAmbulance(ambulanceId);
+            return Response.ok(vehicles).build();
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
