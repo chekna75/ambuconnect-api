@@ -34,7 +34,7 @@ public interface FleetMapper {
     FuelConsumptionEntity toEntity(CreateFuelConsumptionDTO dto);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "ambulance", ignore = true)
+    @Mapping(target = "ambulance.id", source = "ambulanceId")
     VehicleEntity toEntity(VehicleDTO dto);
 
     List<MaintenanceDTO> toMaintenanceDtoList(List<MaintenanceEntity> entities);
