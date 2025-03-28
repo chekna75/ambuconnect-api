@@ -156,10 +156,6 @@ public class CourseService {
             throw new IllegalArgumentException("Course non trouvée");
         }
 
-        // Vérification des droits
-        if (!course.getAmbulance().getEntreprise().equals(administrateur.getEntreprise())) {
-            throw new IllegalArgumentException("L'administrateur ne peut pas modifier une course d'une autre entreprise");
-        }
 
         ChauffeurEntity chauffeur = ChauffeurEntity.findById(courseDto.getChauffeurId());
         if (chauffeur != null && chauffeur.getEntreprise().equals(administrateur.getEntreprise())) {
