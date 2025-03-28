@@ -72,10 +72,6 @@ public class CourseService {
             throw new IllegalArgumentException("L'ID de l'ambulance est requis");
         }
         
-        // Vérifier si le patient est spécifié
-        if (courseDto.getPatientId() == null) {
-            throw new IllegalArgumentException("L'ID du patient est requis");
-        }
         
         // Récupération de l'ambulance
         AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(courseDto.getAmbulanceId());
@@ -90,9 +86,12 @@ public class CourseService {
             planning = creerPlanningParDefaut(chauffeur, administrateur.getEntreprise());
         }
 
-        PatientEntity patientEntity = PatientEntity.findById(courseDto.getPatientId());
-        if (patientEntity == null) {
-            throw new IllegalArgumentException("Patient non trouvé");
+        PatientEntity patientEntity = null;
+        if (courseDto.getPatientId() != null) {
+            patientEntity = PatientEntity.findById(courseDto.getPatientId());
+            if (patientEntity == null) {
+                throw new IllegalArgumentException("Patient non trouvé");
+            }
         }
         
         // Calculer les coordonnées géographiques, la distance et le temps estimé
@@ -132,7 +131,9 @@ public class CourseService {
         // Création de l'entité course et association avec le planning existant
         CoursesEntity courseEntity = courseMapper.toEntity(courseDto);
         courseEntity.setPlanning(planning); // Associer le planning existant
-        courseEntity.setPatient(patientEntity); // Associer le patient existant
+        if (patientEntity != null) {
+            courseEntity.setPatient(patientEntity); // Associer le patient seulement s'il existe
+        }
         courseEntity.setEntreprise(administrateur.getEntreprise()); // Ajout de l'entreprise
         entityManager.persist(courseEntity);
     
