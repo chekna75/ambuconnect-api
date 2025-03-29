@@ -163,8 +163,15 @@ public class AdministrateurService {
      * Crée un planning par défaut pour un nouveau chauffeur
      */
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public void creerPlanningParDefaut(ChauffeurEntity chauffeur, UUID entrepriseId) {
+    protected void creerPlanningParDefaut(ChauffeurEntity chauffeur, UUID entrepriseId) {
         try {
+            // S'assurer que le chauffeur est bien en base de données
+            ChauffeurEntity chauffeurFromDB = ChauffeurEntity.findById(chauffeur.getId());
+            if (chauffeurFromDB == null) {
+                LOG.error("Impossible de trouver le chauffeur en base de données: " + chauffeur.getEmail());
+                return;
+            }
+            
             // Récupérer l'administrateur de l'entreprise (premier trouvé)
             AdministrateurEntity admin = AdministrateurEntity.find("entreprise.id", entrepriseId).firstResult();
             if (admin == null) {
@@ -174,7 +181,7 @@ public class AdministrateurService {
             
             // Créer un DTO de planning
             PlannigDto planningDto = new PlannigDto();
-            planningDto.setChauffeurId(chauffeur.getId());
+            planningDto.setChauffeurId(chauffeurFromDB.getId());
             planningDto.setDate(LocalDate.now());
             planningDto.setHeureDebut(LocalTime.of(8, 0)); // 8h00
             planningDto.setHeureFin(LocalTime.of(17, 0));  // 17h00
@@ -231,6 +238,10 @@ public class AdministrateurService {
             // Persister l'entité
             entityManager.persist(nouveauChauffeur);
             entityManager.flush(); // Forcer la persistence pour détecter les erreurs potentielles
+            
+            // Forcer le commit de la transaction pour que le chauffeur soit visible dans la nouvelle transaction
+            entityManager.getTransaction().commit();
+            entityManager.getTransaction().begin();
             
             LOG.info("Chauffeur créé avec succès: " + chauffeurDto.getEmail());
             
