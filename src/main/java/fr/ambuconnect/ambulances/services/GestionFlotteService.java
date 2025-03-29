@@ -50,7 +50,7 @@ public class GestionFlotteService {
     }
 
     @Transactional
-    public MaintenanceDTO addMaintenance(UUID vehicleId, CreateMaintenanceDTO maintenanceDTO) {
+    public MaintenanceDTO addMaintenance(UUID vehicleId, MaintenanceDTO maintenanceDTO) {
         VehicleEntity vehicle = VehicleEntity.findById(vehicleId);
         if (vehicle == null) {
             throw new NotFoundException("Véhicule non trouvé");

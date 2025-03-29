@@ -73,7 +73,7 @@ public class GestionFlotteRessource {
     @Path("/vehicles/{vehicleId}/maintenances")
     public Response addMaintenance(
             @PathParam("vehicleId") UUID vehicleId,
-            CreateMaintenanceDTO maintenanceDTO) {
+            MaintenanceDTO maintenanceDTO) {
         MaintenanceDTO maintenance = gestionFlotteService.addMaintenance(vehicleId, maintenanceDTO);
         return Response.status(Response.Status.CREATED).entity(maintenance).build();
     }
