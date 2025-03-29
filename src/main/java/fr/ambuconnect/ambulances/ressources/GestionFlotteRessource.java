@@ -158,4 +158,27 @@ public class GestionFlotteRessource {
                 .build();
         }
     }
+
+    @PUT
+    @Path("/equipments/{id}")
+    public Response updateEquipment(@PathParam("id") UUID id, EquipmentDTO equipmentDTO) {
+        try {
+            EquipmentDTO updatedEquipment = gestionFlotteService.updateEquipment(id, equipmentDTO);
+            return Response.ok(updatedEquipment).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la mise à jour de l'équipement", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Une erreur interne est survenue lors de la mise à jour de l'équipement"))
+                .build();
+        }
+    }
+
+    @DELETE
+    @Path("/equipments/{id}")
+    public Response deleteEquipment(@PathParam("id") UUID id) {
+        gestionFlotteService.deleteEquipment(id);
+        return Response.noContent().build();
+    }  
 }

@@ -175,4 +175,31 @@ public class GestionFlotteService {
         vehicle.persist();
         return fleetMapper.toDto(vehicle);
     }
+
+    @Transactional
+    public EquipmentDTO updateEquipment(UUID id, EquipmentDTO equipmentDTO) {
+        EquipmentEntity equipment = EquipmentEntity.findById(id);
+        if (equipment == null) {
+            throw new NotFoundException("Équipement non trouvé");
+        }
+
+        equipment.setNom(equipmentDTO.getNom());
+        equipment.setType(equipmentDTO.getType());
+        equipment.setDateCreation(equipmentDTO.getDateCreation());
+        equipment.setDateModification(equipmentDTO.getDateModification());
+        equipment.setModifiePar(equipmentDTO.getModifiePar());
+        
+        equipment.persist();
+        return fleetMapper.toDto(equipment);
+    }
+
+    @Transactional
+    public void deleteEquipment(UUID id) {
+        EquipmentEntity equipment = EquipmentEntity.findById(id);
+        if (equipment == null) {
+            throw new NotFoundException("Équipement non trouvé");
+        }   
+        equipment.delete();
+    }
 }
+
