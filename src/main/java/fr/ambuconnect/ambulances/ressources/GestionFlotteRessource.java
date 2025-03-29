@@ -142,4 +142,20 @@ public class GestionFlotteRessource {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
     }
+
+    @PUT
+    @Path("/vehicles/{id}")
+    public Response updateVehicle(@PathParam("id") UUID id, VehicleDTO vehicleDTO) {
+        try {
+            VehicleDTO updatedVehicle = gestionFlotteService.updateVehicle(id, vehicleDTO);
+            return Response.ok(updatedVehicle).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la mise à jour du véhicule", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Une erreur interne est survenue lors de la mise à jour du véhicule"))
+                .build();
+        }
+    }
 }

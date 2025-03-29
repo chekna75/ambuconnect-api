@@ -158,4 +158,21 @@ public class GestionFlotteService {
             .map(fleetMapper::toDto)
             .toList();
     }
+
+    @Transactional
+    public VehicleDTO updateVehicle(UUID id, VehicleDTO vehicleDTO) {
+        VehicleEntity vehicle = VehicleEntity.findById(id);
+        if (vehicle == null) {
+            throw new NotFoundException("Véhicule non trouvé");
+        }
+
+        vehicle.setImmatriculation(vehicleDTO.getImmatriculation());
+        vehicle.setMarque(vehicleDTO.getMarque());
+        vehicle.setStatut(vehicleDTO.getStatut());
+        vehicle.setDateMiseEnService(vehicleDTO.getDateMiseEnService());
+        vehicle.setModel(vehicleDTO.getModel());
+        
+        vehicle.persist();
+        return fleetMapper.toDto(vehicle);
+    }
 }
