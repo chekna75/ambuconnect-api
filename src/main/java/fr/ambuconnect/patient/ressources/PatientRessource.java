@@ -30,17 +30,6 @@ public class PatientRessource {
         this.patientService = patientService;
     }
 
-    @POST
-    @Path("/{entrepriseId}")
-    public Response creePatient(PatientDto patient, @PathParam("entrepriseId") UUID entrepriseId) {
-        try {
-            PatientDto createdPatient = patientService.creePatient(patient, entrepriseId);
-            return Response.status(Response.Status.CREATED).entity(createdPatient).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
-        }
-    }
-
     @GET
     @Path("/{id}")
     public Response getPatientById(@PathParam("id") UUID id) {
