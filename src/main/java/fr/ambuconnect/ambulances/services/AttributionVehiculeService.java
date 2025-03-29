@@ -18,6 +18,12 @@ public class AttributionVehiculeService {
 
     @Transactional
     public AttributionVehiculeEntity attribuerVehicule(UUID vehiculeId, UUID chauffeurId, LocalDate dateAttribution, Integer kilometrageDepart) {
+        // Vérifications préalables hors transaction
+        if (isVehiculeDejaAttribue(vehiculeId, dateAttribution)) {
+            throw new WebApplicationException("Le véhicule est déjà attribué pour cette date", Response.Status.CONFLICT);
+        }
+
+        // Récupération et vérification des entités
         VehicleEntity vehicule = VehicleEntity.findById(vehiculeId);
         if (vehicule == null) {
             throw new WebApplicationException("Véhicule non trouvé", Response.Status.BAD_REQUEST);
@@ -28,20 +34,20 @@ public class AttributionVehiculeService {
             throw new WebApplicationException("Chauffeur non trouvé", Response.Status.BAD_REQUEST);
         }
 
-        // Vérifier si le véhicule n'est pas déjà attribué pour cette date
-        if (isVehiculeDejaAttribue(vehiculeId, dateAttribution)) {
-            throw new WebApplicationException("Le véhicule est déjà attribué pour cette date", Response.Status.CONFLICT);
+        try {
+            // Création et persistance de l'attribution
+            AttributionVehiculeEntity attribution = new AttributionVehiculeEntity();
+            attribution.setVehicule(vehicule);
+            attribution.setChauffeur(chauffeur);
+            attribution.setDateAttribution(dateAttribution);
+            attribution.setKilometrageDepart(kilometrageDepart);
+            attribution.setDateCreation(LocalDateTime.now());
+            
+            attribution.persist();
+            return attribution;
+        } catch (Exception e) {
+            throw new WebApplicationException("Erreur lors de la création de l'attribution", Response.Status.INTERNAL_SERVER_ERROR);
         }
-
-        AttributionVehiculeEntity attribution = new AttributionVehiculeEntity();
-        attribution.setVehicule(vehicule);
-        attribution.setChauffeur(chauffeur);
-        attribution.setDateAttribution(dateAttribution);
-        attribution.setKilometrageDepart(kilometrageDepart);
-        attribution.setDateCreation(LocalDateTime.now());
-        
-        attribution.persist();
-        return attribution;
     }
 
     @Transactional

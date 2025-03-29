@@ -38,10 +38,19 @@ public class AttributionVehiculeRessource {
                 dto.getKilometrageDepart()
             );
             return Response.status(Response.Status.CREATED).entity(attribution).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST)
+        } catch (WebApplicationException e) {
+            // Conserver le statut HTTP de l'exception
+            return Response.status(e.getResponse().getStatus())
                 .entity(Map.of(
                     "error", "Erreur lors de l'attribution du véhicule",
+                    "message", e.getMessage()
+                ))
+                .build();
+        } catch (Exception e) {
+            // Pour les autres types d'erreurs, retourner une erreur 500
+            return Response.serverError()
+                .entity(Map.of(
+                    "error", "Erreur interne lors de l'attribution du véhicule",
                     "message", e.getMessage()
                 ))
                 .build();
