@@ -37,7 +37,7 @@ public class AttributionVehiculeRessource {
                 dto.getDateAttribution(),
                 dto.getKilometrageDepart()
             );
-            return Response.status(Response.Status.CREATED).entity(attribution).build();
+            return Response.ok(attribution).build();
         } catch (WebApplicationException e) {
             // Conserver le statut HTTP de l'exception
             return Response.status(e.getResponse().getStatus())
