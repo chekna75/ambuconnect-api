@@ -163,7 +163,7 @@ public class AdministrateurService {
      * Crée un planning par défaut pour un nouveau chauffeur
      */
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    private void creerPlanningParDefaut(ChauffeurEntity chauffeur, UUID entrepriseId) {
+    public void creerPlanningParDefaut(ChauffeurEntity chauffeur, UUID entrepriseId) {
         try {
             // Récupérer l'administrateur de l'entreprise (premier trouvé)
             AdministrateurEntity admin = AdministrateurEntity.find("entreprise.id", entrepriseId).firstResult();
