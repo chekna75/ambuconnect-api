@@ -160,11 +160,39 @@ public class AdministrateurService {
     }
 
     /**
+     * Crée un planning par défaut pour un nouveau chauffeur
+     */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    private void creerPlanningParDefaut(ChauffeurEntity chauffeur, UUID entrepriseId) {
+        try {
+            // Récupérer l'administrateur de l'entreprise (premier trouvé)
+            AdministrateurEntity admin = AdministrateurEntity.find("entreprise.id", entrepriseId).firstResult();
+            if (admin == null) {
+                LOG.error("Aucun administrateur trouvé pour l'entreprise: " + entrepriseId);
+                return;
+            }
+            
+            // Créer un DTO de planning
+            PlannigDto planningDto = new PlannigDto();
+            planningDto.setChauffeurId(chauffeur.getId());
+            planningDto.setDate(LocalDate.now());
+            planningDto.setHeureDebut(LocalTime.of(8, 0)); // 8h00
+            planningDto.setHeureFin(LocalTime.of(17, 0));  // 17h00
+            planningDto.setStatut(StatutEnum.EN_ATTENTE);
+            
+            // Appeler le service de planning pour créer le planning
+            planningService.creerPlanning(planningDto, admin.getId());
+            
+            LOG.info("Planning par défaut créé pour le chauffeur: " + chauffeur.getEmail());
+        } catch (Exception e) {
+            // Logger l'erreur mais ne pas la propager pour ne pas annuler la création du chauffeur
+            LOG.error("Erreur lors de la création du planning par défaut pour le chauffeur " + chauffeur.getEmail(), e);
+            // Ne pas throw l'exception pour éviter d'annuler la transaction principale
+        }
+    }
+
+    /**
      * Création d'un chauffeur
-     * 
-     * @param chauffeurDto
-     * @return
-     * @throws Exception
      */
     @Transactional
     public ChauffeurDto createChauffeur(ChauffeurDto chauffeurDto) throws Exception {
@@ -206,44 +234,19 @@ public class AdministrateurService {
             
             LOG.info("Chauffeur créé avec succès: " + chauffeurDto.getEmail());
             
-            // Créer un planning par défaut pour le chauffeur
-            creerPlanningParDefaut(nouveauChauffeur, chauffeurDto.getEntrepriseId());
+            try {
+                // Créer un planning par défaut pour le chauffeur dans une nouvelle transaction
+                creerPlanningParDefaut(nouveauChauffeur, chauffeurDto.getEntrepriseId());
+            } catch (Exception e) {
+                LOG.error("Erreur lors de la création du planning par défaut", e);
+                // Ne pas bloquer la création du chauffeur si la création du planning échoue
+            }
             
             // Retourner le DTO du chauffeur créé
             return chauffeurMapper.chauffeurToDto(nouveauChauffeur);
         } catch (PersistenceException e) {
             LOG.error("Erreur lors de la création du chauffeur", e);
             throw new InternalServerErrorException("Erreur lors de la création du chauffeur: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Crée un planning par défaut pour un nouveau chauffeur
-     */
-    private void creerPlanningParDefaut(ChauffeurEntity chauffeur, UUID entrepriseId) {
-        try {
-            // Récupérer l'administrateur de l'entreprise (premier trouvé)
-            AdministrateurEntity admin = AdministrateurEntity.find("entreprise.id", entrepriseId).firstResult();
-            if (admin == null) {
-                LOG.error("Aucun administrateur trouvé pour l'entreprise: " + entrepriseId);
-                return;
-            }
-            
-            // Créer un DTO de planning
-            PlannigDto planningDto = new PlannigDto();
-            planningDto.setChauffeurId(chauffeur.getId());
-            planningDto.setDate(LocalDate.now());
-            planningDto.setHeureDebut(LocalTime.of(8, 0)); // 8h00
-            planningDto.setHeureFin(LocalTime.of(17, 0));  // 17h00
-            planningDto.setStatut(StatutEnum.EN_ATTENTE);
-            
-            // Appeler le service de planning pour créer le planning
-            planningService.creerPlanning(planningDto, admin.getId());
-            
-            LOG.info("Planning par défaut créé pour le chauffeur: " + chauffeur.getEmail());
-        } catch (Exception e) {
-            // Ne pas bloquer la création du chauffeur si la création du planning échoue
-            LOG.error("Erreur lors de la création du planning par défaut", e);
         }
     }
 
