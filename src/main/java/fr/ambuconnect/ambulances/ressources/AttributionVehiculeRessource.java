@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
+import java.time.format.DateTimeParseException;
 
 import fr.ambuconnect.ambulances.dto.AttributionVehiculeDTO;
 import fr.ambuconnect.ambulances.entity.AttributionVehiculeEntity;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
+import fr.ambuconnect.ambulances.dto.AttributionVehiculeResponseDTO;
 
 @Path("/api/attributions-vehicules")
 @Produces(MediaType.APPLICATION_JSON)
@@ -75,11 +77,20 @@ public class AttributionVehiculeRessource {
 
     @GET
     @Path("/jour/{date}")
-    @AdminOnly
     public Response getAttributionsJour(@PathParam("date") String date) {
-        List<AttributionVehiculeEntity> attributions = attributionService
-            .getAttributionsJour(LocalDate.parse(date));
-        return Response.ok(attributions).build();
+        try {
+            LocalDate localDate = LocalDate.parse(date);
+            List<AttributionVehiculeResponseDTO> attributions = attributionService.getAttributionsJour(localDate);
+            return Response.ok(attributions).build();
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity("Format de date invalide. Utilisez le format YYYY-MM-DD")
+                .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity("Une erreur est survenue lors de la récupération des attributions")
+                .build();
+        }
     }
 
     @GET

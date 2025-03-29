@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.jboss.logging.Logger;
 
+import fr.ambuconnect.ambulances.dto.AttributionVehiculeResponseDTO;
 import fr.ambuconnect.ambulances.entity.AttributionVehiculeEntity;
 import fr.ambuconnect.ambulances.entity.VehicleEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
@@ -15,6 +17,8 @@ import jakarta.ws.rs.core.Response;
 
 @ApplicationScoped
 public class AttributionVehiculeService {
+
+    private static final Logger LOG = Logger.getLogger(AttributionVehiculeService.class);
 
     @Transactional
     public AttributionVehiculeEntity attribuerVehicule(UUID vehiculeId, UUID chauffeurId, LocalDate dateAttribution, Integer kilometrageDepart) {
@@ -63,8 +67,68 @@ public class AttributionVehiculeService {
         return attribution;
     }
 
-    public List<AttributionVehiculeEntity> getAttributionsJour(LocalDate date) {
-        return AttributionVehiculeEntity.list("dateAttribution", date);
+    private AttributionVehiculeResponseDTO mapToResponseDto(AttributionVehiculeEntity entity) {
+        try {
+            LOG.info("Début de la conversion de l'entité en DTO");
+            if (entity == null) {
+                LOG.warn("L'entité à convertir est null");
+                return null;
+            }
+
+            AttributionVehiculeResponseDTO dto = new AttributionVehiculeResponseDTO();
+            
+            LOG.debug("Attribution ID: " + entity.getId());
+            dto.setId(entity.getId());
+            
+            if (entity.getVehicule() != null) {
+                LOG.debug("Véhicule trouvé: " + entity.getVehicule().getId());
+                dto.setVehiculeId(entity.getVehicule().getId());
+                dto.setImmatriculationVehicule(entity.getVehicule().getImmatriculation());
+                dto.setMarqueVehicule(entity.getVehicule().getMarque());
+                dto.setModeleVehicule(entity.getVehicule().getModel());
+            } else {
+                LOG.warn("Le véhicule est null pour l'attribution " + entity.getId());
+            }
+            
+            if (entity.getChauffeur() != null) {
+                LOG.debug("Chauffeur trouvé: " + entity.getChauffeur().getId());
+                dto.setChauffeurId(entity.getChauffeur().getId());
+                dto.setNomChauffeur(entity.getChauffeur().getNom());
+                dto.setPrenomChauffeur(entity.getChauffeur().getPrenom());
+            } else {
+                LOG.warn("Le chauffeur est null pour l'attribution " + entity.getId());
+            }
+            
+            dto.setDateAttribution(entity.getDateAttribution());
+            dto.setKilometrageDepart(entity.getKilometrageDepart());
+            dto.setKilometrageRetour(entity.getKilometrageRetour());
+            dto.setDateCreation(entity.getDateCreation());
+            dto.setCommentaire(entity.getCommentaire());
+            
+            LOG.info("Conversion en DTO terminée avec succès");
+            return dto;
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la conversion en DTO", e);
+            throw new WebApplicationException("Erreur lors de la conversion des données", Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public List<AttributionVehiculeResponseDTO> getAttributionsJour(LocalDate date) {
+        try {
+            LOG.info("Recherche des attributions pour la date: " + date);
+            List<AttributionVehiculeEntity> attributions = AttributionVehiculeEntity.list("dateAttribution", date);
+            LOG.debug("Nombre d'attributions trouvées: " + attributions.size());
+            
+            List<AttributionVehiculeResponseDTO> dtos = attributions.stream()
+                .map(this::mapToResponseDto)
+                .collect(java.util.stream.Collectors.toList());
+                
+            LOG.info("Conversion des attributions en DTOs terminée");
+            return dtos;
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération des attributions", e);
+            throw new WebApplicationException("Erreur lors de la récupération des attributions", Response.Status.INTERNAL_SERVER_ERROR);
+        }
     }
 
     public List<AttributionVehiculeEntity> getAttributionsChauffeur(UUID chauffeurId) {
