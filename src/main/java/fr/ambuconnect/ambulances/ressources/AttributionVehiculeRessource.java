@@ -30,13 +30,22 @@ public class AttributionVehiculeRessource {
     @POST
     @Path("/attribuer")
     public Response attribuerVehicule(AttributionVehiculeDTO dto) {
-        AttributionVehiculeEntity attribution = attributionService.attribuerVehicule(
-            dto.getVehiculeId(),
-            dto.getChauffeurId(),
-            dto.getDateAttribution(),
-            dto.getKilometrageDepart()
-        );
-        return Response.status(Response.Status.CREATED).entity(attribution).build();
+        try {
+            AttributionVehiculeEntity attribution = attributionService.attribuerVehicule(
+                dto.getVehiculeId(),
+                dto.getChauffeurId(),
+                dto.getDateAttribution(),
+                dto.getKilometrageDepart()
+            );
+            return Response.status(Response.Status.CREATED).entity(attribution).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of(
+                    "error", "Erreur lors de l'attribution du véhicule",
+                    "message", e.getMessage()
+                ))
+                .build();
+        }
     }
 
     
