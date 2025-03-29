@@ -31,6 +31,7 @@ public class PatientRessource {
     }
 
     @POST
+    @Path("/{entrepriseId}")
     public Response creePatient(PatientDto patient, @PathParam("entrepriseId") UUID entrepriseId) {
         try {
             PatientDto createdPatient = patientService.creePatient(patient, entrepriseId);
