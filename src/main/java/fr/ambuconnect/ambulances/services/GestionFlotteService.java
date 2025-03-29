@@ -64,7 +64,7 @@ public class GestionFlotteService {
     }
 
     @Transactional
-    public EquipmentDTO addEquipment(UUID vehicleId, CreateEquipmentDTO equipmentDTO) {
+    public EquipmentDTO addEquipment(UUID vehicleId, EquipmentDTO equipmentDTO) {
         VehicleEntity vehicle = VehicleEntity.findById(vehicleId);
         if (vehicle == null) {
             throw new NotFoundException("Véhicule non trouvé");

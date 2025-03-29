@@ -89,7 +89,7 @@ public class GestionFlotteRessource {
     @Path("/vehicles/{vehicleId}/equipments")
     public Response addEquipment(
             @PathParam("vehicleId") UUID vehicleId,
-            CreateEquipmentDTO equipmentDTO) {
+            EquipmentDTO equipmentDTO) {
         EquipmentDTO equipment = gestionFlotteService.addEquipment(vehicleId, equipmentDTO);
         return Response.status(Response.Status.CREATED).entity(equipment).build();
     }

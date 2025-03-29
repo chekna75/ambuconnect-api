@@ -20,4 +20,10 @@ public class CreateEquipmentDTO {
     private LocalDate dateExpiration;
     private Integer quantite;
     private UUID vehicleId;
+    private LocalDate derniereMaintenance;
+    private LocalDate prochaineMaintenance;
+    private Integer frequenceMaintenanceJours;
+    private Integer seuilAlerteExpirationJours;
+    private String modifiePar;
+    private UUID ambulanceId;
 }
