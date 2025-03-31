@@ -3,6 +3,8 @@ package fr.ambuconnect.ambulances.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -46,6 +48,7 @@ public class FuelConsumptionEntity extends PanacheEntityBase{
     
     @ManyToOne
     @JoinColumn(name = "vehicle_id", nullable = false)
+    @JsonBackReference
     private VehicleEntity vehicle;
     
 }

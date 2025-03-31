@@ -13,6 +13,8 @@ import jakarta.persistence.ManyToOne;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
@@ -49,9 +51,11 @@ public class VehicleEntity extends PanacheEntityBase{
     private String statut;
     
     @OneToMany(mappedBy = "vehicle")
+    @JsonManagedReference
     private List<MaintenanceEntity> maintenances;
     
     @OneToMany(mappedBy = "vehicle")
+    @JsonManagedReference
     private List<FuelConsumptionEntity> fuelConsumptions;
 
     @ManyToOne
