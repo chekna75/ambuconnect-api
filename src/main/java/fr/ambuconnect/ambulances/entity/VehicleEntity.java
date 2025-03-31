@@ -63,5 +63,8 @@ public class VehicleEntity extends PanacheEntityBase{
     @JoinColumn(name = "ambulance_id")
     @JsonBackReference
     private AmbulanceEntity ambulance;
-    
+
+    @OneToMany(mappedBy = "vehicule")
+    @JsonManagedReference(value = "vehicule-attribution")
+    private List<AttributionVehiculeEntity> attributions;
 }

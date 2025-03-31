@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
@@ -22,10 +23,12 @@ public class AttributionVehiculeEntity extends PanacheEntityBase {
 
     @ManyToOne
     @JoinColumn(name = "vehicule_id", nullable = false)
+    @JsonBackReference(value = "vehicule-attribution")
     private VehicleEntity vehicule;
 
     @ManyToOne
     @JoinColumn(name = "chauffeur_id", nullable = false)
+    @JsonBackReference(value = "chauffeur-attribution")
     private ChauffeurEntity chauffeur;
 
     @Column(name = "date_attribution", nullable = false)

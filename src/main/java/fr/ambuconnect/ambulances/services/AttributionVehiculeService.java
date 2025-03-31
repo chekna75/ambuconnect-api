@@ -172,6 +172,8 @@ public class AttributionVehiculeService {
             throw new BadRequestException("L'identifiant du chauffeur ne peut pas être null");
         }
         
+        LOG.info("Recherche d'attribution pour le chauffeur " + chauffeurId + " à la date: " + date);
+        
         return AttributionVehiculeEntity
             .find("chauffeur.id = ?1 and dateAttribution = ?2", 
                   chauffeurId, date)

@@ -13,6 +13,7 @@ import fr.ambuconnect.rh.entity.ContratsEntity;
 import fr.ambuconnect.rh.entity.DemandeCongeEntity;
 import fr.ambuconnect.rh.enums.TypeContratEnum;
 import fr.ambuconnect.administrateur.role.Entity.RoleEntity;
+import fr.ambuconnect.ambulances.entity.AttributionVehiculeEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -112,6 +113,10 @@ public class ChauffeurEntity extends PanacheEntityBase{
     @OneToMany(mappedBy = "chauffeur", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<PlannnigEntity> plannings;
+
+    @OneToMany(mappedBy = "chauffeur")
+    @JsonManagedReference(value = "chauffeur-attribution")
+    private List<AttributionVehiculeEntity> attributions;
     
     public static ChauffeurEntity findByEmail(String email) {
         return find("email", email).firstResult();
