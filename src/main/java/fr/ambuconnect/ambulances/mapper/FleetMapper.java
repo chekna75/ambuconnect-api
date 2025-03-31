@@ -12,6 +12,7 @@ import fr.ambuconnect.ambulances.dto.EquipmentDTO;
 import fr.ambuconnect.ambulances.dto.FuelConsumptionDTO;
 import fr.ambuconnect.ambulances.dto.MaintenanceDTO;
 import fr.ambuconnect.ambulances.dto.VehicleDTO;
+import fr.ambuconnect.ambulances.dto.VehicleMaintenanceDTO;
 import fr.ambuconnect.ambulances.entity.EquipmentEntity;
 import fr.ambuconnect.ambulances.entity.FuelConsumptionEntity;
 import fr.ambuconnect.ambulances.entity.MaintenanceEntity;
@@ -40,5 +41,7 @@ public interface FleetMapper {
     List<MaintenanceDTO> toMaintenanceDtoList(List<MaintenanceEntity> entities);
     List<EquipmentDTO> toEquipmentDtoList(List<EquipmentEntity> entities);
     List<FuelConsumptionDTO> toFuelConsumptionDtoList(List<FuelConsumptionEntity> entities);
+
+    VehicleMaintenanceDTO toVehicleMaintenanceDto(VehicleEntity vehicle);
 }
 

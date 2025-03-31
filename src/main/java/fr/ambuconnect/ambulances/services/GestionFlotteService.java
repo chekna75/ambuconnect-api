@@ -222,7 +222,7 @@ public class GestionFlotteService {
     }
 
     @Transactional
-    public List<VehicleDTO> getVehiclesInMaintenanceByAmbulance(UUID ambulanceId) {
+    public List<VehicleMaintenanceDTO> getVehiclesInMaintenanceByAmbulance(UUID ambulanceId) {
         AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(ambulanceId);
         if (ambulance == null) {
             throw new NotFoundException("Ambulance non trouvée");
@@ -230,7 +230,7 @@ public class GestionFlotteService {
         
         return ambulance.getVehicules().stream()
             .filter(vehicle -> !vehicle.getMaintenances().isEmpty())
-            .map(fleetMapper::toDto)
+            .map(fleetMapper::toVehicleMaintenanceDto)
             .toList();
     }
 }
