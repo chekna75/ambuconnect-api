@@ -198,4 +198,23 @@ public class GestionFlotteRessource {
                 .build();
         }
     }
+
+    @GET
+    @Path("/ambulances/{ambulanceId}/vehicles-in-maintenance")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getVehiclesInMaintenanceByAmbulance(@PathParam("ambulanceId") UUID ambulanceId) {
+        try {
+            List<VehicleDTO> vehicles = gestionFlotteService.getVehiclesInMaintenanceByAmbulance(ambulanceId);
+            return Response.ok(vehicles).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération des véhicules en maintenance", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Une erreur est survenue lors de la récupération des véhicules en maintenance"))
+                .build();
+        }
+    }
 }

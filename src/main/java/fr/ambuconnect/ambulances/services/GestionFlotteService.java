@@ -220,5 +220,18 @@ public class GestionFlotteService {
         vehicle.persist();
         return fleetMapper.toDto(vehicle);
     }
+
+    @Transactional
+    public List<VehicleDTO> getVehiclesInMaintenanceByAmbulance(UUID ambulanceId) {
+        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
+        if (ambulance == null) {
+            throw new NotFoundException("Ambulance non trouvée");
+        }
+        
+        return ambulance.getVehicules().stream()
+            .filter(vehicle -> !vehicle.getMaintenances().isEmpty())
+            .map(fleetMapper::toDto)
+            .toList();
+    }
 }
 
