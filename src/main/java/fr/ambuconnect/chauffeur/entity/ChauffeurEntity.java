@@ -4,6 +4,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import fr.ambuconnect.planning.entity.PlannnigEntity;
 import fr.ambuconnect.rh.entity.ContratsEntity;
@@ -95,15 +98,19 @@ public class ChauffeurEntity extends PanacheEntityBase{
 
     @ManyToOne
     @JoinColumn(name = "entreprise_id")
+    @JsonBackReference
     private EntrepriseEntity entreprise;
 
     @OneToMany(mappedBy = "chauffeur", cascade = CascadeType.ALL)
+    @JsonManagedReference
     public List<ContratsEntity> contrats;
 
     @OneToMany(mappedBy = "chauffeur", cascade = CascadeType.ALL)
+    @JsonManagedReference
     public List<DemandeCongeEntity> demandesConge;
 
     @OneToMany(mappedBy = "chauffeur", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<PlannnigEntity> plannings;
     
     public static ChauffeurEntity findByEmail(String email) {

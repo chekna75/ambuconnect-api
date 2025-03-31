@@ -3,6 +3,8 @@ package fr.ambuconnect.entreprise.entity;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.CascadeType;
@@ -50,6 +52,7 @@ public class EntrepriseEntity extends PanacheEntityBase {
     private String email;
 
     @OneToMany(mappedBy = "entreprise", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<ChauffeurEntity> chauffeurs;
 
 }

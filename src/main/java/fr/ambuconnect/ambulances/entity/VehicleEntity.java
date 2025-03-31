@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -60,6 +61,7 @@ public class VehicleEntity extends PanacheEntityBase{
 
     @ManyToOne
     @JoinColumn(name = "ambulance_id")
+    @JsonBackReference
     private AmbulanceEntity ambulance;
     
 }

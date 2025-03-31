@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.ArrayList;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -72,9 +74,11 @@ public class AmbulanceEntity extends PanacheEntityBase{
     private EntrepriseEntity entreprise;
 
     @OneToMany(mappedBy = "ambulance", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<EquipmentEntity> equipements;
 
     @OneToMany(mappedBy = "ambulance", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<VehicleEntity> vehicules = new ArrayList<>();
 
     public static AmbulanceEntity findByImmatriculation(String immatriculation){

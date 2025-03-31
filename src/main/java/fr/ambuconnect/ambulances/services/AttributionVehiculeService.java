@@ -14,11 +14,17 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.inject.Inject;
+import io.quarkus.security.identity.SecurityIdentity;
 
 @ApplicationScoped
 public class AttributionVehiculeService {
 
     private static final Logger LOG = Logger.getLogger(AttributionVehiculeService.class);
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     @Transactional
     public AttributionVehiculeEntity attribuerVehicule(UUID vehiculeId, UUID chauffeurId, LocalDate dateAttribution, Integer kilometrageDepart) {
@@ -116,6 +122,8 @@ public class AttributionVehiculeService {
     public List<AttributionVehiculeResponseDTO> getAttributionsJour(LocalDate date) {
         try {
             LOG.info("Recherche des attributions pour la date: " + date);
+            
+            // Récupérer toutes les attributions pour la date donnée
             List<AttributionVehiculeEntity> attributions = AttributionVehiculeEntity.list("dateAttribution", date);
             LOG.debug("Nombre d'attributions trouvées: " + attributions.size());
             
