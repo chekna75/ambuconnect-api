@@ -75,7 +75,9 @@ public class AmbulanceService {
         // Récupère uniquement les ambulances de l'entreprise spécifiée
         List<AmbulanceEntity> ambulances = AmbulanceEntity.list("entrepriseId", entrepriseId);
         
-        return mapToDtoList(ambulances);
+        return ambulances.stream()
+            .map(amublancesMapper::toDto)
+            .collect(Collectors.toList());
     }
 
     @Transactional
