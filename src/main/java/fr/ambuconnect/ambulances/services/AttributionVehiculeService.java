@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.jboss.logging.Logger;
 
 import fr.ambuconnect.ambulances.dto.AttributionVehiculeResponseDTO;
@@ -139,24 +141,29 @@ public class AttributionVehiculeService {
         }
     }
 
-    public List<AttributionVehiculeEntity> getAttributionsChauffeur(UUID chauffeurId) {
-        return AttributionVehiculeEntity.list("chauffeur.id", chauffeurId);
+    public List<AttributionVehiculeResponseDTO> getAttributionsChauffeur(UUID chauffeurId) {
+        List<AttributionVehiculeEntity> attributions = AttributionVehiculeEntity.list("chauffeur.id", chauffeurId);
+        return attributions.stream()
+            .map(this::mapToResponseDto)
+            .collect(Collectors.toList());
     }
 
     private boolean isVehiculeDejaAttribue(UUID vehiculeId, LocalDate date) {
         return AttributionVehiculeEntity.count("vehicule.id = ?1 and dateAttribution = ?2", vehiculeId, date) > 0;
     }
 
-    public AttributionVehiculeEntity getAttributionChauffeurJour(String email, LocalDate date) {
+    public AttributionVehiculeResponseDTO getAttributionChauffeurJour(String email, LocalDate date) {
         ChauffeurEntity chauffeur = ChauffeurEntity.find("email", email).firstResult();
         if (chauffeur == null) {
             throw new NotFoundException("Chauffeur non trouvé");
         }
         
-        return AttributionVehiculeEntity
+        AttributionVehiculeEntity attribution = AttributionVehiculeEntity
             .find("chauffeur.id = ?1 and dateAttribution = ?2", 
                   chauffeur.getId(), date)
             .firstResult();
+            
+        return mapToResponseDto(attribution);
     }
     
     /**
@@ -167,16 +174,18 @@ public class AttributionVehiculeService {
      * @param date La date d'attribution à vérifier
      * @return L'attribution correspondante ou null si aucune n'existe
      */
-    public AttributionVehiculeEntity getAttributionChauffeurJour(UUID chauffeurId, LocalDate date) {
+    public AttributionVehiculeResponseDTO getAttributionChauffeurJour(UUID chauffeurId, LocalDate date) {
         if (chauffeurId == null) {
             throw new BadRequestException("L'identifiant du chauffeur ne peut pas être null");
         }
         
         LOG.info("Recherche d'attribution pour le chauffeur " + chauffeurId + " à la date: " + date);
         
-        return AttributionVehiculeEntity
+        AttributionVehiculeEntity attribution = AttributionVehiculeEntity
             .find("chauffeur.id = ?1 and dateAttribution = ?2", 
                   chauffeurId, date)
             .firstResult();
+            
+        return mapToResponseDto(attribution);
     }
 } 

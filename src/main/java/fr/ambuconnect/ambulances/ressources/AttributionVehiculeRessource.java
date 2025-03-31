@@ -96,7 +96,7 @@ public class AttributionVehiculeRessource {
     @GET
     @Path("/chauffeur/{chauffeurId}")
     public Response getAttributionsChauffeur(@PathParam("chauffeurId") UUID chauffeurId) {
-        List<AttributionVehiculeEntity> attributions = attributionService
+        List<AttributionVehiculeResponseDTO> attributions = attributionService
             .getAttributionsChauffeur(chauffeurId);
         return Response.ok(attributions).build();
     }
@@ -120,7 +120,7 @@ public class AttributionVehiculeRessource {
             }
             
             // Récupérer l'attribution de véhicule pour aujourd'hui
-            AttributionVehiculeEntity attribution = attributionService.getAttributionChauffeurJour(
+            AttributionVehiculeResponseDTO attribution = attributionService.getAttributionChauffeurJour(
                 chauffeur.getId(), LocalDate.now());
                 
             if (attribution == null) {
