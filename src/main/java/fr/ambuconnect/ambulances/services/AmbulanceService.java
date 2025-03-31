@@ -308,6 +308,13 @@ public class AmbulanceService {
         dto.setAmbulanceId(entity.getAmbulance().getId());
         dto.setMarque(entity.getMarque());
         dto.setStatut(entity.getStatut());
+        dto.setKilometrage(entity.getKilometrage());
+        dto.setNiveauCarburant(entity.getNiveauCarburant());
+        dto.setConditionExterieureNote(entity.getConditionExterieureNote());
+        dto.setConditionExterieureDetails(entity.getConditionExterieureDetails());
+        dto.setConditionInterieureNote(entity.getConditionInterieureNote());
+        dto.setConditionInterieureDetails(entity.getConditionInterieureDetails());
+        dto.setInventaire(entity.getInventaire());
         return dto;
     }
 
