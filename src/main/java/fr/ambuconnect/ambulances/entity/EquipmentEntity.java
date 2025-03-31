@@ -67,6 +67,9 @@ public class EquipmentEntity extends PanacheEntityBase{
     
     @Column(name = "modifie_par", nullable = false, length = 50)
     private String modifiePar;
+
+    @Column(name = "vehicule_id", nullable = true)
+    private UUID vehiculeId;
     
     @ManyToOne
     @JoinColumn(name = "ambulance_id")

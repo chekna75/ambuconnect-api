@@ -29,4 +29,5 @@ public class EquipmentDTO {
     private LocalDateTime dateCreation;
     private LocalDateTime dateModification;
     private String modifiePar;
+    private UUID vehiculeId;
 }

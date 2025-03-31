@@ -213,14 +213,14 @@ public class AmbulanceService {
             .collect(Collectors.toList());
     }
 
-    public List<EquipmentDTO> getEquipementsEnAlerte(UUID entrepriseId) {
-        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(entrepriseId);
-        if (ambulance == null) {
-            throw new NotFoundException("Ambulance non trouvée pour cette entreprise");
+    public List<EquipmentDTO> getEquipementsEnAlerte(UUID vehiculeId) {
+        VehicleEntity vehicule = VehicleEntity.findById(vehiculeId);
+        if (vehicule == null) {
+            throw new NotFoundException("Véhicule non trouvé");
         }
 
         LocalDate aujourdhui = LocalDate.now();
-        return ambulance.getEquipements().stream()
+        return vehicule.getAmbulance().getEquipements().stream()
             .filter(eq -> eq.getDateExpiration() != null && 
                    eq.getSeuilAlerteExpirationJours() != null &&
                    !aujourdhui.plusDays(eq.getSeuilAlerteExpirationJours()).isAfter(eq.getDateExpiration()))

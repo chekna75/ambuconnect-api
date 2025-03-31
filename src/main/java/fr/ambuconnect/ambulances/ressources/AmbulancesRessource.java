@@ -190,11 +190,11 @@ public class AmbulancesRessource {
     }
 
     @GET
-    @Path("/{ambulanceId}/equipements/en-alerte")
+    @Path("/{vehiculeId}/equipements/en-alerte")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getEquipementsEnAlerte(@PathParam("ambulanceId") UUID ambulanceId) {
+    public Response getEquipementsEnAlerte(@PathParam("vehiculeId") UUID vehiculeId) {
         try {
-            List<EquipmentDTO> equipements = ambulanceService.getEquipementsEnAlerte(ambulanceId);
+            List<EquipmentDTO> equipements = ambulanceService.getEquipementsEnAlerte(vehiculeId);
             return Response.ok(equipements).build();
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
