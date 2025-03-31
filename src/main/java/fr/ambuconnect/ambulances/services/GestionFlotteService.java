@@ -223,7 +223,7 @@ public class GestionFlotteService {
 
     @Transactional
     public List<VehicleDTO> getVehiclesInMaintenanceByAmbulance(UUID ambulanceId) {
-        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
+        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(ambulanceId);
         if (ambulance == null) {
             throw new NotFoundException("Ambulance non trouvée");
         }
