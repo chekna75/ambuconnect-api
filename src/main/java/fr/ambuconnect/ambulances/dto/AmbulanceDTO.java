@@ -27,5 +27,12 @@ public class AmbulanceDTO {
     private String dateAchat;
     private StatutAmbulance statut;
     private UUID entrepriseId;
+    private Integer kilometrage;
+    private Integer niveauCarburant;
+    private Integer conditionExterieureNote;
+    private String conditionExterieureDetails;
+    private Integer conditionInterieureNote;
+    private String conditionInterieureDetails;
+    private String inventaire;
 }
 
