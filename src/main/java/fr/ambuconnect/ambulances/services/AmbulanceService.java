@@ -213,10 +213,10 @@ public class AmbulanceService {
             .collect(Collectors.toList());
     }
 
-    public List<EquipmentDTO> getEquipementsEnAlerte(UUID ambulanceId) {
-        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
+    public List<EquipmentDTO> getEquipementsEnAlerte(UUID entrepriseId) {
+        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(entrepriseId);
         if (ambulance == null) {
-            throw new NotFoundException("Ambulance non trouvée");
+            throw new NotFoundException("Ambulance non trouvée pour cette entreprise");
         }
 
         LocalDate aujourdhui = LocalDate.now();
