@@ -180,5 +180,22 @@ public class GestionFlotteRessource {
     public Response deleteEquipment(@PathParam("id") UUID id) {
         gestionFlotteService.deleteEquipment(id);
         return Response.noContent().build();
-    }  
+    }
+
+    @POST
+    @Path("/vehicles/{id}/state")
+    public Response updateVehicleState(@PathParam("id") UUID id, VehicleDTO stateDTO) {
+        try {
+            VehicleDTO updatedVehicle = gestionFlotteService.updateVehicleState(id, stateDTO);
+            return Response.ok(updatedVehicle).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Une erreur est survenue lors de la mise à jour de l'état du véhicule"))
+                .build();
+        }
+    }
 }

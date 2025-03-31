@@ -50,6 +50,27 @@ public class VehicleEntity extends PanacheEntityBase{
 
     @Column(name = "statut", length = 50)
     private String statut;
+
+    @Column(name = "kilometrage")
+    private Integer kilometrage;
+
+    @Column(name = "niveau_carburant")
+    private Integer niveauCarburant;
+
+    @Column(name = "condition_exterieure_note")
+    private Integer conditionExterieureNote;
+
+    @Column(name = "condition_exterieure_details", length = 500)
+    private String conditionExterieureDetails;
+
+    @Column(name = "condition_interieure_note")
+    private Integer conditionInterieureNote;
+
+    @Column(name = "condition_interieure_details", length = 500)
+    private String conditionInterieureDetails;
+
+    @Column(name = "inventaire", length = 1000)
+    private String inventaire;
     
     @OneToMany(mappedBy = "vehicle")
     @JsonManagedReference

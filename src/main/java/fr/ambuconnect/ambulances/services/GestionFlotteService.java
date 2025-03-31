@@ -201,5 +201,24 @@ public class GestionFlotteService {
         }   
         equipment.delete();
     }
+
+    @Transactional
+    public VehicleDTO updateVehicleState(UUID id, VehicleDTO stateDTO) {
+        VehicleEntity vehicle = VehicleEntity.findById(id);
+        if (vehicle == null) {
+            throw new NotFoundException("Véhicule non trouvé");
+        }
+
+        vehicle.setKilometrage(stateDTO.getKilometrage());
+        vehicle.setNiveauCarburant(stateDTO.getNiveauCarburant());
+        vehicle.setConditionExterieureNote(stateDTO.getConditionExterieureNote());
+        vehicle.setConditionExterieureDetails(stateDTO.getConditionExterieureDetails());
+        vehicle.setConditionInterieureNote(stateDTO.getConditionInterieureNote());
+        vehicle.setConditionInterieureDetails(stateDTO.getConditionInterieureDetails());
+        vehicle.setInventaire(stateDTO.getInventaire());
+        
+        vehicle.persist();
+        return fleetMapper.toDto(vehicle);
+    }
 }
 
