@@ -17,6 +17,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -76,13 +77,12 @@ public class AdministrateurResourse {
     @Path("/createchauffeur")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public RestResponse<ChauffeurDto> craeteChauffeur(@RequestBody @Valid ChauffeurDto chauffeurDto) throws Exception{
-        //this.checkAutorization();
+    public Response craeteChauffeur(@RequestBody ChauffeurDto chauffeurDto) throws Exception{
         try {
             ChauffeurDto dto = administrateurService.createChauffeur(chauffeurDto);
-            return RestResponse.ok(dto);
+            return Response.ok(dto).build();
         } catch (Exception e) {
-            throw new ForbiddenException("Erreur lors de la cration", e);
+            throw new BadRequestException("Erreur lors de la cration", e);
         }
     }
 
@@ -90,9 +90,13 @@ public class AdministrateurResourse {
     @Path("/createAdmin")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public RestResponse<AdministrateurDto> createAdmin(@RequestBody @Valid AdministrateurDto administrateurDto) throws Exception {
-        AdministrateurDto dto = administrateurService.creationAdmin(administrateurDto);
-        return RestResponse.ok(dto);
+    public Response createAdmin(@RequestBody AdministrateurDto administrateurDto) throws Exception {
+        try {
+            AdministrateurDto dto = administrateurService.creationAdmin(administrateurDto);
+            return Response.ok(dto).build();
+        } catch (Exception e) {
+            throw new BadRequestException("Erreur lors de la cration", e);
+        }
     }
 
     /**
@@ -104,9 +108,13 @@ public class AdministrateurResourse {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
-    public RestResponse<AdministrateurDto> createRegulateur(@RequestBody @Valid AdministrateurDto administrateurDto) throws Exception {
-        AdministrateurDto dto = administrateurService.createRegulateur(administrateurDto);
-        return RestResponse.ok(dto);
+    public Response createRegulateur(@RequestBody AdministrateurDto administrateurDto) throws Exception {
+        try {
+            AdministrateurDto dto = administrateurService.createRegulateur(administrateurDto);
+            return Response.ok(dto).build();
+        } catch (Exception e) {
+            throw new BadRequestException("Erreur lors de la cration", e);
+        }
     }
 
     @GET
