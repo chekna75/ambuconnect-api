@@ -5,31 +5,45 @@ import java.util.UUID;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.time.LocalDateTime;
 
 import org.mindrot.jbcrypt.BCrypt;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
+import fr.ambuconnect.authentification.entity.PasswordResetTokenEntity;
 import fr.ambuconnect.authentification.mapper.AuthentificationMapper;
 import fr.ambuconnect.authentification.utils.JwtUtils;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.smallrye.jwt.build.Jwt;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.BadRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class AuthenService {
     
+    private static final Logger LOG = LoggerFactory.getLogger(AuthenService.class);
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Inject
+    EmailService emailService;
+
+    @ConfigProperty(name = "app.frontend.url")
+    String frontendUrl;
+
     private final AuthentificationMapper authentificationMapper;
     private final JwtUtils jwtUtils;
-
-
-
 
     @Inject
     public AuthenService(AuthentificationMapper authentificationMapper, JwtUtils jwtUtils) {
@@ -239,6 +253,63 @@ public class AuthenService {
             System.out.println("Erreur lors de la réinitialisation du mot de passe: " + e.getMessage());
             throw e;
         }
+    }
+
+    @Transactional
+    public void demandeReinitialisationMotDePasse(String email) {
+        LOG.info("Demande de réinitialisation de mot de passe pour: " + email);
+        
+        // Vérifier si c'est un admin ou un chauffeur
+        AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
+        ChauffeurEntity chauffeur = ChauffeurEntity.findByEmail(email);
+        
+        if (admin == null && chauffeur == null) {
+            LOG.warn("Aucun utilisateur trouvé avec l'email: " + email);
+            // On renvoie quand même un succès pour ne pas exposer quels emails existent
+            return;
+        }
+        
+        // Créer un token
+        String token = UUID.randomUUID().toString();
+        PasswordResetTokenEntity resetToken = new PasswordResetTokenEntity();
+        resetToken.setToken(token);
+        resetToken.setUserId(admin != null ? admin.getId() : chauffeur.getId());
+        resetToken.setExpiryDate(LocalDateTime.now().plusHours(1));
+        resetToken.setUsed(false);
+        
+        entityManager.persist(resetToken);
+        
+        // Envoyer l'email
+        emailService.sendPasswordResetEmail(email, token);
+        
+        LOG.info("Email de réinitialisation envoyé à: " + email);
+    }
+
+    @Transactional
+    public void finaliserReinitialisationMotDePasse(String token, String nouveauMotDePasse) {
+        PasswordResetTokenEntity resetToken = PasswordResetTokenEntity.findByToken(token);
+        
+        if (resetToken == null || resetToken.isExpired() || resetToken.isUsed()) {
+            throw new BadRequestException("Token invalide ou expiré");
+        }
+        
+        // Chercher l'utilisateur
+        AdministrateurEntity admin = AdministrateurEntity.findById(resetToken.getUserId());
+        if (admin != null) {
+            reinitialiserMotDePasseAdmin(admin.getEmail(), nouveauMotDePasse);
+        } else {
+            ChauffeurEntity chauffeur = ChauffeurEntity.findById(resetToken.getUserId());
+            if (chauffeur != null) {
+                reinitialiserMotDePasse(chauffeur.getEmail(), nouveauMotDePasse);
+            } else {
+                throw new NotFoundException("Utilisateur non trouvé");
+            }
+        }
+        
+        // Marquer le token comme utilisé
+        resetToken.setUsed(true);
+        
+        LOG.info("Réinitialisation du mot de passe terminée avec succès");
     }
 
 }

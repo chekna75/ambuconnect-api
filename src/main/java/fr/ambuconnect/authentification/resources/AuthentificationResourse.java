@@ -7,6 +7,7 @@ import java.util.Map;
 import fr.ambuconnect.authentification.dto.LoginRequestDto;
 import fr.ambuconnect.authentification.dto.LoginResponseDto;
 import fr.ambuconnect.authentification.dto.MotDePasseRequestDto;
+import fr.ambuconnect.authentification.dto.ResetPasswordRequestDto;
 import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.utils.ErrorResponse;
 import io.quarkus.security.ForbiddenException;
@@ -27,6 +28,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.ws.rs.BadRequestException;
 
 
 @Path("/auth")
@@ -132,6 +136,50 @@ public class AuthentificationResourse {
     public Response options() {
         // Ne pas ajouter d'en-têtes CORS ici, ils sont gérés par le CorsFilter
         return Response.ok().build();
+    }
+
+    @POST
+    @Path("/demande-reset-password")
+    @PermitAll
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response demandeResetPassword(@Valid LoginRequestDto request) {
+        try {
+            authenService.demandeReinitialisationMotDePasse(request.getEmail());
+            return Response.ok()
+                    .entity(new HashMap<String, String>() {{ 
+                        put("message", "Si l'email existe, un lien de réinitialisation a été envoyé");
+                    }})
+                    .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la demande de réinitialisation: {}", e.getMessage(), e);
+            return Response.serverError()
+                    .entity(new ErrorResponse("Erreur lors de la demande de réinitialisation"))
+                    .build();
+        }
+    }
+
+    @POST
+    @Path("/finaliser-reset-password")
+    @PermitAll
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response finaliserResetPassword(@Valid ResetPasswordRequestDto request) {
+        try {
+            authenService.finaliserReinitialisationMotDePasse(request.getToken(), request.getNouveauMotDePasse());
+            return Response.ok()
+                    .entity(new HashMap<String, String>() {{ 
+                        put("message", "Mot de passe réinitialisé avec succès");
+                    }})
+                    .build();
+        } catch (BadRequestException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorResponse(e.getMessage()))
+                    .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la réinitialisation: {}", e.getMessage(), e);
+            return Response.serverError()
+                    .entity(new ErrorResponse("Erreur lors de la réinitialisation"))
+                    .build();
+        }
     }
 
 }
