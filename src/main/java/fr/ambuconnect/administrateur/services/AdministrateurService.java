@@ -159,14 +159,23 @@ public class AdministrateurService {
         }
     }
 
-
-
     /**
      * Création d'un chauffeur
      */
     @Transactional
     public ChauffeurDto createChauffeur(ChauffeurDto chauffeurDto) throws Exception {
         LOG.debug("Début création chauffeur avec email: " + chauffeurDto.getEmail());
+        
+        // Validation des champs obligatoires
+        if (chauffeurDto.getEmail() == null || chauffeurDto.getEmail().trim().isEmpty()) {
+            throw new BadRequestException("L'email est obligatoire");
+        }
+        if (chauffeurDto.getNumeroSecuriteSociale() == null || chauffeurDto.getNumeroSecuriteSociale().length() != 15) {
+            throw new BadRequestException("Le numéro de sécurité sociale doit contenir exactement 15 caractères");
+        }
+        if (chauffeurDto.getTypeContrat() == null || chauffeurDto.getTypeContrat().trim().isEmpty()) {
+            throw new BadRequestException("Le type de contrat est obligatoire (CDI, CDD, INTERIM)");
+        }
         
         // Vérifier si l'email existe déjà
         if (ChauffeurEntity.findByEmail(chauffeurDto.getEmail()) != null) {
@@ -201,10 +210,6 @@ public class AdministrateurService {
             // Persister l'entité
             entityManager.persist(nouveauChauffeur);
             entityManager.flush(); // Forcer la persistence pour détecter les erreurs potentielles
-            
-            // Forcer le commit de la transaction pour que le chauffeur soit visible dans la nouvelle transaction
-            entityManager.getTransaction().commit();
-            entityManager.getTransaction().begin();
             
             LOG.info("Chauffeur créé avec succès: " + chauffeurDto.getEmail());
             

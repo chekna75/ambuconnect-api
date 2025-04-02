@@ -34,5 +34,6 @@ public class ChauffeurDto {
     private String numeroSecuriteSociale;
     private LocalDate dateEntree;
     private String niveauConvention;
+    private String typeContrat;
     
 }
