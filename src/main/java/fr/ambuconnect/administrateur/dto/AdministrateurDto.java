@@ -22,7 +22,9 @@ public class AdministrateurDto {
     private String motDePasse;
     private String telephone;
     private UUID entrepriseId;
+    private String entrepriseNom;
     private String role;
+    private UUID roleId;
     private boolean actif;
 
 }

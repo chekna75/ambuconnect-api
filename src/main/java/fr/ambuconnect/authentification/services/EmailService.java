@@ -39,4 +39,30 @@ public class EmailService {
 
         mailer.send(Mail.withText(to, subject, body));
     }
+
+    public void sendNewAccountCredentials(String to, String nom, String prenom, String role, String motDePasse) {
+        String loginLink = frontendUrl + "/login";
+        String subject = "Bienvenue sur AmbuConnect - Vos identifiants de connexion";
+        String body = String.format("""
+            Bonjour %s %s,
+            
+            Votre compte AmbuConnect a été créé avec succès en tant que %s.
+            
+            Voici vos identifiants de connexion :
+            Email : %s
+            Mot de passe : %s
+            
+            Pour vous connecter, rendez-vous sur :
+            %s
+            
+            Pour des raisons de sécurité, nous vous recommandons de changer votre mot de passe lors de votre première connexion.
+            En cliquant sur mot de passe, vous pourrez modifier votre mot de passe.
+
+            Si vous rencontrez des difficultés, n'hésitez pas à nous contacter via le support.
+            Cordialement,
+            L'équipe AmbuConnect
+            """, prenom, nom, role, to, motDePasse, loginLink);
+
+        mailer.send(Mail.withText(to, subject, body));
+    }
 } 

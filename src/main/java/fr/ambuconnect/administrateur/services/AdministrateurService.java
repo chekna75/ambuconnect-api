@@ -12,6 +12,7 @@ import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.administrateur.mapper.AdministrateurMapper;
 import fr.ambuconnect.administrateur.role.Entity.RoleEntity;
 import fr.ambuconnect.authentification.services.AuthenService;
+import fr.ambuconnect.authentification.services.EmailService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.chauffeur.mapper.ChauffeurMapper;
@@ -37,16 +38,18 @@ public class AdministrateurService {
     private final ChauffeurMapper chauffeurMapper;
     private final AuthenService authenService;
     private final PlanningService planningService;
+    private final EmailService emailService;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Inject
-    public AdministrateurService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, PlanningService planningService) {
+    public AdministrateurService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, PlanningService planningService, EmailService emailService) {
         this.administrateurMapper = administrateurMapper;
         this.chauffeurMapper = chauffeurMapper;
         this.authenService = authenService;
         this.planningService = planningService;
+        this.emailService = emailService;
     }
 
     /**
@@ -68,15 +71,25 @@ public class AdministrateurService {
         
         try {
             // Récupérer le rôle
-            RoleEntity roleDefault = RoleEntity.findByName(administrateurDto.getRole());
+            RoleEntity roleDefault;
+            if (administrateurDto.getRoleId() != null) {
+                roleDefault = RoleEntity.findById(administrateurDto.getRoleId());
+            } else {
+                roleDefault = RoleEntity.findByName(administrateurDto.getRole());
+            }
+            
             if (roleDefault == null) {
-                LOG.error("Rôle non trouvé: " + administrateurDto.getRole());
+                LOG.error("Rôle non trouvé: " + (administrateurDto.getRoleId() != null ? administrateurDto.getRoleId() : administrateurDto.getRole()));
                 throw new BadRequestException("Le rôle spécifié n'existe pas");
             }
+            
             administrateurDto.setRole(roleDefault.getNom());
             
+            // Sauvegarder le mot de passe en clair pour l'email
+            String motDePasseClair = administrateurDto.getMotDePasse();
+            
             // Hasher le mot de passe
-            String hashedPassword = authenService.hasherMotDePasse(administrateurDto.getMotDePasse());
+            String hashedPassword = authenService.hasherMotDePasse(motDePasseClair);
             administrateurDto.setMotDePasse(hashedPassword);
             
             // Convertir DTO en entité
@@ -87,7 +100,16 @@ public class AdministrateurService {
             
             // Persister l'entité
             entityManager.persist(nouvelAdministrateur);
-            entityManager.flush(); // Forcer la persistence pour détecter les erreurs potentielles
+            entityManager.flush();
+            
+            // Envoyer l'email avec les identifiants
+            emailService.sendNewAccountCredentials(
+                administrateurDto.getEmail(),
+                administrateurDto.getNom(),
+                administrateurDto.getPrenom(),
+                roleDefault.getNom(),
+                motDePasseClair
+            );
             
             LOG.info("Administrateur créé avec succès: " + administrateurDto.getEmail());
             
@@ -131,8 +153,11 @@ public class AdministrateurService {
             // Forcer le rôle à REGULATEUR
             administrateurDto.setRole(roleRegulateur.getNom());
             
+            // Sauvegarder le mot de passe en clair pour l'email
+            String motDePasseClair = administrateurDto.getMotDePasse();
+            
             // Hasher le mot de passe
-            String hashedPassword = authenService.hasherMotDePasse(administrateurDto.getMotDePasse());
+            String hashedPassword = authenService.hasherMotDePasse(motDePasseClair);
             administrateurDto.setMotDePasse(hashedPassword);
             
             // Convertir DTO en entité
@@ -143,7 +168,16 @@ public class AdministrateurService {
             
             // Persister l'entité
             entityManager.persist(nouvelAdministrateur);
-            entityManager.flush(); // Forcer la persistence pour détecter les erreurs potentielles
+            entityManager.flush();
+            
+            // Envoyer l'email avec les identifiants
+            emailService.sendNewAccountCredentials(
+                administrateurDto.getEmail(),
+                administrateurDto.getNom(),
+                administrateurDto.getPrenom(),
+                roleRegulateur.getNom(),
+                motDePasseClair
+            );
             
             LOG.info("Régulateur créé avec succès: " + administrateurDto.getEmail());
             
@@ -191,33 +225,48 @@ public class AdministrateurService {
             }
             
             // Récupérer le rôle
-            if (chauffeurDto.getRoleId() == null) {
-                LOG.error("ID de rôle non fourni");
-                chauffeurDto.setRoleId(UUID.fromString("ecfeaf60-6adb-42e2-a01c-c8d8c12a9269"));
+            RoleEntity roleChauffeur = RoleEntity.findById(UUID.fromString("ecfeaf60-6adb-42e2-a01c-c8d8c12a9269"));
+            if (roleChauffeur == null) {
+                LOG.error("Rôle chauffeur non trouvé");
+                throw new NotFoundException("Le rôle chauffeur n'existe pas");
             }
+            
+            // Sauvegarder le mot de passe en clair pour l'email
+            String motDePasseClair = chauffeurDto.getMotDePasse();
             
             // Hasher le mot de passe
-            chauffeurDto.setMotDePasse(authenService.hasherMotDePasse(chauffeurDto.getMotDePasse()));
+            chauffeurDto.setMotDePasse(authenService.hasherMotDePasse(motDePasseClair));
             
             // Convertir DTO en entité
-            ChauffeurEntity nouveauChauffeur = chauffeurMapper.chauffeurDtoToEntity(chauffeurDto);
+            ChauffeurEntity nouveauChauffeur = chauffeurMapper.toEntity(chauffeurDto);
             
-            // Par défaut, le chauffeur est disponible
-            if (!chauffeurDto.isDisponible()) {
-                nouveauChauffeur.setDisponible(true);
-            }
+            // Définir le rôle
+            nouveauChauffeur.setRole(roleChauffeur);
             
             // Persister l'entité
             entityManager.persist(nouveauChauffeur);
-            entityManager.flush(); // Forcer la persistence pour détecter les erreurs potentielles
+            entityManager.flush();
+            
+            // Envoyer l'email avec les identifiants
+            emailService.sendNewAccountCredentials(
+                chauffeurDto.getEmail(),
+                chauffeurDto.getNom(),
+                chauffeurDto.getPrenom(),
+                roleChauffeur.getNom(),
+                motDePasseClair
+            );
             
             LOG.info("Chauffeur créé avec succès: " + chauffeurDto.getEmail());
             
             // Retourner le DTO du chauffeur créé
-            return chauffeurMapper.chauffeurToDto(nouveauChauffeur);
+            return chauffeurMapper.toDto(nouveauChauffeur);
+            
         } catch (PersistenceException e) {
-            LOG.error("Erreur lors de la création du chauffeur", e);
-            throw new InternalServerErrorException("Erreur lors de la création du chauffeur: " + e.getMessage());
+            LOG.error("Erreur lors de la persistance du chauffeur", e);
+            throw new BadRequestException("Erreur lors de la création du chauffeur: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("Erreur inattendue lors de la création du chauffeur", e);
+            throw new InternalServerErrorException("Une erreur inattendue est survenue");
         }
     }
 
