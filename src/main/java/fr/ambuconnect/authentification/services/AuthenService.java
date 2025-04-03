@@ -286,21 +286,27 @@ public class AuthenService {
     }
 
     @Transactional
-    public void finaliserReinitialisationMotDePasse(String token, String nouveauMotDePasse) {
+    public void finaliserReinitialisationMotDePasse(String token, String email, String nouveauMotDePasse) {
         PasswordResetTokenEntity resetToken = PasswordResetTokenEntity.findByToken(token);
         
         if (resetToken == null || resetToken.isExpired() || resetToken.isUsed()) {
             throw new BadRequestException("Token invalide ou expiré");
         }
         
-        // Chercher l'utilisateur
-        AdministrateurEntity admin = AdministrateurEntity.findById(resetToken.getUserId());
+        // Chercher l'utilisateur par email
+        AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
         if (admin != null) {
-            reinitialiserMotDePasseAdmin(admin.getEmail(), nouveauMotDePasse);
+            if (!admin.getId().equals(resetToken.getUserId())) {
+                throw new BadRequestException("Token invalide pour cet utilisateur");
+            }
+            reinitialiserMotDePasseAdmin(email, nouveauMotDePasse);
         } else {
-            ChauffeurEntity chauffeur = ChauffeurEntity.findById(resetToken.getUserId());
+            ChauffeurEntity chauffeur = ChauffeurEntity.findByEmail(email);
             if (chauffeur != null) {
-                reinitialiserMotDePasse(chauffeur.getEmail(), nouveauMotDePasse);
+                if (!chauffeur.getId().equals(resetToken.getUserId())) {
+                    throw new BadRequestException("Token invalide pour cet utilisateur");
+                }
+                reinitialiserMotDePasse(email, nouveauMotDePasse);
             } else {
                 throw new NotFoundException("Utilisateur non trouvé");
             }
@@ -309,7 +315,7 @@ public class AuthenService {
         // Marquer le token comme utilisé
         resetToken.setUsed(true);
         
-        LOG.info("Réinitialisation du mot de passe terminée avec succès");
+        LOG.info("Réinitialisation du mot de passe terminée avec succès pour: {}", email);
     }
 
 }

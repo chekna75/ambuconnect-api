@@ -164,7 +164,11 @@ public class AuthentificationResourse {
     @Produces(MediaType.APPLICATION_JSON)
     public Response finaliserResetPassword(@Valid ResetPasswordRequestDto request) {
         try {
-            authenService.finaliserReinitialisationMotDePasse(request.getToken(), request.getNouveauMotDePasse());
+            authenService.finaliserReinitialisationMotDePasse(
+                request.getToken(), 
+                request.getEmail(),
+                request.getNouveauMotDePasse()
+            );
             return Response.ok()
                     .entity(new HashMap<String, String>() {{ 
                         put("message", "Mot de passe réinitialisé avec succès");
