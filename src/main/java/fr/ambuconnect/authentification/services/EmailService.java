@@ -19,7 +19,7 @@ public class EmailService {
     String frontendUrl;
 
     public void sendPasswordResetEmail(String to, String token) {
-        String resetLink = frontendUrl + "/reset-password?token=" + token;
+        String resetLink = frontendUrl + "/reset-password?token=" + token + "&email=" + to;
         String subject = "Réinitialisation de votre mot de passe AmbuConnect";
         String body = String.format("""
             Bonjour,
