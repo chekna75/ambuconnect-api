@@ -11,6 +11,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.HashMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -276,16 +277,34 @@ public class LocalisationService {
             // Récupérer la dernière localisation connue du chauffeur
             LocalisationDto localisation = getDerniereLocalisation(chauffeurId);
             
+            Map<String, Object> response = new HashMap<>();
+            response.put("type", "POSITION_UPDATE");
+            response.put("timestamp", LocalDateTime.now().toString());
+            
             if (localisation != null) {
-                String message = new ObjectMapper().writeValueAsString(localisation);
-                session.getBasicRemote().sendText(message);
+                response.put("status", "SUCCESS");
+                response.put("data", localisation);
             } else {
-                // Si aucune localisation n'est disponible, envoyer un message approprié
-                String noDataMessage = "{\"status\":\"no_data\",\"message\":\"Pas de données de localisation disponibles pour ce chauffeur\"}";
-                session.getBasicRemote().sendText(noDataMessage);
+                response.put("status", "NO_DATA");
+                response.put("message", "Pas de données de localisation disponibles pour ce chauffeur");
             }
+            
+            String message = new ObjectMapper().writeValueAsString(response);
+            session.getBasicRemote().sendText(message);
+            
         } catch (IOException e) {
-            e.printStackTrace();
+            try {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("type", "POSITION_ACK");
+                errorResponse.put("status", "ERROR");
+                errorResponse.put("message", "Erreur lors de l'envoi des données de localisation");
+                errorResponse.put("timestamp", LocalDateTime.now().toString());
+                
+                String errorMessage = new ObjectMapper().writeValueAsString(errorResponse);
+                session.getBasicRemote().sendText(errorMessage);
+            } catch (IOException ex) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -294,7 +313,13 @@ public class LocalisationService {
             adminChauffeurSessions.get(entrepriseId).containsKey(chauffeurId)) {
             
             try {
-                String message = new ObjectMapper().writeValueAsString(localisation);
+                Map<String, Object> response = new HashMap<>();
+                response.put("type", "POSITION_UPDATE");
+                response.put("status", "SUCCESS");
+                response.put("data", localisation);
+                response.put("timestamp", LocalDateTime.now().toString());
+                
+                String message = new ObjectMapper().writeValueAsString(response);
                 
                 for (Session session : adminChauffeurSessions.get(entrepriseId).get(chauffeurId)) {
                     if (session.isOpen()) {
