@@ -30,13 +30,21 @@ public class RHRessource {
     @POST
     @Path("/contrats")
     public Response creerContrat(ContratDTO contratDTO) {
-        return Response.ok(rhService.creerContrat(contratDTO)).build();
+        try {
+            return Response.ok(rhService.creerContrat(contratDTO)).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+        }
     }
 
     @POST
     @Path("/conges")
     public Response demanderConge(CongeDTO congeDTO) {
-        return Response.ok(rhService.demanderConge(congeDTO)).build();
+        try {
+            return Response.ok(rhService.demanderConge(congeDTO)).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+        }
     }
 
     @PUT
@@ -44,7 +52,11 @@ public class RHRessource {
     public Response traiterDemandeConge(
         @PathParam("id") UUID id,
         TraitementCongeDTO traitementDTO) {
-        return Response.ok(rhService.traiterDemandeConge(id, traitementDTO.getStatut(), traitementDTO.getCommentaire())).build();
+        try {
+            return Response.ok(rhService.traiterDemandeConge(id, traitementDTO.getStatut(), traitementDTO.getCommentaire())).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+        }
     }
 
     @GET
@@ -56,7 +68,22 @@ public class RHRessource {
     @GET
     @Path("/conges/{id}")
     public Response getCongeByIdChauffeur(@PathParam("id") UUID chauffeurId) {
-        List<CongeDTO> conges = rhService.getCongeDTOByIdChauffeur(chauffeurId);
-        return Response.ok(conges).build();
+        try {
+            List<CongeDTO> conges = rhService.getCongeDTOByIdChauffeur(chauffeurId);
+            return Response.ok(conges).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+        }
+    }
+
+    @GET
+    @Path("/conges/all/{id}")
+    public Response getCongeByAllChauffeur(@PathParam("id") UUID entrepriseId) {
+        try {
+            List<CongeDTO> conges = rhService.getCongeByAllChauffeur(entrepriseId);
+            return Response.ok(conges).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+        }
     }
 }
