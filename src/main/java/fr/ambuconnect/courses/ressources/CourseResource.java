@@ -65,15 +65,27 @@ public class CourseResource {
     @PUT
     @Path("/{id}")
     public Response updateCourse(@PathParam("id") UUID id, CourseDto courseDto, @QueryParam("adminId") UUID adminId) {
-        CourseDto updatedCourse = courseService.modifierCourse(id, courseDto, adminId);
-        return Response.ok(updatedCourse).build();
+        try {
+            CourseDto updatedCourse = courseService.modifierCourse(id, courseDto, adminId);
+            return Response.ok(updatedCourse).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        }
     }
 
     @DELETE
     @Path("/{id}")
     public Response deleteCourse(@PathParam("id") UUID id, @QueryParam("adminId") UUID adminId) {
-        courseService.supprimerCourse(id, adminId);
-        return Response.noContent().build();
+        try {
+            courseService.supprimerCourse(id, adminId);
+            return Response.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        }
     }
 
     @GET

@@ -28,8 +28,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -398,18 +396,11 @@ public class CourseService {
             // Sauvegarder les coordonnées comme adresse de départ
             String coordonnees = String.format("%.6f,%.6f", localisation.getLatitude(), localisation.getLongitude());
             course.setAdresseDepart(coordonnees);
-            
-            // Sauvegarder également les coordonnées dans les champs latitude et longitude
-            course.setLatitude(localisation.getLatitude());
-            course.setLongitude(localisation.getLongitude());
         }
 
-        // Mettre à jour les informations de début de course avec le fuseau horaire correct
+        // Mettre à jour les informations de début de course
         course.setStatut(StatutEnum.EN_COURS);
-        
-        // Utiliser le fuseau horaire Europe/Paris
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Paris"));
-        course.setDateHeureDepart(now.toLocalDateTime());
+        course.setDateHeureDepart(LocalDateTime.now());
         
         entityManager.merge(course);
 
@@ -472,9 +463,7 @@ public class CourseService {
             throw new IllegalArgumentException("La course n'est pas en cours");
         }
 
-        // Utiliser le fuseau horaire Europe/Paris
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Paris"));
-        LocalDateTime heureArrivee = now.toLocalDateTime();
+        LocalDateTime heureArrivee = LocalDateTime.now();
 
         // Calculer la durée totale de la course en minutes
         long dureeEnMinutes = java.time.Duration.between(course.getDateHeureDepart(), heureArrivee).toMinutes();

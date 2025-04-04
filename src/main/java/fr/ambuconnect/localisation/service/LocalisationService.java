@@ -2,8 +2,6 @@ package fr.ambuconnect.localisation.service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -142,11 +140,7 @@ public class LocalisationService {
         LocalisationEntity entity = new LocalisationEntity();
         entity.setLatitude(localisation.getLatitude());
         entity.setLongitude(localisation.getLongitude());
-        
-        // Utiliser le fuseau horaire Europe/Paris
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Paris"));
-        entity.setDateHeure(now.toLocalDateTime());
-        
+        entity.setDateHeure(LocalDateTime.now());
         entity.setChauffeur(chauffeur); // Définir la relation une seule fois
         
         // Persister l'entité
