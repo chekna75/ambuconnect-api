@@ -21,11 +21,15 @@ import fr.ambuconnect.geolocalisation.service.GeoService;
 import fr.ambuconnect.geolocalisation.dto.GeoPoint;
 import fr.ambuconnect.geolocalisation.dto.RouteInfo;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
+import fr.ambuconnect.localisation.service.LocalisationService;
+import fr.ambuconnect.localisation.dto.LocalisationDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,12 +43,14 @@ public class CourseService {
     private final CourseMapper courseMapper;
     private final NotificationService notificationService;
     private final GeoService geoService;
+    private final LocalisationService localisationService;
 
     @Inject
-    public CourseService(CourseMapper courseMapper, NotificationService notificationService, GeoService geoService) {
+    public CourseService(CourseMapper courseMapper, NotificationService notificationService, GeoService geoService, LocalisationService localisationService) {
         this.courseMapper = courseMapper;
         this.notificationService = notificationService;
         this.geoService = geoService;
+        this.localisationService = localisationService;
     }
 
     @Transactional
@@ -386,9 +392,24 @@ public class CourseService {
             throw new IllegalArgumentException("La course n'est pas en attente d'acceptation");
         }
 
-        // Mettre à jour les informations de début de course
+        // Récupérer la position actuelle du chauffeur
+        LocalisationDto localisation = localisationService.getDerniereLocalisation(chauffeurId);
+        if (localisation != null) {
+            // Sauvegarder les coordonnées comme adresse de départ
+            String coordonnees = String.format("%.6f,%.6f", localisation.getLatitude(), localisation.getLongitude());
+            course.setAdresseDepart(coordonnees);
+            
+            // Sauvegarder également les coordonnées dans les champs latitude et longitude
+            course.setLatitude(localisation.getLatitude());
+            course.setLongitude(localisation.getLongitude());
+        }
+
+        // Mettre à jour les informations de début de course avec le fuseau horaire correct
         course.setStatut(StatutEnum.EN_COURS);
-        course.setDateHeureDepart(LocalDateTime.now());
+        
+        // Utiliser le fuseau horaire Europe/Paris
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Paris"));
+        course.setDateHeureDepart(now.toLocalDateTime());
         
         entityManager.merge(course);
 
@@ -451,7 +472,9 @@ public class CourseService {
             throw new IllegalArgumentException("La course n'est pas en cours");
         }
 
-        LocalDateTime heureArrivee = LocalDateTime.now();
+        // Utiliser le fuseau horaire Europe/Paris
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Paris"));
+        LocalDateTime heureArrivee = now.toLocalDateTime();
 
         // Calculer la durée totale de la course en minutes
         long dureeEnMinutes = java.time.Duration.between(course.getDateHeureDepart(), heureArrivee).toMinutes();
