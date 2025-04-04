@@ -23,17 +23,22 @@ import fr.ambuconnect.geolocalisation.dto.RouteInfo;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import fr.ambuconnect.localisation.service.LocalisationService;
 import fr.ambuconnect.localisation.dto.LocalisationDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class CourseService {
+    private static final Logger LOG = LoggerFactory.getLogger(CourseService.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -393,14 +398,39 @@ public class CourseService {
         // Récupérer la position actuelle du chauffeur
         LocalisationDto localisation = localisationService.getDerniereLocalisation(chauffeurId);
         if (localisation != null) {
-            // Sauvegarder les coordonnées comme adresse de départ
-            String coordonnees = String.format("%.6f,%.6f", localisation.getLatitude(), localisation.getLongitude());
-            course.setAdresseDepart(coordonnees);
+            // Sauvegarder les coordonnées dans les champs latitude et longitude
+            course.setLatitude(localisation.getLatitude());
+            course.setLongitude(localisation.getLongitude());
+            
+            // Convertir les coordonnées en adresse réelle
+            try {
+                String adresseReelle = geoService.getAdresseFromCoordinates(
+                    localisation.getLatitude(), 
+                    localisation.getLongitude()
+                );
+                
+                if (adresseReelle != null && !adresseReelle.isEmpty()) {
+                    // Si la conversion a réussi, utiliser l'adresse réelle
+                    course.setAdresseDepart(adresseReelle);
+                } else {
+                    // Sinon, utiliser le format latitude,longitude comme fallback
+                    String coordonnees = String.format("%.6f,%.6f", localisation.getLatitude(), localisation.getLongitude());
+                    course.setAdresseDepart(coordonnees);
+                }
+            } catch (Exception e) {
+                // En cas d'erreur, utiliser le format latitude,longitude comme fallback
+                String coordonnees = String.format("%.6f,%.6f", localisation.getLatitude(), localisation.getLongitude());
+                course.setAdresseDepart(coordonnees);
+                LOG.warn("Impossible de convertir les coordonnées en adresse: " + e.getMessage());
+            }
         }
 
         // Mettre à jour les informations de début de course
         course.setStatut(StatutEnum.EN_COURS);
-        course.setDateHeureDepart(LocalDateTime.now());
+        
+        // Utiliser le fuseau horaire Europe/Paris
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Europe/Paris"));
+        course.setDateHeureDepart(now.toLocalDateTime());
         
         entityManager.merge(course);
 

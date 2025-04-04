@@ -7,7 +7,8 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import fr.ambuconnect.geolocalisation.dto.GeoPoint;
 import fr.ambuconnect.geolocalisation.dto.RouteInfo;
@@ -16,6 +17,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Service pour gérer les opérations de géolocalisation
@@ -24,7 +31,7 @@ import java.util.Map;
 @ApplicationScoped
 public class GeoService {
 
-    private static final Logger LOG = Logger.getLogger(GeoService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GeoService.class);
     
     private final String mapboxAccessToken;
     private final String mapboxBaseUrl;
@@ -133,6 +140,54 @@ public class GeoService {
         } catch (Exception e) {
             LOG.error("Erreur lors du calcul de l'itinéraire", e);
             throw e;
+        }
+    }
+
+    /**
+     * Convertit des coordonnées GPS en adresse réelle en utilisant le géocodage inversé
+     * 
+     * @param latitude La latitude
+     * @param longitude La longitude
+     * @return L'adresse réelle au format texte ou null si la conversion échoue
+     */
+    public String getAdresseFromCoordinates(Double latitude, Double longitude) {
+        try {
+            // Préparation de l'URL de l'API de géocodage inversé (OpenStreetMap Nominatim)
+            String url = String.format("https://nominatim.openstreetmap.org/reverse?format=json&lat=%f&lon=%f&accept-language=fr", 
+                    latitude, longitude);
+            
+            // Configurer la requête avec un User-Agent approprié (requis par Nominatim)
+            HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_2)
+                    .build();
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "AmbuConnect/1.0")
+                    .GET()
+                    .build();
+            
+            // Exécuter la requête et récupérer la réponse
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            if (response.statusCode() == 200) {
+                // Analyser la réponse JSON
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode rootNode = mapper.readTree(response.body());
+                
+                // Récupérer l'adresse formatée
+                if (rootNode.has("display_name")) {
+                    return rootNode.get("display_name").asText();
+                }
+            }
+            
+            // Gérer les autres cas d'erreur
+            LOG.warn("Géocodage inversé échoué: code de statut " + response.statusCode());
+            return null;
+            
+        } catch (Exception e) {
+            LOG.error("Erreur lors du géocodage inversé", e);
+            return null;
         }
     }
 } 
