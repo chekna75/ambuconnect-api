@@ -279,8 +279,16 @@ public class AuthenService {
         
         entityManager.persist(resetToken);
         
-        // Envoyer l'email
+// Envoyer l'email approprié en fonction du type d'utilisateur
+    if (admin != null) {
+        // Si c'est un admin, utiliser la méthode standard
         emailService.sendPasswordResetEmail(email, token);
+        LOG.info("Email de réinitialisation pour ADMIN envoyé à: " + email);
+    } else {
+        // Si c'est un chauffeur, utiliser la méthode spécifique aux chauffeurs
+        emailService.sendPasswordResetEmailChauffeur(email, token);
+        LOG.info("Email de réinitialisation pour CHAUFFEUR envoyé à: " + email);
+    }
         
         LOG.info("Email de réinitialisation envoyé à: " + email);
     }
