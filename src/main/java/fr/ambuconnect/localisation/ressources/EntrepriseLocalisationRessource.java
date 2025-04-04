@@ -52,19 +52,23 @@ public class EntrepriseLocalisationRessource {
             // Ajouter la session à la liste des observateurs pour cette entreprise
             localisationService.addEntrepriseSession(entrepriseId, role, session);
             
-            // Envoyer immédiatement les dernières positions connues
+            // Envoyer immédiatement les dernières positions connues de tous les chauffeurs
             localisationService.sendAllChauffeursLocalisations(entrepriseId, session);
             
             LOG.info("Connexion WebSocket établie pour l'entreprise: " + entrepriseIdStr);
         } catch (Exception e) {
             LOG.error("Erreur lors de l'ouverture de la connexion WebSocket", e);
+            try {
+                session.close();
+            } catch (Exception ex) {
+                LOG.error("Erreur lors de la fermeture de la session", ex);
+            }
         }
     }
 
     @OnClose
     public void onClose(Session session, 
-                       @PathParam("entrepriseId") String entrepriseIdStr,
-                       @PathParam("role") String role) {
+                       @PathParam("entrepriseId") String entrepriseIdStr) {
         try {
             LOG.info("Fermeture de la connexion WebSocket pour l'entreprise: " + entrepriseIdStr);
             UUID entrepriseId = UUID.fromString(entrepriseIdStr);
@@ -77,7 +81,6 @@ public class EntrepriseLocalisationRessource {
     @OnError
     public void onError(Session session, 
                        @PathParam("entrepriseId") String entrepriseIdStr,
-                       @PathParam("role") String role,
                        Throwable throwable) {
         try {
             LOG.error("Erreur WebSocket pour l'entreprise: " + entrepriseIdStr, throwable);

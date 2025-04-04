@@ -16,6 +16,7 @@ import fr.ambuconnect.authentification.services.EmailService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.chauffeur.mapper.ChauffeurMapper;
+import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -242,6 +243,10 @@ public class AdministrateurService {
             
             // Définir le rôle
             nouveauChauffeur.setRole(roleChauffeur);
+
+            // Définir l'entreprise
+            EntrepriseEntity entreprise = EntrepriseEntity.findById(chauffeurDto.getEntrepriseId());
+            nouveauChauffeur.setEntreprise(entreprise);
             
             // Persister l'entité
             entityManager.persist(nouveauChauffeur);

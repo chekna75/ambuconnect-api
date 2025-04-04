@@ -18,6 +18,9 @@ public class EmailService {
     @ConfigProperty(name = "app.frontend.url")
     String frontendUrl;
 
+    @ConfigProperty(name = "app.frontendchauffeur.url")
+    String frontendChauffeurUrl;
+
     public void sendPasswordResetEmail(String to, String token) {
         String resetLink = frontendUrl + "/reset-password?token=" + token + "&email=" + to;
         String subject = "Réinitialisation de votre mot de passe AmbuConnect";
@@ -41,7 +44,7 @@ public class EmailService {
     }
 
     public void sendNewAccountCredentials(String to, String nom, String prenom, String role, String motDePasse) {
-        String loginLink = frontendUrl + "/login";
+        String loginLink = frontendChauffeurUrl + "/login";
         String subject = "Bienvenue sur AmbuConnect - Vos identifiants de connexion";
         String body = String.format("""
             Bonjour %s %s,

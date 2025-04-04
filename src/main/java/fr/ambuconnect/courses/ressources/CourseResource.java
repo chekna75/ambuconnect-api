@@ -93,22 +93,40 @@ public class CourseResource {
     @PUT
     @Path("/{id}/accepter")
     public Response accepterCourse(@PathParam("id") UUID id, @QueryParam("chauffeurId") UUID chauffeurId) {
-        CourseDto course = courseService.accepterCourse(id, chauffeurId);
-        return Response.ok(course).build();
+        try {
+            CourseDto course = courseService.accepterCourse(id, chauffeurId);
+            return Response.ok(course).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        }
     }
 
     @PUT
     @Path("/{id}/statut")
     public Response updateStatutCourse(@PathParam("id") UUID id, @QueryParam("statut") StatutEnum statut, @QueryParam("chauffeurId") UUID chauffeurId) {
-        CourseDto course = courseService.mettreAJourStatut(id, statut, chauffeurId);
-        return Response.ok(course).build();
+        try {
+            CourseDto course = courseService.mettreAJourStatut(id, statut, chauffeurId);
+            return Response.ok(course).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        }
     }
 
     @PUT
     @Path("/{id}/terminer")
     public Response terminerCourse(@PathParam("id") UUID id, @QueryParam("chauffeurId") UUID chauffeurId) {
-        CourseDto course = courseService.terminerCourse(id, chauffeurId);
-        return Response.ok(course).build();
+        try {
+            CourseDto course = courseService.terminerCourse(id, chauffeurId);
+            return Response.ok(course).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        }
     }
 
     @PUT
