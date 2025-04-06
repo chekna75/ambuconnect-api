@@ -2,15 +2,12 @@ package fr.ambuconnect.authentification.resources;
 
 import java.util.UUID;
 import java.util.HashMap;
-import java.util.Map;
 
 import fr.ambuconnect.authentification.dto.LoginRequestDto;
-import fr.ambuconnect.authentification.dto.LoginResponseDto;
 import fr.ambuconnect.authentification.dto.MotDePasseRequestDto;
 import fr.ambuconnect.authentification.dto.ResetPasswordRequestDto;
 import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.utils.ErrorResponse;
-import io.quarkus.security.ForbiddenException;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,13 +21,16 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.BadRequestException;
+import io.quarkus.security.Authenticated;
 
 
 @Path("/auth")
@@ -183,6 +183,35 @@ public class AuthentificationResourse {
             return Response.serverError()
                     .entity(new ErrorResponse("Erreur lors de la réinitialisation"))
                     .build();
+        }
+    }
+
+    @POST
+    @Path("/chauffeur/logout")
+    @RolesAllowed({"CHAUFFEUR", "chauffeur"})
+    public Response logoutChauffeur(@Context SecurityContext securityContext) {
+        try {
+            LOG.info("Déconnexion du chauffeur");
+            
+            // Récupérer l'ID du chauffeur à partir du token JWT
+            String chauffeurId = securityContext.getUserPrincipal().getName();
+            UUID entrepriseId = null;
+            
+            // Récupérer l'ID de l'entreprise
+            JsonWebToken jwt = (JsonWebToken) securityContext.getUserPrincipal();
+            if (jwt.containsClaim("entrepriseId")) {
+                entrepriseId = UUID.fromString(jwt.getClaim("entrepriseId").toString());
+            }
+            
+            // Enregistrer la déconnexion
+            authenService.enregistrerDeconnexionChauffeur(UUID.fromString(chauffeurId), entrepriseId);
+            
+            return Response.ok().build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la déconnexion", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Une erreur est survenue lors de la déconnexion")
+                .build();
         }
     }
 

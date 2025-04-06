@@ -17,6 +17,8 @@ import fr.ambuconnect.entreprise.dto.EntrepriseDto;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import fr.ambuconnect.entreprise.mapper.EntrepriseMapper;
 import fr.ambuconnect.paiement.entity.AbonnementEntity;
+import fr.ambuconnect.paiement.entity.PlanTarifaireEntity;
+import fr.ambuconnect.paiement.services.PlanTarifaireService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -39,17 +41,20 @@ public class InscriptionService {
     private final EntrepriseMapper entrepriseMapper;
     private final AuthenService authenService;
     private final EmailService emailService;
+    private final PlanTarifaireService planTarifaireService;
 
     @Inject
     public InscriptionService(
             AdministrateurMapper administrateurMapper,
             EntrepriseMapper entrepriseMapper,
             AuthenService authenService,
-            EmailService emailService) {
+            EmailService emailService,
+            PlanTarifaireService planTarifaireService) {
         this.administrateurMapper = administrateurMapper;
         this.entrepriseMapper = entrepriseMapper;
         this.authenService = authenService;
         this.emailService = emailService;
+        this.planTarifaireService = planTarifaireService;
     }
 
     /**
@@ -63,28 +68,48 @@ public class InscriptionService {
         LOG.info("Début du processus d'inscription d'une entreprise");
 
         try {
-            // 1. Création de l'entreprise
+            // 1. Vérification du plan tarifaire si un code est fourni
+            String stripePriceId = null;
+            PlanTarifaireEntity planTarifaire = null;
+            
+            if (inscriptionDto.getCodeAbonnement() != null && !inscriptionDto.getCodeAbonnement().isEmpty()) {
+                // Utiliser le code du plan tarifaire pour obtenir le PriceID Stripe
+                try {
+                    planTarifaire = planTarifaireService.obtenirPlanTarifaireParCode(inscriptionDto.getCodeAbonnement());
+                    stripePriceId = planTarifaire.getStripePriceId();
+                    LOG.info("Plan tarifaire trouvé: {} avec Stripe Price ID: {}", 
+                             planTarifaire.getNom(), stripePriceId);
+                } catch (Exception e) {
+                    LOG.error("Erreur lors de la récupération du plan tarifaire", e);
+                    throw new BadRequestException("Plan tarifaire non trouvé: " + inscriptionDto.getCodeAbonnement());
+                }
+            } else if (inscriptionDto.getStripeSubscriptionId() != null && !inscriptionDto.getStripeSubscriptionId().isEmpty()) {
+                // Utiliser l'ID d'abonnement Stripe directement
+                stripePriceId = inscriptionDto.getStripeSubscriptionId();
+            }
+            
+            // 2. Création de l'entreprise
             EntrepriseEntity entrepriseEntity = creerEntreprise(inscriptionDto.getEntreprise());
             LOG.info("Entreprise créée avec succès. ID: {}", entrepriseEntity.getId());
 
-            // 2. Préparation des informations de l'administrateur
+            // 3. Préparation des informations de l'administrateur
             AdministrateurDto administrateurDto = getAdministrateurDto(inscriptionDto);
             
-            // 3. Associer l'admin à l'entreprise créée
+            // 4. Associer l'admin à l'entreprise créée
             administrateurDto.setEntrepriseId(entrepriseEntity.getId());
             
-            // 4. Création de l'administrateur
+            // 5. Création de l'administrateur
             AdministrateurEntity adminEntity = creerAdministrateur(administrateurDto);
             LOG.info("Administrateur créé avec succès. ID: {}", adminEntity.getId());
             
-            // 5. Création de l'enregistrement d'abonnement si un ID d'abonnement est fourni
-            if (inscriptionDto.getStripeSubscriptionId() != null && !inscriptionDto.getStripeSubscriptionId().isEmpty()) {
-                enregistrerAbonnement(entrepriseEntity.getId(), inscriptionDto);
+            // 6. Création de l'enregistrement d'abonnement si un ID d'abonnement est fourni
+            if (stripePriceId != null) {
+                enregistrerAbonnement(entrepriseEntity.getId(), stripePriceId, planTarifaire);
             }
             
-            // 6. Envoi d'un email de bienvenue
+            // 7. Envoi d'un email de bienvenue
             String motDePasseClair = administrateurDto.getMotDePasse();
-            envoyerEmailBienvenue(adminEntity, motDePasseClair);
+            envoyerEmailBienvenue(adminEntity, motDePasseClair, planTarifaire);
             
             return administrateurMapper.toDto(adminEntity);
             
@@ -204,11 +229,11 @@ public class InscriptionService {
     /**
      * Enregistre un abonnement pour l'entreprise
      */
-    private void enregistrerAbonnement(UUID entrepriseId, InscriptionEntrepriseDto inscriptionDto) {
+    private void enregistrerAbonnement(UUID entrepriseId, String stripePriceId, PlanTarifaireEntity planTarifaire) {
         try {
             // Vérifier si un abonnement avec cet ID existe déjà
-            if (AbonnementEntity.findByStripeSubscriptionId(inscriptionDto.getStripeSubscriptionId()) != null) {
-                LOG.warn("Un abonnement avec cet ID existe déjà: {}", inscriptionDto.getStripeSubscriptionId());
+            if (AbonnementEntity.findByStripeSubscriptionId(stripePriceId) != null) {
+                LOG.warn("Un abonnement avec cet ID existe déjà: {}", stripePriceId);
                 return;
             }
             
@@ -221,9 +246,15 @@ public class InscriptionService {
             // Créer l'abonnement
             AbonnementEntity abonnement = new AbonnementEntity();
             abonnement.setEntreprise(entreprise);
-            abonnement.setStripeSubscriptionId(inscriptionDto.getStripeSubscriptionId());
-            abonnement.setStripeCustomerId(inscriptionDto.getStripeCustomerId());
-            abonnement.setPlanId(inscriptionDto.getTypeAbonnement());
+            abonnement.setStripeSubscriptionId(stripePriceId);
+            
+            // Si le plan tarifaire est fourni, utiliser ses informations
+            if (planTarifaire != null) {
+                abonnement.setPlanId(planTarifaire.getCode());
+                abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
+                abonnement.setDevise(planTarifaire.getDevise());
+            }
+            
             abonnement.setStatut("active");
             abonnement.setDateDebut(LocalDate.now());
             abonnement.setActif(true);
@@ -243,8 +274,9 @@ public class InscriptionService {
     /**
      * Envoie un email de bienvenue à l'administrateur
      */
-    private void envoyerEmailBienvenue(AdministrateurEntity admin, String motDePasseClair) {
+    private void envoyerEmailBienvenue(AdministrateurEntity admin, String motDePasseClair, PlanTarifaireEntity planTarifaire) {
         try {
+            // Email avec les identifiants
             emailService.sendNewAccountCredentials(
                 admin.getEmail(),
                 admin.getNom(),
@@ -252,6 +284,9 @@ public class InscriptionService {
                 admin.getRole().getNom(),
                 motDePasseClair
             );
+            
+            // TODO: Envoyer un email supplémentaire avec les détails de l'abonnement si nécessaire
+            
             LOG.info("Email de bienvenue envoyé à: {}", admin.getEmail());
         } catch (Exception e) {
             LOG.error("Erreur lors de l'envoi de l'email de bienvenue", e);

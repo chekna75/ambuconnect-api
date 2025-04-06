@@ -27,6 +27,10 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.ws.rs.NotAuthorizedException;
+import fr.ambuconnect.authentification.dto.LoginRequestDto;
+import fr.ambuconnect.chauffeur.services.ChauffeurConnexionService;
+import jakarta.ws.rs.ForbiddenException;
 
 @ApplicationScoped
 public class AuthenService {
@@ -44,11 +48,13 @@ public class AuthenService {
 
     private final AuthentificationMapper authentificationMapper;
     private final JwtUtils jwtUtils;
+    private final ChauffeurConnexionService chauffeurConnexionService;
 
     @Inject
-    public AuthenService(AuthentificationMapper authentificationMapper, JwtUtils jwtUtils) {
+    public AuthenService(AuthentificationMapper authentificationMapper, JwtUtils jwtUtils, ChauffeurConnexionService chauffeurConnexionService) {
         this.authentificationMapper = authentificationMapper;
         this.jwtUtils = jwtUtils;
+        this.chauffeurConnexionService = chauffeurConnexionService;
     }
 
     /**
@@ -170,38 +176,52 @@ public class AuthenService {
     }
 
     public String connexionChauffeur(String email, String motDePasse, Boolean isAdmin) {
+        LOG.debug("Connexion chauffeur demandée pour: " + email);
+        
         try {
-            System.out.println("=== Début connexion chauffeur ===");
-            
             ChauffeurEntity chauffeur = ChauffeurEntity.findByEmail(email);
-            if (chauffeur != null && verifierMotDePasse(motDePasse, chauffeur.getMotDePasse())) {
-                // Déterminer le rôle correct
-                String role = "CHAUFFEUR";
-                
-                // Vérifier si l'entreprise a un abonnement actif
-                boolean abonnementActif = true; // Par défaut, tous les utilisateurs ont un abonnement actif
-                String planType = "PREMIUM"; // Par défaut, tous les utilisateurs ont un plan PREMIUM
-                
-                return jwtUtils.generateCompleteToken(
-                    chauffeur.getId(),
-                    chauffeur.getEmail(),
-                    role,
-                    chauffeur.getEntreprise().getId(),
-                    chauffeur.getNom(),
-                    chauffeur.getPrenom(),
-                    chauffeur.getTelephone(),
-                    chauffeur.getEntreprise().getNom(),
-                    chauffeur.getEntreprise().getSiret(),
-                    chauffeur.getEntreprise().getAdresse(),
-                    abonnementActif,
-                    planType
-                );
+            
+            if (chauffeur == null) {
+                LOG.warn("Chauffeur non trouvé avec l'email: " + email);
+                throw new NotAuthorizedException("Email ou mot de passe incorrect");
             }
-            throw new IllegalArgumentException("Identifiants invalides");
-        } catch (Exception e) {
-            System.out.println("Erreur lors de la connexion: " + e.getMessage());
-            e.printStackTrace();
+            
+            if (!chauffeur.isDisponible()) {
+                LOG.warn("Chauffeur {} non disponible", chauffeur.getId());
+                throw new NotAuthorizedException("Votre compte n'est pas actif. Contactez votre administrateur.");
+            }
+
+            // Vérifier si le chauffeur peut se connecter selon les limites du pack
+            chauffeurConnexionService.verifierPossibiliteConnexion(chauffeur);
+            
+            // Vérification du mot de passe
+            if (!verifierMotDePasse(motDePasse, chauffeur.getMotDePasse())) {
+                LOG.warn("Tentative de connexion avec mot de passe invalide pour: " + email);
+                throw new NotAuthorizedException("Email ou mot de passe incorrect");
+            }
+            
+            // Création du token JWT
+            return jwtUtils.generateCompleteToken(
+                chauffeur.getId(),
+                chauffeur.getEmail(),
+                chauffeur.getRole().getNom(),
+                chauffeur.getEntreprise().getId(),
+                chauffeur.getNom(),
+                chauffeur.getPrenom(),
+                chauffeur.getTelephone(),
+                chauffeur.getEntreprise().getNom(),
+                chauffeur.getEntreprise().getSiret(),
+                chauffeur.getEntreprise().getAdresse(),
+                true, // abonnementActif
+                "PREMIUM" // planType
+            );
+            
+        } catch (ForbiddenException e) {
+            // Simplement relancer l'exception pour les limitations du pack
             throw e;
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la connexion du chauffeur", e);
+            throw new NotAuthorizedException("Une erreur est survenue lors de la connexion");
         }
     }
 
@@ -324,6 +344,19 @@ public class AuthenService {
         resetToken.setUsed(true);
         
         LOG.info("Réinitialisation du mot de passe terminée avec succès pour: {}", email);
+    }
+
+    /**
+     * Enregistre la déconnexion d'un chauffeur
+     */
+    public void enregistrerDeconnexionChauffeur(UUID chauffeurId, UUID entrepriseId) {
+        LOG.info("Enregistrement de la déconnexion du chauffeur: {}", chauffeurId);
+        
+        try {
+            chauffeurConnexionService.enregistrerDeconnexion(chauffeurId, entrepriseId);
+        } catch (Exception e) {
+            LOG.error("Erreur lors de l'enregistrement de la déconnexion", e);
+        }
     }
 
 }

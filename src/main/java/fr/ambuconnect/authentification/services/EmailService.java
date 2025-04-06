@@ -5,9 +5,14 @@ import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.List;
 
 @ApplicationScoped
 public class EmailService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EmailService.class);
 
     @Inject
     Mailer mailer;
@@ -20,6 +25,9 @@ public class EmailService {
 
     @ConfigProperty(name = "app.frontendchauffeur.url")
     String frontendChauffeurUrl;
+
+    @ConfigProperty(name = "quarkus.mailer.email-from")
+    String emailFrom;
 
     public void sendPasswordResetEmail(String to, String token) {
         String resetLink = frontendUrl + "/reset-password?token=" + token + "&email=" + to;
@@ -43,7 +51,7 @@ public class EmailService {
         mailer.send(Mail.withText(to, subject, body));
     }
 
-        public void sendPasswordResetEmailChauffeur(String to, String token) {
+    public void sendPasswordResetEmailChauffeur(String to, String token) {
         String resetLink = frontendChauffeurUrl + "/reset-password?token=" + token + "&email=" + to;
         String subject = "Réinitialisation de votre mot de passe AmbuConnect";
         String body = String.format("""
@@ -89,5 +97,27 @@ public class EmailService {
             """, prenom, nom, role, to, motDePasse, loginLink);
 
         mailer.send(Mail.withText(to, subject, body));
+    }
+
+    /**
+     * Envoie un email générique
+     * 
+     * @param destinataire L'adresse email du destinataire
+     * @param sujet Le sujet de l'email
+     * @param contenu Le contenu de l'email
+     * @throws Exception En cas d'erreur lors de l'envoi
+     */
+    public void sendEmail(String destinataire, String sujet, String contenu) throws Exception {
+        LOG.info("Envoi d'un email à {} avec le sujet: {}", destinataire, sujet);
+        
+        Mail email = new Mail();
+        email.setFrom(emailFrom);
+        email.setTo(List.of(destinataire));
+        email.setSubject(sujet);
+        email.setText(contenu);
+        
+        mailer.send(email);
+        
+        LOG.info("Email envoyé avec succès à {}", destinataire);
     }
 } 

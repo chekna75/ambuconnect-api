@@ -393,6 +393,10 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
      * 1. Création de l'entreprise
      * 2. Récupération de l'ID de l'entreprise
      * 3. Création de l'administrateur associé à cette entreprise
+     * 
+     * L'abonnement peut être spécifié de deux façons:
+     * - Soit par un code d'abonnement (START, PRO, ENTREPRISE) défini dans notre système
+     * - Soit par un ID d'abonnement Stripe déjà créé
      */
     @POST
     @Path("/inscription-workflow")
@@ -401,13 +405,17 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
     @Transactional
     public Response inscriptionWorkflow(@RequestBody @Valid InscriptionEntrepriseDto inscriptionDto) {
         try {
-            // Validation des données d'abonnement si nécessaire
-            if (inscriptionDto.getStripeSubscriptionId() != null && !inscriptionDto.getStripeSubscriptionId().isEmpty()) {
-                boolean abonnementValide = paiementService.verifierAbonnement(inscriptionDto.getStripeSubscriptionId());
-                if (!abonnementValide) {
-                    return Response.status(Response.Status.BAD_REQUEST)
-                        .entity("L'abonnement n'est pas actif. Veuillez contacter le support.")
-                        .build();
+            // Si un code d'abonnement est fourni, pas besoin de vérifier l'abonnement Stripe
+            // puisque nous allons le créer nous-mêmes
+            if (inscriptionDto.getCodeAbonnement() == null || inscriptionDto.getCodeAbonnement().isEmpty()) {
+                // Validation des données d'abonnement si aucun code n'est fourni
+                if (inscriptionDto.getStripeSubscriptionId() != null && !inscriptionDto.getStripeSubscriptionId().isEmpty()) {
+                    boolean abonnementValide = paiementService.verifierAbonnement(inscriptionDto.getStripeSubscriptionId());
+                    if (!abonnementValide) {
+                        return Response.status(Response.Status.BAD_REQUEST)
+                            .entity("L'abonnement n'est pas actif. Veuillez contacter le support.")
+                            .build();
+                    }
                 }
             }
             

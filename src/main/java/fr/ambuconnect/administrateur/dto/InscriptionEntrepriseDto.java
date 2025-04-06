@@ -95,4 +95,9 @@ public class InscriptionEntrepriseDto {
      * validation personnalisée dans le controller
      */
     private String stripeSubscriptionId;
+
+    /**
+     * Code du plan tarifaire (START, PRO, ENTREPRISE)
+     */
+    private String codeAbonnement;
 } 
