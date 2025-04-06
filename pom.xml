@@ -171,7 +171,7 @@
         <dependency>
             <groupId>com.stripe</groupId>
             <artifactId>stripe-java</artifactId>
-            <version>22.21.0</version>
+            <version>22.0.0</version>
         </dependency>
 
         <!-- Security -->
