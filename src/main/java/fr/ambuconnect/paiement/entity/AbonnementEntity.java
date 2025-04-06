@@ -63,6 +63,13 @@ public class AbonnementEntity extends PanacheEntityBase {
     @Column(name = "actif")
     private boolean actif;
 
+    // Champs pour les webhooks
+    @Column(name = "date_dernier_paiement")
+    private LocalDate dateDernierPaiement;
+
+    @Column(name = "statut_dernier_paiement")
+    private String statutDernierPaiement;
+
     /**
      * Trouve un abonnement par son ID Stripe
      * 
