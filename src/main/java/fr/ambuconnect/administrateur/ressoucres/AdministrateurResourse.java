@@ -41,7 +41,6 @@ import jakarta.annotation.security.PermitAll;
 @Path("/administrateur")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR", "superadmin", "SUPERADMIN"})
 @Valid
 public class AdministrateurResourse {
 
