@@ -36,6 +36,7 @@ import fr.ambuconnect.paiement.services.PaiementService;
 import fr.ambuconnect.administrateur.dto.InscriptionEntrepriseDto;
 import fr.ambuconnect.paiement.services.AbonnementService;
 import io.quarkus.arc.Arc;
+import jakarta.annotation.security.PermitAll;
 
 @Path("/administrateur")
 @Produces(MediaType.APPLICATION_JSON)
@@ -301,6 +302,7 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @Transactional
+    @PermitAll
     public Response inscriptionComplete(@RequestBody @Valid InscriptionEntrepriseDto inscriptionDto) {
         try {
             // Vérification des données obligatoires
