@@ -9,6 +9,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.administrateur.services.AdministrateurService;
+import fr.ambuconnect.administrateur.services.InscriptionService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.ForbiddenException;
@@ -31,6 +32,11 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import fr.ambuconnect.paiement.services.PaiementService;
+import fr.ambuconnect.administrateur.dto.InscriptionEntrepriseDto;
+import fr.ambuconnect.paiement.services.AbonnementService;
+import io.quarkus.arc.Arc;
+
 @Path("/administrateur")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -40,11 +46,18 @@ public class AdministrateurResourse {
 
     private final AdministrateurService administrateurService;
     private final SecurityIdentity securityIdentity;
+    private final PaiementService paiementService;
+    private final InscriptionService inscriptionService;
 
     @Inject
-    public AdministrateurResourse(SecurityIdentity securityIdentity, AdministrateurService administrateurService) {
+    public AdministrateurResourse(SecurityIdentity securityIdentity, 
+                                  AdministrateurService administrateurService,
+                                  PaiementService paiementService,
+                                  InscriptionService inscriptionService) {
         this.securityIdentity = securityIdentity;
         this.administrateurService = administrateurService;
+        this.paiementService = paiementService;
+        this.inscriptionService = inscriptionService;
     }
 
     @GET
@@ -218,6 +231,216 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
     @Consumes(MediaType.APPLICATION_JSON)
     public void deleteAdministrateur(@PathParam("id") UUID id) {
         administrateurService.deleteAdministrateur(id);
+    }
+
+    /**
+     * Création d'un administrateur après paiement sur le site vitrine
+     * Cet endpoint est public et permet l'inscription d'un nouvel administrateur après validation du paiement
+     */
+    @POST
+    @Path("/inscription-entreprise")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Transactional
+    public Response inscriptionEntreprise(@RequestBody AdministrateurDto administrateurDto, 
+                                         @QueryParam("paymentIntentId") String paymentIntentId,
+                                         @QueryParam("abonnementId") String abonnementId) {
+        try {
+            // Vérification des paramètres obligatoires
+            if (abonnementId == null || abonnementId.isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("L'ID d'abonnement Stripe est obligatoire")
+                    .build();
+            }
+            
+            if (paymentIntentId == null || paymentIntentId.isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("L'ID de paiement Stripe est obligatoire")
+                    .build();
+            }
+            
+            // Vérification de l'abonnement (obligatoire)
+            boolean abonnementValide = paiementService.verifierAbonnement(abonnementId);
+            if (!abonnementValide) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("L'abonnement n'est pas actif. Veuillez contacter le support.")
+                    .build();
+            }
+            
+            // Vérification du paiement avec Stripe
+            boolean paiementValide = paiementService.verifierPaiement(paymentIntentId, abonnementId);
+            if (!paiementValide) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Le paiement n'a pas pu être validé. Veuillez contacter le support.")
+                    .build();
+            }
+            
+            // Création de l'administrateur avec son entreprise
+            AdministrateurDto nouvelAdmin = administrateurService.inscriptionEntrepriseAdmin(administrateurDto, abonnementId);
+            
+            return Response.status(Response.Status.CREATED)
+                .entity(nouvelAdmin)
+                .build();
+        } catch (BadRequestException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Erreur lors de l'inscription: " + e.getMessage())
+                .build();
+        }
+    }
+
+    /**
+     * Inscription complète d'une entreprise avec son administrateur
+     * Utilise les informations de l'entreprise et de l'administrateur depuis le même DTO
+     */
+    @POST
+    @Path("/inscription-complete")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Transactional
+    public Response inscriptionComplete(@RequestBody @Valid InscriptionEntrepriseDto inscriptionDto) {
+        try {
+            // Vérification des données obligatoires
+            if (inscriptionDto.getStripeSubscriptionId() == null || inscriptionDto.getStripeSubscriptionId().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("L'ID d'abonnement Stripe est obligatoire")
+                    .build();
+            }
+            
+            // Vérification de l'abonnement (obligatoire)
+            boolean abonnementValide = paiementService.verifierAbonnement(inscriptionDto.getStripeSubscriptionId());
+            if (!abonnementValide) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("L'abonnement n'est pas actif. Veuillez contacter le support.")
+                    .build();
+            }
+            
+            // Vérification du paiement si fourni
+            if (inscriptionDto.getStripePaymentIntentId() != null && !inscriptionDto.getStripePaymentIntentId().isEmpty()) {
+                boolean paiementValide = paiementService.verifierPaiement(
+                    inscriptionDto.getStripePaymentIntentId(), 
+                    inscriptionDto.getStripeSubscriptionId()
+                );
+                
+                if (!paiementValide) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Le paiement n'a pas pu être validé. Veuillez contacter le support.")
+                        .build();
+                }
+            }
+            
+            // Préparer les informations d'administrateur
+            AdministrateurDto administrateurDto;
+            
+            if (inscriptionDto.getAdministrateur() != null) {
+                // Utiliser l'administrateur fourni
+                administrateurDto = inscriptionDto.getAdministrateur();
+            } else {
+                // Créer un objet administrateur à partir des informations de base
+                if (inscriptionDto.getEmail() == null || inscriptionDto.getEmail().isEmpty() ||
+                    inscriptionDto.getMotDePasse() == null || inscriptionDto.getMotDePasse().isEmpty()) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Email et mot de passe sont obligatoires si les informations d'administrateur ne sont pas fournies")
+                        .build();
+                }
+                
+                administrateurDto = new AdministrateurDto();
+                administrateurDto.setEmail(inscriptionDto.getEmail());
+                administrateurDto.setMotDePasse(inscriptionDto.getMotDePasse());
+                administrateurDto.setNom(inscriptionDto.getNom());
+                administrateurDto.setPrenom(inscriptionDto.getPrenom());
+                administrateurDto.setTelephone(inscriptionDto.getTelephone());
+                administrateurDto.setActif(true);
+            }
+            
+            // Définir le nom de l'entreprise dans l'administrateur pour la création
+            administrateurDto.setEntrepriseNom(inscriptionDto.getEntreprise().getNom());
+            
+            // Création de l'administrateur et de l'entreprise
+            AdministrateurDto nouvelAdmin = administrateurService.inscriptionEntrepriseAdmin(
+                administrateurDto, 
+                inscriptionDto.getStripeSubscriptionId()
+            );
+            
+            // Enregistrement de l'abonnement dans la base de données
+            AbonnementService abonnementService = Arc.container().instance(AbonnementService.class).get();
+            abonnementService.enregistrerAbonnement(
+                nouvelAdmin.getEntrepriseId(), 
+                inscriptionDto.getStripeSubscriptionId()
+            );
+            
+            return Response.status(Response.Status.CREATED)
+                .entity(nouvelAdmin)
+                .build();
+                
+        } catch (BadRequestException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Erreur lors de l'inscription: " + e.getMessage())
+                .build();
+        }
+    }
+
+    /**
+     * Nouveau workflow d'inscription: création de l'entreprise puis de l'administrateur
+     * Le processus suit explicitement l'ordre suivant:
+     * 1. Création de l'entreprise
+     * 2. Récupération de l'ID de l'entreprise
+     * 3. Création de l'administrateur associé à cette entreprise
+     */
+    @POST
+    @Path("/inscription-workflow")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Transactional
+    public Response inscriptionWorkflow(@RequestBody @Valid InscriptionEntrepriseDto inscriptionDto) {
+        try {
+            // Validation des données d'abonnement si nécessaire
+            if (inscriptionDto.getStripeSubscriptionId() != null && !inscriptionDto.getStripeSubscriptionId().isEmpty()) {
+                boolean abonnementValide = paiementService.verifierAbonnement(inscriptionDto.getStripeSubscriptionId());
+                if (!abonnementValide) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("L'abonnement n'est pas actif. Veuillez contacter le support.")
+                        .build();
+                }
+            }
+            
+            // Validation du paiement si un ID est fourni
+            if (inscriptionDto.getStripePaymentIntentId() != null && !inscriptionDto.getStripePaymentIntentId().isEmpty()) {
+                boolean paiementValide = paiementService.verifierPaiement(
+                    inscriptionDto.getStripePaymentIntentId(),
+                    inscriptionDto.getStripeSubscriptionId()
+                );
+                
+                if (!paiementValide) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Le paiement n'a pas pu être validé. Veuillez contacter le support.")
+                        .build();
+                }
+            }
+            
+            // Appel du service qui gère le workflow complet
+            AdministrateurDto nouvelAdmin = inscriptionService.inscrireEntreprise(inscriptionDto);
+            
+            return Response.status(Response.Status.CREATED)
+                .entity(nouvelAdmin)
+                .build();
+                
+        } catch (BadRequestException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(e.getMessage())
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Erreur lors de l'inscription: " + e.getMessage())
+                .build();
+        }
     }
 
 }

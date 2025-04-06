@@ -514,4 +514,101 @@ public class AdministrateurService {
         entityManager.remove(administrateur);
     }
 
+    /**
+     * Création d'un administrateur avec son entreprise après inscription et paiement sur le site vitrine
+     * 
+     * @param administrateurDto Les informations de l'administrateur
+     * @param abonnementStripeId L'identifiant de l'abonnement Stripe
+     * @return Le DTO de l'administrateur créé
+     */
+    @Transactional
+    public AdministrateurDto inscriptionEntrepriseAdmin(AdministrateurDto administrateurDto, String abonnementStripeId) {
+        LOG.debug("Début création administrateur après inscription sur site vitrine avec email: " + administrateurDto.getEmail());
+        
+        // Vérifier si l'email existe déjà
+        if (AdministrateurEntity.findByEmail(administrateurDto.getEmail()) != null) {
+            LOG.error("Email déjà utilisé: " + administrateurDto.getEmail());
+            throw new BadRequestException("Un compte avec cet email existe déjà");
+        }
+        
+        try {
+            // Créer l'entreprise d'abord
+            EntrepriseEntity entreprise = new EntrepriseEntity();
+            entreprise.setNom(administrateurDto.getEntrepriseNom());
+            
+            // Stocker les informations d'abonnement (si votre entité a ces champs)
+            // Si ces méthodes ne sont pas disponibles, modifiez selon votre structure
+            try {
+                // Stocker l'ID de l'abonnement Stripe
+                java.lang.reflect.Method setAbonnementStripeId = EntrepriseEntity.class.getMethod("setAbonnementStripeId", String.class);
+                setAbonnementStripeId.invoke(entreprise, abonnementStripeId);
+                
+                // Définir la date d'inscription comme date courante
+                java.lang.reflect.Method setDateInscription = EntrepriseEntity.class.getMethod("setDateInscription", LocalDate.class);
+                setDateInscription.invoke(entreprise, LocalDate.now());
+                
+                // Marquer l'entreprise comme active
+                java.lang.reflect.Method setActif = EntrepriseEntity.class.getMethod("setActif", boolean.class);
+                setActif.invoke(entreprise, true);
+            } catch (Exception e) {
+                LOG.warn("Impossible de définir toutes les propriétés de l'entreprise. Certains champs pourraient être manquants: " + e.getMessage());
+            }
+            
+            // Persister l'entreprise
+            entityManager.persist(entreprise);
+            entityManager.flush();
+            
+            // Récupérer le rôle ADMIN
+            RoleEntity roleAdmin = RoleEntity.findByName("ADMIN");
+            if (roleAdmin == null) {
+                LOG.error("Rôle ADMIN non trouvé");
+                throw new NotFoundException("Le rôle ADMIN n'existe pas");
+            }
+            
+            // Définir le rôle et l'entreprise
+            administrateurDto.setRole(roleAdmin.getNom());
+            administrateurDto.setEntrepriseId(entreprise.getId());
+            
+            // Sauvegarder le mot de passe en clair pour l'email
+            String motDePasseClair = administrateurDto.getMotDePasse();
+            
+            // Hasher le mot de passe
+            String hashedPassword = authenService.hasherMotDePasse(motDePasseClair);
+            administrateurDto.setMotDePasse(hashedPassword);
+            
+            // Convertir DTO en entité
+            AdministrateurEntity nouvelAdmin = administrateurMapper.toEntity(administrateurDto);
+            
+            // Définir le rôle et l'entreprise
+            nouvelAdmin.setRole(roleAdmin);
+            nouvelAdmin.setEntreprise(entreprise);
+            nouvelAdmin.setActif(true);
+            
+            // Persister l'administrateur
+            entityManager.persist(nouvelAdmin);
+            entityManager.flush();
+            
+            // Envoyer l'email avec les identifiants
+            emailService.sendNewAccountCredentials(
+                administrateurDto.getEmail(),
+                administrateurDto.getNom(),
+                administrateurDto.getPrenom(),
+                roleAdmin.getNom(),
+                motDePasseClair
+            );
+            
+            LOG.info("Administrateur et entreprise créés avec succès après inscription: " + administrateurDto.getEmail());
+            
+            // Retourner le DTO de l'administrateur créé
+            return administrateurMapper.toDto(nouvelAdmin);
+            
+        } catch (PersistenceException e) {
+            LOG.error("Erreur lors de la persistance après inscription", e);
+            throw new BadRequestException("Erreur lors de la création du compte: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("Erreur inattendue lors de la création après inscription", e);
+            throw new InternalServerErrorException("Une erreur inattendue est survenue");
+        }
+    }
+
 }
