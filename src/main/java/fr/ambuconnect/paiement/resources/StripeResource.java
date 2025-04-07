@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 import com.stripe.model.Customer;
 import com.stripe.model.Subscription;
@@ -157,6 +158,36 @@ public class StripeResource {
             LOG.error("Erreur lors du traitement du webhook Stripe", e);
             return Response.status(Response.Status.BAD_REQUEST)
                      .entity("Erreur lors du traitement du webhook: " + e.getMessage())
+                     .build();
+        }
+    }
+
+    /**
+     * Crée un SetupIntent pour configurer une méthode de paiement
+     */
+    @POST
+    @Path("/setup-intent")
+    @PermitAll
+    public Response createSetupIntent(@QueryParam("customerId") String customerId) {
+        try {
+            LOG.info("Création d'un SetupIntent pour le client: {}", customerId);
+            
+            Map<String, Object> params = new HashMap<>();
+            if (customerId != null && !customerId.isEmpty()) {
+                params.put("customer", customerId);
+            }
+            
+            // Utilisation de l'API Stripe pour créer un SetupIntent
+            com.stripe.model.SetupIntent setupIntent = com.stripe.model.SetupIntent.create(params);
+            
+            return Response.ok(Map.of(
+                "clientSecret", setupIntent.getClientSecret(),
+                "id", setupIntent.getId()
+            )).build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la création du SetupIntent", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                     .entity(new ErrorResponse("Erreur lors de la création du SetupIntent: " + e.getMessage()))
                      .build();
         }
     }

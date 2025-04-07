@@ -368,6 +368,10 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
             
             // Enregistrement de l'abonnement dans la base de données
             AbonnementService abonnementService = Arc.container().instance(AbonnementService.class).get();
+            
+            // Utiliser le type d'abonnement effectif (provient de typeAbonnement ou subscriptionType)
+            String typeAbonnement = inscriptionDto.getTypeAbonnementEffectif();
+            
             abonnementService.enregistrerAbonnement(
                 nouvelAdmin.getEntrepriseId(), 
                 inscriptionDto.getStripeSubscriptionId()

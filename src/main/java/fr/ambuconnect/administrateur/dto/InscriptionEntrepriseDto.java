@@ -75,9 +75,27 @@ public class InscriptionEntrepriseDto {
 
     /**
      * Type d'abonnement souscrit (basic, standard, premium, etc.)
+     * @deprecated Remplacé par subscriptionType, gardé pour rétrocompatibilité
+     */
+    private String typeAbonnement;
+
+    /**
+     * Type d'abonnement souscrit (START, PRO, ENTREPRISE)
+     */
+    private String subscriptionType;
+
+    /**
+     * Méthode getter personnalisée qui retourne typeAbonnement ou subscriptionType
+     * Permet de maintenir la compatibilité tout en supportant le nouveau format
+     * Cette méthode est utilisée par la validation
      */
     @NotBlank(message = "Le type d'abonnement est obligatoire")
-    private String typeAbonnement;
+    public String getTypeAbonnementEffectif() {
+        if (typeAbonnement != null && !typeAbonnement.isEmpty()) {
+            return typeAbonnement;
+        }
+        return subscriptionType;
+    }
 
     /**
      * Informations concernant le paiement et l'abonnement Stripe
