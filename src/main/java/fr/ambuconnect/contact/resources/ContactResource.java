@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.annotation.security.PermitAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +21,7 @@ public class ContactResource {
     ContactService contactService;
 
     @POST
+    @PermitAll
     public Response envoyerDemandeContact(@Valid ContactRequestDto request) {
         try {
             LOG.info("Réception d'une nouvelle demande de contact");
