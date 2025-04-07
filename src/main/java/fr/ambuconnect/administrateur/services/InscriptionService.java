@@ -143,29 +143,25 @@ public class InscriptionService {
                 throw new BadRequestException("Une entreprise avec ce nom existe déjà");
             }
             
+            // S'assurer que tous les champs importants sont renseignés avec des valeurs par défaut si nécessaire
+            if (entrepriseDto.getAdresse() == null || entrepriseDto.getAdresse().trim().isEmpty()) {
+                entrepriseDto.setAdresse("À définir");
+            }
+            if (entrepriseDto.getCodePostal() == null || entrepriseDto.getCodePostal().trim().isEmpty()) {
+                entrepriseDto.setCodePostal("00000");
+            }
+            if (entrepriseDto.getSiret() == null || entrepriseDto.getSiret().trim().isEmpty()) {
+                entrepriseDto.setSiret("À définir");
+            }
+            if (entrepriseDto.getTelephone() == null || entrepriseDto.getTelephone().trim().isEmpty()) {
+                entrepriseDto.setTelephone("À définir");
+            }
+            if (entrepriseDto.getEmail() == null || entrepriseDto.getEmail().trim().isEmpty()) {
+                entrepriseDto.setEmail("À définir");
+            }
+            
             // Création de l'entité entreprise
             EntrepriseEntity entreprise = entrepriseMapper.toEntity(entrepriseDto);
-            
-            // S'assurer que tous les champs importants sont renseignés
-            if (entrepriseDto.getAdresse() != null) {
-                entreprise.setAdresse(entrepriseDto.getAdresse());
-            }
-            
-            if (entrepriseDto.getCodePostal() != null) {
-                entreprise.setCodePostal(entrepriseDto.getCodePostal());
-            }
-            
-            if (entrepriseDto.getSiret() != null) {
-                entreprise.setSiret(entrepriseDto.getSiret());
-            }
-            
-            if (entrepriseDto.getTelephone() != null) {
-                entreprise.setTelephone(entrepriseDto.getTelephone());
-            }
-            
-            if (entrepriseDto.getEmail() != null) {
-                entreprise.setEmail(entrepriseDto.getEmail());
-            }
             
             // Persister l'entreprise
             entityManager.persist(entreprise);

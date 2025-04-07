@@ -2,6 +2,7 @@ package fr.ambuconnect.entreprise.entity;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -50,6 +51,16 @@ public class EntrepriseEntity extends PanacheEntityBase {
 
     @Column(name = "email")
     private String email;
+
+    @Column(name = "abonnement_stripe_id", nullable = true)
+    private String abonnementStripeId;
+
+
+    @Column(name = "date_inscription", nullable = true)
+    private LocalDate dateInscription;
+
+    @Column(name = "actif", nullable = true)
+    private boolean actif;
 
     @OneToMany(mappedBy = "entreprise", cascade = CascadeType.ALL)
     @JsonManagedReference

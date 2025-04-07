@@ -26,5 +26,10 @@ public class AdministrateurDto {
     private String role;
     private UUID roleId;
     private boolean actif;
+    private String entrepriseEmail;
+    private String entrepriseSiret;
+    private String entrepriseAdresse;
+    private String entrepriseCodePostal;
+    private String entrepriseTelephone;
 
 }

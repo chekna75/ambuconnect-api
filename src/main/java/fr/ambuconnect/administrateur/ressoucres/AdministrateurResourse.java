@@ -359,6 +359,11 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
             
             // Définir le nom de l'entreprise dans l'administrateur pour la création
             administrateurDto.setEntrepriseNom(inscriptionDto.getEntreprise().getNom());
+            administrateurDto.setEntrepriseEmail(inscriptionDto.getEntreprise().getEmail());
+            administrateurDto.setEntrepriseSiret(inscriptionDto.getEntreprise().getSiret());
+            administrateurDto.setEntrepriseAdresse(inscriptionDto.getEntreprise().getAdresse());
+            administrateurDto.setEntrepriseCodePostal(inscriptionDto.getEntreprise().getCodePostal());
+            administrateurDto.setEntrepriseTelephone(inscriptionDto.getEntreprise().getTelephone());
             
             // Création de l'administrateur et de l'entreprise
             AdministrateurDto nouvelAdmin = administrateurService.inscriptionEntrepriseAdmin(

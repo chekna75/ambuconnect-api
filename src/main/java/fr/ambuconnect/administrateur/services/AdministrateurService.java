@@ -535,25 +535,23 @@ public class AdministrateurService {
             // Créer l'entreprise d'abord
             EntrepriseEntity entreprise = new EntrepriseEntity();
             entreprise.setNom(administrateurDto.getEntrepriseNom());
+            entreprise.setEmail(administrateurDto.getEntrepriseEmail());
+            entreprise.setSiret(administrateurDto.getEntrepriseSiret());
+            entreprise.setAdresse(administrateurDto.getEntrepriseAdresse());
+            entreprise.setCodePostal(administrateurDto.getEntrepriseCodePostal());
+            entreprise.setTelephone(administrateurDto.getEntrepriseTelephone());
             
+            // Valeurs par défaut si non fournies
+            if (entreprise.getEmail() == null) entreprise.setEmail("À définir");
+            if (entreprise.getSiret() == null) entreprise.setSiret("À définir");
+            if (entreprise.getAdresse() == null) entreprise.setAdresse("À définir");
+            if (entreprise.getCodePostal() == null) entreprise.setCodePostal("00000");
+            if (entreprise.getTelephone() == null) entreprise.setTelephone("À définir");
             
-            // Stocker les informations d'abonnement (si votre entité a ces champs)
-            // Si ces méthodes ne sont pas disponibles, modifiez selon votre structure
-            try {
-                // Stocker l'ID de l'abonnement Stripe
-                java.lang.reflect.Method setAbonnementStripeId = EntrepriseEntity.class.getMethod("setAbonnementStripeId", String.class);
-                setAbonnementStripeId.invoke(entreprise, abonnementStripeId);
-                
-                // Définir la date d'inscription comme date courante
-                java.lang.reflect.Method setDateInscription = EntrepriseEntity.class.getMethod("setDateInscription", LocalDate.class);
-                setDateInscription.invoke(entreprise, LocalDate.now());
-                
-                // Marquer l'entreprise comme active
-                java.lang.reflect.Method setActif = EntrepriseEntity.class.getMethod("setActif", boolean.class);
-                setActif.invoke(entreprise, true);
-            } catch (Exception e) {
-                LOG.warn("Impossible de définir toutes les propriétés de l'entreprise. Certains champs pourraient être manquants: " + e.getMessage());
-            }
+            // Stocker les informations d'abonnement
+            entreprise.setAbonnementStripeId(abonnementStripeId);
+            entreprise.setDateInscription(LocalDate.now());
+            entreprise.setActif(true);
             
             // Persister l'entreprise
             entityManager.persist(entreprise);
