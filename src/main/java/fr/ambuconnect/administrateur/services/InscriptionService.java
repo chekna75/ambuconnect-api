@@ -102,13 +102,6 @@ public class InscriptionService {
             AdministrateurEntity adminEntity = creerAdministrateur(administrateurDto);
             LOG.info("Administrateur créé avec succès. ID: {}", adminEntity.getId());
 
-            // 6. Création de l'enregistrement d'abonnement si un ID d'abonnement est fourni
-            if (stripePriceId != null) {
-                enregistrerAbonnement(entrepriseEntity.getId(), stripePriceId, planTarifaire);
-            }
-
-
-            
             // 6. Création de l'abonnement
             if (stripePriceId != null) {
                 enregistrerAbonnement(entrepriseEntity.getId(), stripePriceId, planTarifaire);
@@ -275,12 +268,6 @@ public class InscriptionService {
      */
     private void enregistrerAbonnement(UUID entrepriseId, String stripePriceId, PlanTarifaireEntity planTarifaire) {
         try {
-            // Vérifier si un abonnement avec cet ID existe déjà
-            if (AbonnementEntity.findByStripeSubscriptionId(stripePriceId) != null) {
-                LOG.warn("Un abonnement avec cet ID existe déjà: {}", stripePriceId);
-                return;
-            }
-            
             // Récupérer l'entreprise
             EntrepriseEntity entreprise = entityManager.find(EntrepriseEntity.class, entrepriseId);
             if (entreprise == null) {
@@ -290,49 +277,33 @@ public class InscriptionService {
             // Créer l'abonnement
             AbonnementEntity abonnement = new AbonnementEntity();
             abonnement.setEntreprise(entreprise);
-            abonnement.setStripeSubscriptionId(stripePriceId);
             
-            // Si le plan tarifaire est fourni, utiliser ses informations
-            if (planTarifaire != null) {
-                abonnement.setPlanId(planTarifaire.getId());
-                abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
-                abonnement.setPrixMensuel(planTarifaire.getMontantMensuel());
-                abonnement.setDevise(planTarifaire.getDevise());
-                abonnement.setType(planTarifaire.getCode());
-            } else {
-                // Si pas de plan tarifaire fourni, chercher le plan START par défaut
-                PlanTarifaireEntity planStart = PlanTarifaireEntity.findByCode("START");
-                if (planStart == null) {
-                    throw new RuntimeException("Le plan START n'existe pas dans la base de données");
+            // Si le plan tarifaire n'est pas fourni, le récupérer à partir du stripePriceId
+            if (planTarifaire == null) {
+                planTarifaire = PlanTarifaireEntity.findByStripePriceId(stripePriceId);
+                if (planTarifaire == null) {
+                    // Si on ne trouve pas le plan, utiliser le plan START par défaut
+                    planTarifaire = PlanTarifaireEntity.findByCode("START");
+                    if (planTarifaire == null) {
+                        throw new RuntimeException("Le plan START n'existe pas dans la base de données");
+                    }
                 }
-                abonnement.setPlanId(planStart.getId());
-                abonnement.setType("START");
-                abonnement.setPrixMensuel(planStart.getMontantMensuel());
-                abonnement.setMontantMensuel(planStart.getMontantMensuel());
-                abonnement.setDevise(planStart.getDevise());
             }
             
-            // S'assurer que tous les champs requis sont définis
+            // Définir les informations du plan
+            abonnement.setPlanId(planTarifaire.getId());
+            abonnement.setType(planTarifaire.getCode());
+            abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
+            abonnement.setPrixMensuel(planTarifaire.getMontantMensuel());
+            abonnement.setMontant(planTarifaire.getMontantMensuel());
+            abonnement.setDevise(planTarifaire.getDevise());
+            
+            // Définir les autres informations
             abonnement.setStatut("active");
             abonnement.setDateDebut(LocalDate.now());
             abonnement.setDateCreation(LocalDate.now());
             abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
             abonnement.setFrequenceFacturation("MENSUEL");
-            
-            // S'assurer que les champs de montant et devise sont définis s'ils ne le sont pas déjà
-            if (abonnement.getMontantMensuel() == null) {
-                abonnement.setMontantMensuel(199.0);
-            }
-            if (abonnement.getPrixMensuel() == null) {
-                abonnement.setPrixMensuel(199.0);
-            }
-            if (abonnement.getDevise() == null) {
-                abonnement.setDevise("EUR");
-            }
-            if (abonnement.getMontant() == null) {
-                abonnement.setMontant(199.0);
-            }
-            
             abonnement.setActif(true);
             
             // Persister l'abonnement
@@ -343,7 +314,6 @@ public class InscriptionService {
             
         } catch (Exception e) {
             LOG.error("Erreur lors de l'enregistrement de l'abonnement", e);
-            // Ne pas bloquer l'inscription si l'enregistrement de l'abonnement échoue
             throw new RuntimeException("Erreur lors de l'enregistrement de l'abonnement: " + e.getMessage());
         }
     }
