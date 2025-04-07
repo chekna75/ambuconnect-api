@@ -4,5 +4,6 @@ public enum TypeContrat {
     CDI,
     CDD,
     INTERIM,
-    STAGE
+    STAGE,
+    VACATAIRE
 } 
