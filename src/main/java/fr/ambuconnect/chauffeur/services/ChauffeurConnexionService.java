@@ -89,9 +89,9 @@ public class ChauffeurConnexionService {
         }
         
         // 4. Vérifier si le seuil d'alerte de chauffeurs est atteint (mais pas encore la limite)
-        if (planTarifaire.getNbMaxChauffeurs() != null && planTarifaire.getSeuilAlerteChauffeurs() != null) {
+        if (planTarifaire.getNbMaxChauffeurs() != null) {
             double pourcentageUtilisation = ((double) nombreTotalChauffeurs / planTarifaire.getNbMaxChauffeurs()) * 100;
-            if (pourcentageUtilisation >= planTarifaire.getSeuilAlerteChauffeurs() && 
+            if (pourcentageUtilisation >= 80 && 
                 nombreTotalChauffeurs < planTarifaire.getNbMaxChauffeurs()) {
                 
                 notifierAdministrateurSeuilAlerteChauffeurs(entreprise, planTarifaire, (int) nombreTotalChauffeurs);

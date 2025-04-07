@@ -104,7 +104,7 @@ public class AdministrateurService {
             entityManager.flush();
             
             // Envoyer l'email avec les identifiants
-            emailService.sendNewAccountCredentials(
+            emailService.sendNewAccountCredentialsAdmin(
                 administrateurDto.getEmail(),
                 administrateurDto.getNom(),
                 administrateurDto.getPrenom(),
@@ -172,7 +172,7 @@ public class AdministrateurService {
             entityManager.flush();
             
             // Envoyer l'email avec les identifiants
-            emailService.sendNewAccountCredentials(
+            emailService.sendNewAccountCredentialsAdmin(
                 administrateurDto.getEmail(),
                 administrateurDto.getNom(),
                 administrateurDto.getPrenom(),
@@ -588,7 +588,7 @@ public class AdministrateurService {
             entityManager.flush();
             
             // Envoyer l'email avec les identifiants
-            emailService.sendNewAccountCredentials(
+            emailService.sendNewAccountCredentialsAdmin(
                 administrateurDto.getEmail(),
                 administrateurDto.getNom(),
                 administrateurDto.getPrenom(),
