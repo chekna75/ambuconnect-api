@@ -12,6 +12,7 @@ import com.stripe.model.Subscription;
 
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import fr.ambuconnect.paiement.entity.AbonnementEntity;
+import fr.ambuconnect.paiement.entity.PlanTarifaireEntity;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -75,7 +76,30 @@ public class AbonnementService {
             abonnement.setEntreprise(entreprise);
             abonnement.setStripeSubscriptionId(stripeSubscriptionId);
             abonnement.setStripeCustomerId(subscription.getCustomer());
-            abonnement.setPlanId(subscription.getItems().getData().get(0).getPlan().getId());
+            
+            // Extraire l'ID du plan et essayer de le convertir en UUID
+            String planIdStr = subscription.getItems().getData().get(0).getPlan().getId();
+            try {
+                // Vérifier si l'ID est un code de plan tarifaire connu
+                PlanTarifaireEntity planTarifaire = PlanTarifaireEntity.findByCode(planIdStr);
+                if (planTarifaire != null) {
+                    // Utiliser l'UUID du plan tarifaire
+                    abonnement.setPlanId(planTarifaire.getId());
+                } else {
+                    // Si non, essayer de le convertir en UUID
+                    try {
+                        UUID planUuid = UUID.fromString(planIdStr);
+                        abonnement.setPlanId(planUuid);
+                    } catch (IllegalArgumentException e) {
+                        LOG.warn("L'ID du plan {} n'est pas un UUID valide, le champ plan_id sera null", planIdStr);
+                        // Plan ID reste null
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warn("Erreur lors de la conversion du plan ID: {}", e.getMessage());
+                // Plan ID reste null
+            }
+            
             abonnement.setStatut(subscription.getStatus());
             
             // Dates
