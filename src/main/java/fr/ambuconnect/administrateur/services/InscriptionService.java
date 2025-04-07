@@ -294,6 +294,19 @@ public class InscriptionService {
             abonnement.setDateDebut(LocalDate.now());
             abonnement.setDateCreation(LocalDate.now());
             abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
+            abonnement.setFrequenceFacturation("MENSUEL");
+            
+            // S'assurer que les champs de montant et devise sont définis s'ils ne le sont pas déjà
+            if (abonnement.getMontantMensuel() == null) {
+                abonnement.setMontantMensuel(199.0);
+            }
+            if (abonnement.getPrixMensuel() == null) {
+                abonnement.setPrixMensuel(199.0);
+            }
+            if (abonnement.getDevise() == null) {
+                abonnement.setDevise("EUR");
+            }
+            
             abonnement.setActif(true);
             
             // Persister l'abonnement

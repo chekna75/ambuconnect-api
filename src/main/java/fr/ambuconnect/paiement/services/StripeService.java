@@ -379,6 +379,29 @@ public class StripeService {
             if (abonnement.getDateDebut() == null) {
                 abonnement.setDateDebut(LocalDate.now());
             }
+            if (abonnement.getDateCreation() == null) {
+                abonnement.setDateCreation(LocalDate.now());
+            }
+            if (abonnement.getStatut() == null) {
+                abonnement.setStatut("active");
+            }
+            if (abonnement.getType() == null) {
+                abonnement.setType("STANDARD");
+            }
+            if (abonnement.getFrequenceFacturation() == null) {
+                abonnement.setFrequenceFacturation("MENSUEL");
+            }
+            
+            // Définir la fréquence de facturation en fonction de l'intervalle Stripe
+            String interval = subscription.getItems().getData().get(0).getPrice().getRecurring().getInterval();
+            if ("month".equals(interval)) {
+                abonnement.setFrequenceFacturation("MENSUEL");
+            } else if ("year".equals(interval)) {
+                abonnement.setFrequenceFacturation("ANNUEL");
+            } else {
+                // Valeur par défaut
+                abonnement.setFrequenceFacturation("MENSUEL");
+            }
             
             // Persister
             entityManager.persist(abonnement);
@@ -461,6 +484,29 @@ public class StripeService {
             }
             if (abonnement.getDateDebut() == null) {
                 abonnement.setDateDebut(LocalDate.now());
+            }
+            if (abonnement.getDateCreation() == null) {
+                abonnement.setDateCreation(LocalDate.now());
+            }
+            if (abonnement.getStatut() == null) {
+                abonnement.setStatut("active");
+            }
+            if (abonnement.getType() == null) {
+                abonnement.setType("STANDARD");
+            }
+            if (abonnement.getFrequenceFacturation() == null) {
+                abonnement.setFrequenceFacturation("MENSUEL");
+            }
+            
+            // Définir la fréquence de facturation en fonction de l'intervalle Stripe
+            String interval = subscription.getItems().getData().get(0).getPrice().getRecurring().getInterval();
+            if ("month".equals(interval)) {
+                abonnement.setFrequenceFacturation("MENSUEL");
+            } else if ("year".equals(interval)) {
+                abonnement.setFrequenceFacturation("ANNUEL");
+            } else {
+                // Valeur par défaut
+                abonnement.setFrequenceFacturation("MENSUEL");
             }
             
             LOG.info("Abonnement mis à jour en base de données: {}", abonnement.getId());

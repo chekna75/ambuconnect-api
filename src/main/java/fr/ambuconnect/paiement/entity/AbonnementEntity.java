@@ -42,25 +42,25 @@ public class AbonnementEntity extends PanacheEntityBase {
     @Column(name = "plan_id")
     private UUID planId;
 
-    @Column(name = "statut")
+    @Column(name = "statut", nullable = false)
     private String statut;
 
-    @Column(name = "date_debut")
+    @Column(name = "date_debut", nullable = false)
     private LocalDate dateDebut;
 
     @Column(name = "date_fin")
     private LocalDate dateFin;
 
-    @Column(name = "date_prochain_paiement")
+    @Column(name = "date_prochain_paiement", nullable = false)
     private LocalDate dateProchainPaiement;
 
-    @Column(name = "montant_mensuel")
+    @Column(name = "montant_mensuel", nullable = false)
     private Double montantMensuel;
 
     @Column(name = "prix_mensuel", nullable = false)
     private Double prixMensuel;
 
-    @Column(name = "devise")
+    @Column(name = "devise", nullable = false)
     private String devise;
 
     @Column(name = "actif")
@@ -71,6 +71,9 @@ public class AbonnementEntity extends PanacheEntityBase {
 
     @Column(name = "date_creation", nullable = false)
     private LocalDate dateCreation;
+
+    @Column(name = "frequence_facturation", nullable = false)
+    private String frequenceFacturation;
 
     // Champs pour les webhooks
     @Column(name = "date_dernier_paiement")

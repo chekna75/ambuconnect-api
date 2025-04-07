@@ -146,6 +146,18 @@ public class AbonnementService {
             if (abonnement.getDevise() == null) {
                 abonnement.setDevise("EUR");
             }
+            if (abonnement.getStatut() == null) {
+                abonnement.setStatut("active");
+            }
+            if (abonnement.getDateDebut() == null) {
+                abonnement.setDateDebut(LocalDate.now());
+            }
+            if (abonnement.getDateCreation() == null) {
+                abonnement.setDateCreation(LocalDate.now());
+            }
+            
+            // Définir la fréquence de facturation (généralement mensuelle pour Stripe)
+            abonnement.setFrequenceFacturation("MENSUEL");
             
             // Persister
             entityManager.persist(abonnement);
