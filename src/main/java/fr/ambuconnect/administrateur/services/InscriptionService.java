@@ -277,36 +277,43 @@ public class InscriptionService {
                 throw new NotFoundException("Entreprise non trouvée");
             }
             
-            // Si le plan tarifaire n'est pas fourni, le créer
+            // Si le plan tarifaire n'est pas fourni, le créer ou le récupérer
             if (planTarifaire == null) {
-                LOG.info("Création d'un nouveau plan tarifaire pour le stripePriceId: {}", stripePriceId);
-                planTarifaire = new PlanTarifaireEntity();
+                // D'abord essayer de récupérer par stripePriceId
+                planTarifaire = PlanTarifaireEntity.find("stripePriceId", stripePriceId).firstResult();
                 
-                // Déterminer le type de plan à partir du stripePriceId
-                String typePlan;
-                switch (stripePriceId) {
-                    case "price_1RB2AtAPjtnUAxI8gR1lQBhY":
-                        typePlan = "ENTREPRISE";
-                        planTarifaire.setMontantMensuel(399.0);
-                        break;
-                    case "price_1RB2AbAPjtnUAxI8VxzHVi9t":
-                        typePlan = "PRO";
-                        planTarifaire.setMontantMensuel(199.0);
-                        break;
-                    default:
-                        typePlan = "START";
-                        planTarifaire.setMontantMensuel(129.0);
+                if (planTarifaire == null) {
+                    LOG.info("Création d'un nouveau plan tarifaire pour le stripePriceId: {}", stripePriceId);
+                    planTarifaire = new PlanTarifaireEntity();
+                    
+                    // Déterminer le type de plan à partir du stripePriceId
+                    String typePlan;
+                    switch (stripePriceId) {
+                        case "price_1RB2AtAPjtnUAxI8gR1lQBhY":
+                            typePlan = "ENTREPRISE";
+                            planTarifaire.setMontantMensuel(399.0);
+                            break;
+                        case "price_1RB2AbAPjtnUAxI8VxzHVi9t":
+                            typePlan = "PRO";
+                            planTarifaire.setMontantMensuel(199.0);
+                            break;
+                        default:
+                            typePlan = "START";
+                            planTarifaire.setMontantMensuel(129.0);
+                    }
+                    
+                    planTarifaire.setCode(typePlan);
+                    planTarifaire.setNom("AmbuConnect " + typePlan);
+                    planTarifaire.setDevise("EUR");
+                    planTarifaire.setStripePriceId(stripePriceId);
+                    
+                    // Persister le plan tarifaire
+                    entityManager.persist(planTarifaire);
+                    entityManager.flush();
+                    LOG.info("Plan tarifaire créé avec succès: {}", planTarifaire.getId());
+                } else {
+                    LOG.info("Plan tarifaire existant trouvé: {}", planTarifaire.getId());
                 }
-                
-                planTarifaire.setCode(typePlan);
-                planTarifaire.setNom("AmbuConnect " + typePlan);
-                planTarifaire.setDevise("EUR");
-                planTarifaire.setStripePriceId(stripePriceId);
-                
-                // Persister le plan tarifaire
-                entityManager.persist(planTarifaire);
-                entityManager.flush();
-                LOG.info("Plan tarifaire créé avec succès: {}", planTarifaire.getId());
             }
             
             // Créer l'abonnement
@@ -314,7 +321,7 @@ public class InscriptionService {
             abonnement.setEntreprise(entreprise);
             
             // Définir les informations du plan
-            abonnement.setPlanId(planTarifaire.getId());
+            abonnement.setPlanId(planTarifaire.getId().toString());
             abonnement.setType(planTarifaire.getCode());
             abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
             abonnement.setPrixMensuel(planTarifaire.getMontantMensuel());
