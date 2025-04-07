@@ -102,10 +102,7 @@ public class InscriptionService {
             AdministrateurEntity adminEntity = creerAdministrateur(administrateurDto);
             LOG.info("Administrateur créé avec succès. ID: {}", adminEntity.getId());
             
-            // 6. Création de l'enregistrement d'abonnement si un ID d'abonnement est fourni
-            if (stripePriceId != null) {
-                enregistrerAbonnement(entrepriseEntity.getId(), stripePriceId, planTarifaire);
-            }
+
             
             // 7. Envoi d'un email de bienvenue
             String motDePasseClair = administrateurDto.getMotDePasse();
