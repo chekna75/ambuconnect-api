@@ -366,8 +366,8 @@ public class StripeService {
                 entityManager.flush();
             }
             
-            // Définir le plan_id et autres informations du plan
-            abonnement.setPlanId(planTarifaire.getId());
+            // Définir les informations du plan
+            abonnement.setPlanId(planTarifaire.getId().toString());
             abonnement.setType(planTarifaire.getCode());
             
             // Définir les montants
@@ -432,7 +432,7 @@ public class StripeService {
                     try {
                         PlanTarifaireEntity plan = PlanTarifaireEntity.findByCode(entry.getKey());
                         if (plan != null) {
-                            abonnement.setPlanId(plan.getId());
+                            abonnement.setPlanId(plan.getId().toString());
                             abonnement.setType(plan.getCode());
                         }
                     } catch (Exception e) {

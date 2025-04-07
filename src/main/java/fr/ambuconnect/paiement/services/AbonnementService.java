@@ -84,13 +84,13 @@ public class AbonnementService {
                 PlanTarifaireEntity planTarifaire = PlanTarifaireEntity.findByCode(planIdStr);
                 if (planTarifaire != null) {
                     // Utiliser l'UUID du plan tarifaire
-                    abonnement.setPlanId(planTarifaire.getId());
+                    abonnement.setPlanId(planTarifaire.getId().toString());
                     abonnement.setType(planTarifaire.getCode());
                 } else {
                     // Si non, essayer de le convertir en UUID
                     try {
                         UUID planUuid = UUID.fromString(planIdStr);
-                        abonnement.setPlanId(planUuid);
+                        abonnement.setPlanId(planUuid.toString());
                         // Chercher le plan tarifaire pour obtenir le code
                         PlanTarifaireEntity plan = PlanTarifaireEntity.findById(planUuid);
                         if (plan != null) {
