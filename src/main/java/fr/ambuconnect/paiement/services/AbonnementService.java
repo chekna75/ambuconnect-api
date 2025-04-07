@@ -21,8 +21,10 @@ import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.quarkus.arc.Unremovable;
 
 @ApplicationScoped
+@Unremovable
 public class AbonnementService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbonnementService.class);
