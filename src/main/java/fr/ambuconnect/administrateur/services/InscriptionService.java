@@ -268,27 +268,50 @@ public class InscriptionService {
      */
     private void enregistrerAbonnement(UUID entrepriseId, String stripePriceId, PlanTarifaireEntity planTarifaire) {
         try {
+            LOG.info("Début de l'enregistrement de l'abonnement pour l'entreprise: {} avec stripePriceId: {}", 
+                     entrepriseId, stripePriceId);
+            
             // Récupérer l'entreprise
             EntrepriseEntity entreprise = entityManager.find(EntrepriseEntity.class, entrepriseId);
             if (entreprise == null) {
                 throw new NotFoundException("Entreprise non trouvée");
             }
             
+            // Si le plan tarifaire n'est pas fourni, le créer
+            if (planTarifaire == null) {
+                LOG.info("Création d'un nouveau plan tarifaire pour le stripePriceId: {}", stripePriceId);
+                planTarifaire = new PlanTarifaireEntity();
+                
+                // Déterminer le type de plan à partir du stripePriceId
+                String typePlan;
+                switch (stripePriceId) {
+                    case "price_1RB2AtAPjtnUAxI8gR1lQBhY":
+                        typePlan = "ENTREPRISE";
+                        planTarifaire.setMontantMensuel(399.0);
+                        break;
+                    case "price_1RB2AbAPjtnUAxI8VxzHVi9t":
+                        typePlan = "PRO";
+                        planTarifaire.setMontantMensuel(199.0);
+                        break;
+                    default:
+                        typePlan = "START";
+                        planTarifaire.setMontantMensuel(129.0);
+                }
+                
+                planTarifaire.setCode(typePlan);
+                planTarifaire.setNom("AmbuConnect " + typePlan);
+                planTarifaire.setDevise("EUR");
+                planTarifaire.setStripePriceId(stripePriceId);
+                
+                // Persister le plan tarifaire
+                entityManager.persist(planTarifaire);
+                entityManager.flush();
+                LOG.info("Plan tarifaire créé avec succès: {}", planTarifaire.getId());
+            }
+            
             // Créer l'abonnement
             AbonnementEntity abonnement = new AbonnementEntity();
             abonnement.setEntreprise(entreprise);
-            
-            // Si le plan tarifaire n'est pas fourni, le récupérer à partir du stripePriceId
-            if (planTarifaire == null) {
-                planTarifaire = PlanTarifaireEntity.findByStripePriceId(stripePriceId);
-                if (planTarifaire == null) {
-                    // Si on ne trouve pas le plan, utiliser le plan START par défaut
-                    planTarifaire = PlanTarifaireEntity.findByCode("START");
-                    if (planTarifaire == null) {
-                        throw new RuntimeException("Le plan START n'existe pas dans la base de données");
-                    }
-                }
-            }
             
             // Définir les informations du plan
             abonnement.setPlanId(planTarifaire.getId());
@@ -310,7 +333,8 @@ public class InscriptionService {
             entityManager.persist(abonnement);
             entityManager.flush();
             
-            LOG.info("Abonnement enregistré avec succès pour l'entreprise: {}", entrepriseId);
+            LOG.info("Abonnement enregistré avec succès pour l'entreprise: {} avec plan: {}", 
+                     entrepriseId, planTarifaire.getCode());
             
         } catch (Exception e) {
             LOG.error("Erreur lors de l'enregistrement de l'abonnement", e);
