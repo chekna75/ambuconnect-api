@@ -54,6 +54,9 @@ public class AbonnementEntity extends PanacheEntityBase {
     @Column(name = "date_prochain_paiement", nullable = false)
     private LocalDate dateProchainPaiement;
 
+    @Column(name = "montant", nullable = false)
+    private Double montant;
+
     @Column(name = "montant_mensuel", nullable = false)
     private Double montantMensuel;
 

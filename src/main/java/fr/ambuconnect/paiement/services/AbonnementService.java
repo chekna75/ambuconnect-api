@@ -125,6 +125,7 @@ public class AbonnementService {
             // Montant
             abonnement.setMontantMensuel(subscription.getItems().getData().get(0).getPlan().getAmount() / 100.0);
             abonnement.setPrixMensuel(subscription.getItems().getData().get(0).getPlan().getAmount() / 100.0);
+            abonnement.setMontant(subscription.getItems().getData().get(0).getPlan().getAmount() / 100.0);
             abonnement.setDevise(subscription.getItems().getData().get(0).getPlan().getCurrency().toUpperCase());
             
             // Statut
@@ -142,6 +143,9 @@ public class AbonnementService {
             }
             if (abonnement.getPrixMensuel() == null) {
                 abonnement.setPrixMensuel(199.0);
+            }
+            if (abonnement.getMontant() == null) {
+                abonnement.setMontant(199.0);
             }
             if (abonnement.getDevise() == null) {
                 abonnement.setDevise("EUR");
