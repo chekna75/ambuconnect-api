@@ -39,7 +39,7 @@ public class AbonnementEntity extends PanacheEntityBase {
     @Column(name = "stripe_customer_id")
     private String stripeCustomerId;
 
-    @Column(name = "plan_id")
+    @Column(name = "plan_id", nullable = false)
     private UUID planId;
 
     @Column(name = "statut", nullable = false)

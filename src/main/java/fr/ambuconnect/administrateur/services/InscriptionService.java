@@ -282,7 +282,18 @@ public class InscriptionService {
                 abonnement.setDevise(planTarifaire.getDevise());
                 abonnement.setType(planTarifaire.getCode());
             } else {
-                // Valeurs par défaut si le plan tarifaire n'est pas disponible
+                // Si pas de plan tarifaire fourni, chercher le plan STANDARD par défaut
+                PlanTarifaireEntity planStandard = PlanTarifaireEntity.findByCode("STANDARD");
+                if (planStandard == null) {
+                    // Si le plan STANDARD n'existe pas, en créer un
+                    planStandard = new PlanTarifaireEntity();
+                    planStandard.setCode("STANDARD");
+                    planStandard.setNom("Standard");
+                    planStandard.setMontantMensuel(199.0);
+                    planStandard.setDevise("EUR");
+                    entityManager.persist(planStandard);
+                }
+                abonnement.setPlanId(planStandard.getId());
                 abonnement.setType("STANDARD");
                 abonnement.setPrixMensuel(199.0);
                 abonnement.setMontantMensuel(199.0);
@@ -306,6 +317,9 @@ public class InscriptionService {
             if (abonnement.getDevise() == null) {
                 abonnement.setDevise("EUR");
             }
+            if (abonnement.getMontant() == null) {
+                abonnement.setMontant(199.0);
+            }
             
             abonnement.setActif(true);
             
@@ -318,6 +332,7 @@ public class InscriptionService {
         } catch (Exception e) {
             LOG.error("Erreur lors de l'enregistrement de l'abonnement", e);
             // Ne pas bloquer l'inscription si l'enregistrement de l'abonnement échoue
+            throw new RuntimeException("Erreur lors de l'enregistrement de l'abonnement: " + e.getMessage());
         }
     }
     
