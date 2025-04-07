@@ -175,6 +175,11 @@ public class PlanTarifaireService {
             planEntity.setStripePriceId(price.getId());
             planEntity.setDateCreation(LocalDate.now());
             planEntity.setActif(planDto.getActif() != null ? planDto.getActif() : true);
+            
+            // Ajouter les champs liés aux limites
+            planEntity.setNbMaxChauffeurs(planDto.getNbMaxChauffeurs());
+            planEntity.setNbMaxConnexionsSimultanees(planDto.getNbMaxConnexionsSimultanees());
+            planEntity.setSeuilAlerteChauffeurs(planDto.getSeuilAlerteChauffeurs());
 
             entityManager.persist(planEntity);
             LOG.info("Plan tarifaire créé avec succès: {}", planEntity.getId());
@@ -227,6 +232,17 @@ public class PlanTarifaireService {
             planExistant.setMontantMensuel(planDto.getMontantMensuel());
             planExistant.setDevise(planDto.getDevise());
             planExistant.setActif(planDto.getActif());
+            
+            // Mise à jour des limites
+            if (planDto.getNbMaxChauffeurs() != null) {
+                planExistant.setNbMaxChauffeurs(planDto.getNbMaxChauffeurs());
+            }
+            if (planDto.getNbMaxConnexionsSimultanees() != null) {
+                planExistant.setNbMaxConnexionsSimultanees(planDto.getNbMaxConnexionsSimultanees());
+            }
+            if (planDto.getSeuilAlerteChauffeurs() != null) {
+                planExistant.setSeuilAlerteChauffeurs(planDto.getSeuilAlerteChauffeurs());
+            }
 
             LOG.info("Plan tarifaire mis à jour avec succès: {}", id);
             return planExistant;

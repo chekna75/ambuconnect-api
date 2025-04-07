@@ -135,9 +135,35 @@ public class InscriptionService {
             // Création de l'entité entreprise
             EntrepriseEntity entreprise = entrepriseMapper.toEntity(entrepriseDto);
             
+            // S'assurer que tous les champs importants sont renseignés
+            if (entrepriseDto.getAdresse() != null) {
+                entreprise.setAdresse(entrepriseDto.getAdresse());
+            }
+            
+            if (entrepriseDto.getCodePostal() != null) {
+                entreprise.setCodePostal(entrepriseDto.getCodePostal());
+            }
+            
+            if (entrepriseDto.getSiret() != null) {
+                entreprise.setSiret(entrepriseDto.getSiret());
+            }
+            
+            if (entrepriseDto.getTelephone() != null) {
+                entreprise.setTelephone(entrepriseDto.getTelephone());
+            }
+            
+            if (entrepriseDto.getEmail() != null) {
+                entreprise.setEmail(entrepriseDto.getEmail());
+            }
+            
             // Persister l'entreprise
             entityManager.persist(entreprise);
             entityManager.flush();
+            
+            // Log des données sauvegardées pour débogage
+            LOG.info("Entreprise créée - Nom: {}, Siret: {}, Adresse: {}, Code postal: {}, Téléphone: {}, Email: {}", 
+                    entreprise.getNom(), entreprise.getSiret(), entreprise.getAdresse(), 
+                    entreprise.getCodePostal(), entreprise.getTelephone(), entreprise.getEmail());
             
             return entreprise;
             
