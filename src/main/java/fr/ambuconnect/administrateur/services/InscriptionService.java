@@ -339,7 +339,7 @@ public class InscriptionService {
     private void envoyerEmailBienvenue(AdministrateurEntity admin, String motDePasseClair, PlanTarifaireEntity planTarifaire) {
         try {
             // Email avec les identifiants
-            emailService.sendNewAccountCredentials(
+            emailService.sendNewAccountCredentialsAdmin(
                 admin.getEmail(),
                 admin.getNom(),
                 admin.getPrenom(),
