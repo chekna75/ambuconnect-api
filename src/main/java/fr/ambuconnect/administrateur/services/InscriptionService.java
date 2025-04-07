@@ -279,6 +279,10 @@ public class InscriptionService {
                 abonnement.setPlanId(planTarifaire.getId());
                 abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
                 abonnement.setDevise(planTarifaire.getDevise());
+                abonnement.setType(planTarifaire.getCode());
+            } else {
+                // Valeur par défaut si le plan tarifaire n'est pas disponible
+                abonnement.setType("STANDARD");
             }
             
             abonnement.setStatut("active");

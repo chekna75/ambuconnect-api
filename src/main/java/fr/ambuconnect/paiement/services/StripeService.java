@@ -330,12 +330,18 @@ public class StripeService {
                         PlanTarifaireEntity plan = PlanTarifaireEntity.findByCode(entry.getKey());
                         if (plan != null) {
                             abonnement.setPlanId(plan.getId());
+                            abonnement.setType(plan.getCode());
                         }
                     } catch (Exception e) {
                         LOG.warn("Impossible de récupérer le plan tarifaire: {}", e.getMessage());
                     }
                     break;
                 }
+            }
+            
+            // Si le type n'a pas été défini, utiliser une valeur par défaut
+            if (abonnement.getType() == null) {
+                abonnement.setType("STANDARD");
             }
             
             abonnement.setStatut(subscription.getStatus());
@@ -390,12 +396,18 @@ public class StripeService {
                         PlanTarifaireEntity plan = PlanTarifaireEntity.findByCode(entry.getKey());
                         if (plan != null) {
                             abonnement.setPlanId(plan.getId());
+                            abonnement.setType(plan.getCode());
                         }
                     } catch (Exception e) {
                         LOG.warn("Impossible de récupérer le plan tarifaire: {}", e.getMessage());
                     }
                     break;
                 }
+            }
+            
+            // Si le type n'a pas été défini, ne pas le modifier s'il existe déjà
+            if (abonnement.getType() == null) {
+                abonnement.setType("STANDARD");
             }
             
             // Dates

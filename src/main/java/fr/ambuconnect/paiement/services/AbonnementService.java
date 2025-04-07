@@ -85,19 +85,29 @@ public class AbonnementService {
                 if (planTarifaire != null) {
                     // Utiliser l'UUID du plan tarifaire
                     abonnement.setPlanId(planTarifaire.getId());
+                    abonnement.setType(planTarifaire.getCode());
                 } else {
                     // Si non, essayer de le convertir en UUID
                     try {
                         UUID planUuid = UUID.fromString(planIdStr);
                         abonnement.setPlanId(planUuid);
+                        // Chercher le plan tarifaire pour obtenir le code
+                        PlanTarifaireEntity plan = PlanTarifaireEntity.findById(planUuid);
+                        if (plan != null) {
+                            abonnement.setType(plan.getCode());
+                        } else {
+                            abonnement.setType("STANDARD"); // Valeur par défaut
+                        }
                     } catch (IllegalArgumentException e) {
                         LOG.warn("L'ID du plan {} n'est pas un UUID valide, le champ plan_id sera null", planIdStr);
                         // Plan ID reste null
+                        abonnement.setType("STANDARD"); // Valeur par défaut
                     }
                 }
             } catch (Exception e) {
                 LOG.warn("Erreur lors de la conversion du plan ID: {}", e.getMessage());
                 // Plan ID reste null
+                abonnement.setType("STANDARD"); // Valeur par défaut
             }
             
             abonnement.setStatut(subscription.getStatus());
