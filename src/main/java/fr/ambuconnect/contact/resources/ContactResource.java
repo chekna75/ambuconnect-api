@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 @Path("/contact")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@PermitAll
 public class ContactResource {
     private static final Logger LOG = LoggerFactory.getLogger(ContactResource.class);
 
@@ -22,6 +23,7 @@ public class ContactResource {
 
     @POST
     @PermitAll
+    @Path("/send")
     public Response envoyerDemandeContact(@Valid ContactRequestDto request) {
         try {
             LOG.info("Réception d'une nouvelle demande de contact");
