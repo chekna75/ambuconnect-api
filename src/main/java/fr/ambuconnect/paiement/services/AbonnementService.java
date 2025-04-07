@@ -96,18 +96,18 @@ public class AbonnementService {
                         if (plan != null) {
                             abonnement.setType(plan.getCode());
                         } else {
-                            abonnement.setType("STANDARD"); // Valeur par défaut
+                            abonnement.setType("START"); // Valeur par défaut
                         }
                     } catch (IllegalArgumentException e) {
                         LOG.warn("L'ID du plan {} n'est pas un UUID valide, le champ plan_id sera null", planIdStr);
                         // Plan ID reste null
-                        abonnement.setType("STANDARD"); // Valeur par défaut
+                        abonnement.setType("START"); // Valeur par défaut
                     }
                 }
             } catch (Exception e) {
                 LOG.warn("Erreur lors de la conversion du plan ID: {}", e.getMessage());
                 // Plan ID reste null
-                abonnement.setType("STANDARD"); // Valeur par défaut
+                abonnement.setType("START"); // Valeur par défaut
             }
             
             abonnement.setStatut(subscription.getStatus());
@@ -136,7 +136,7 @@ public class AbonnementService {
                 abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
             }
             if (abonnement.getType() == null) {
-                abonnement.setType("STANDARD");
+                abonnement.setType("START");
             }
             if (abonnement.getMontantMensuel() == null) {
                 abonnement.setMontantMensuel(199.0);
