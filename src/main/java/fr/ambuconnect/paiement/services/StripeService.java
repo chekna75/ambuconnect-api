@@ -350,6 +350,7 @@ public class StripeService {
             // Dates
             Instant startInstant = Instant.ofEpochSecond(subscription.getStartDate());
             abonnement.setDateDebut(LocalDate.ofInstant(startInstant, ZoneId.systemDefault()));
+            abonnement.setDateCreation(LocalDate.now());
             
             if (subscription.getCurrentPeriodEnd() != null) {
                 Instant endInstant = Instant.ofEpochSecond(subscription.getCurrentPeriodEnd());
@@ -371,6 +372,12 @@ public class StripeService {
             }
             if (abonnement.getDevise() == null) {
                 abonnement.setDevise("EUR");
+            }
+            if (abonnement.getDateProchainPaiement() == null) {
+                abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
+            }
+            if (abonnement.getDateDebut() == null) {
+                abonnement.setDateDebut(LocalDate.now());
             }
             
             // Persister
@@ -448,6 +455,12 @@ public class StripeService {
             }
             if (abonnement.getDevise() == null) {
                 abonnement.setDevise("EUR");
+            }
+            if (abonnement.getDateProchainPaiement() == null) {
+                abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
+            }
+            if (abonnement.getDateDebut() == null) {
+                abonnement.setDateDebut(LocalDate.now());
             }
             
             LOG.info("Abonnement mis à jour en base de données: {}", abonnement.getId());

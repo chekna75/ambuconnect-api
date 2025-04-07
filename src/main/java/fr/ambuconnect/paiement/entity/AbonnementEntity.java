@@ -69,6 +69,9 @@ public class AbonnementEntity extends PanacheEntityBase {
     @Column(name = "type", nullable = false)
     private String type;
 
+    @Column(name = "date_creation", nullable = false)
+    private LocalDate dateCreation;
+
     // Champs pour les webhooks
     @Column(name = "date_dernier_paiement")
     private LocalDate dateDernierPaiement;

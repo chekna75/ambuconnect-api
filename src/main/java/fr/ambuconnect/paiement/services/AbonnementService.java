@@ -115,6 +115,7 @@ public class AbonnementService {
             // Dates
             Instant startInstant = Instant.ofEpochSecond(subscription.getStartDate());
             abonnement.setDateDebut(LocalDate.ofInstant(startInstant, ZoneId.systemDefault()));
+            abonnement.setDateCreation(LocalDate.now());
             
             if (subscription.getCurrentPeriodEnd() != null) {
                 Instant endInstant = Instant.ofEpochSecond(subscription.getCurrentPeriodEnd());
@@ -128,6 +129,23 @@ public class AbonnementService {
             
             // Statut
             abonnement.setActif("active".equals(subscription.getStatus()));
+            
+            // Vérification des champs obligatoires
+            if (abonnement.getDateProchainPaiement() == null) {
+                abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
+            }
+            if (abonnement.getType() == null) {
+                abonnement.setType("STANDARD");
+            }
+            if (abonnement.getMontantMensuel() == null) {
+                abonnement.setMontantMensuel(199.0);
+            }
+            if (abonnement.getPrixMensuel() == null) {
+                abonnement.setPrixMensuel(199.0);
+            }
+            if (abonnement.getDevise() == null) {
+                abonnement.setDevise("EUR");
+            }
             
             // Persister
             entityManager.persist(abonnement);

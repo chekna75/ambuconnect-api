@@ -292,6 +292,8 @@ public class InscriptionService {
             // S'assurer que tous les champs requis sont définis
             abonnement.setStatut("active");
             abonnement.setDateDebut(LocalDate.now());
+            abonnement.setDateCreation(LocalDate.now());
+            abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
             abonnement.setActif(true);
             
             // Persister l'abonnement
