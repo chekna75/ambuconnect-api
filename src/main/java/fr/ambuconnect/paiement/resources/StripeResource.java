@@ -172,18 +172,10 @@ public class StripeResource {
         try {
             LOG.info("Création d'un SetupIntent pour le client: {}", customerId);
             
-            Map<String, Object> params = new HashMap<>();
-            if (customerId != null && !customerId.isEmpty()) {
-                params.put("customer", customerId);
-            }
+            // Déléguer au service qui a déjà la clé API initialisée
+            Map<String, Object> setupIntentData = stripeService.createSetupIntent(customerId);
             
-            // Utilisation de l'API Stripe pour créer un SetupIntent
-            com.stripe.model.SetupIntent setupIntent = com.stripe.model.SetupIntent.create(params);
-            
-            return Response.ok(Map.of(
-                "clientSecret", setupIntent.getClientSecret(),
-                "id", setupIntent.getId()
-            )).build();
+            return Response.ok(setupIntentData).build();
         } catch (Exception e) {
             LOG.error("Erreur lors de la création du SetupIntent", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

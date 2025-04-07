@@ -505,4 +505,34 @@ public class StripeService {
         // Implémenter l'envoi d'emails de notification
         // Cette méthode peut appeler un service d'emails existant dans votre application
     }
+
+    /**
+     * Crée un SetupIntent pour configurer une méthode de paiement
+     * 
+     * @param customerId ID du client Stripe (facultatif)
+     * @return Map contenant les informations du SetupIntent (id et clientSecret)
+     */
+    public Map<String, Object> createSetupIntent(String customerId) {
+        try {
+            LOG.info("Création d'un SetupIntent pour le client: {}", customerId);
+            
+            Map<String, Object> params = new HashMap<>();
+            if (customerId != null && !customerId.isEmpty()) {
+                params.put("customer", customerId);
+            }
+            
+            com.stripe.model.SetupIntent setupIntent = com.stripe.model.SetupIntent.create(params);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("clientSecret", setupIntent.getClientSecret());
+            response.put("id", setupIntent.getId());
+            
+            LOG.info("SetupIntent créé avec succès: {}", setupIntent.getId());
+            return response;
+            
+        } catch (StripeException e) {
+            LOG.error("Erreur lors de la création du SetupIntent", e);
+            throw new RuntimeException("Erreur lors de la création du SetupIntent: " + e.getMessage());
+        }
+    }
 } 
