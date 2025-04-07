@@ -300,22 +300,16 @@ public class InscriptionService {
                 abonnement.setDevise(planTarifaire.getDevise());
                 abonnement.setType(planTarifaire.getCode());
             } else {
-                // Si pas de plan tarifaire fourni, chercher le plan STANDARD par défaut
-                PlanTarifaireEntity planStandard = PlanTarifaireEntity.findByCode("STANDARD");
-                if (planStandard == null) {
-                    // Si le plan STANDARD n'existe pas, en créer un
-                    planStandard = new PlanTarifaireEntity();
-                    planStandard.setCode("STANDARD");
-                    planStandard.setNom("Standard");
-                    planStandard.setMontantMensuel(199.0);
-                    planStandard.setDevise("EUR");
-                    entityManager.persist(planStandard);
+                // Si pas de plan tarifaire fourni, chercher le plan START par défaut
+                PlanTarifaireEntity planStart = PlanTarifaireEntity.findByCode("START");
+                if (planStart == null) {
+                    throw new RuntimeException("Le plan START n'existe pas dans la base de données");
                 }
-                abonnement.setPlanId(planStandard.getId());
-                abonnement.setType("STANDARD");
-                abonnement.setPrixMensuel(199.0);
-                abonnement.setMontantMensuel(199.0);
-                abonnement.setDevise("EUR");
+                abonnement.setPlanId(planStart.getId());
+                abonnement.setType("START");
+                abonnement.setPrixMensuel(planStart.getMontantMensuel());
+                abonnement.setMontantMensuel(planStart.getMontantMensuel());
+                abonnement.setDevise(planStart.getDevise());
             }
             
             // S'assurer que tous les champs requis sont définis

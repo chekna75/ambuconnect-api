@@ -499,7 +499,7 @@ public class StripeService {
             
             // Si le type n'a pas été défini, ne pas le modifier s'il existe déjà
             if (abonnement.getType() == null) {
-                abonnement.setType("STANDARD");
+                abonnement.setType("START");
             }
             
             // Dates
@@ -541,7 +541,7 @@ public class StripeService {
                 abonnement.setStatut("active");
             }
             if (abonnement.getType() == null) {
-                abonnement.setType("STANDARD");
+                abonnement.setType("START");
             }
             if (abonnement.getFrequenceFacturation() == null) {
                 abonnement.setFrequenceFacturation("MENSUEL");
