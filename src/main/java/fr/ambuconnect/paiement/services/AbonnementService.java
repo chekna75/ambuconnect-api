@@ -123,6 +123,7 @@ public class AbonnementService {
             
             // Montant
             abonnement.setMontantMensuel(subscription.getItems().getData().get(0).getPlan().getAmount() / 100.0);
+            abonnement.setPrixMensuel(subscription.getItems().getData().get(0).getPlan().getAmount() / 100.0);
             abonnement.setDevise(subscription.getItems().getData().get(0).getPlan().getCurrency().toUpperCase());
             
             // Statut

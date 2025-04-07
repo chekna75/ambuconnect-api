@@ -357,8 +357,21 @@ public class StripeService {
             }
             
             // Montant
-            abonnement.setMontantMensuel(subscription.getItems().getData().get(0).getPrice().getUnitAmount() / 100.0);
+            Double montant = subscription.getItems().getData().get(0).getPrice().getUnitAmount() / 100.0;
+            abonnement.setMontantMensuel(montant);
+            abonnement.setPrixMensuel(montant);
             abonnement.setDevise(subscription.getItems().getData().get(0).getPrice().getCurrency().toUpperCase());
+            
+            // S'assurer que tous les champs obligatoires sont définis
+            if (abonnement.getPrixMensuel() == null) {
+                abonnement.setPrixMensuel(199.0);
+            }
+            if (abonnement.getMontantMensuel() == null) {
+                abonnement.setMontantMensuel(199.0);
+            }
+            if (abonnement.getDevise() == null) {
+                abonnement.setDevise("EUR");
+            }
             
             // Persister
             entityManager.persist(abonnement);
@@ -422,7 +435,20 @@ public class StripeService {
             }
             
             // Montant
-            abonnement.setMontantMensuel(subscription.getItems().getData().get(0).getPrice().getUnitAmount() / 100.0);
+            Double montant = subscription.getItems().getData().get(0).getPrice().getUnitAmount() / 100.0;
+            abonnement.setMontantMensuel(montant);
+            abonnement.setPrixMensuel(montant);
+            
+            // S'assurer que tous les champs obligatoires sont définis
+            if (abonnement.getPrixMensuel() == null) {
+                abonnement.setPrixMensuel(199.0);
+            }
+            if (abonnement.getMontantMensuel() == null) {
+                abonnement.setMontantMensuel(199.0);
+            }
+            if (abonnement.getDevise() == null) {
+                abonnement.setDevise("EUR");
+            }
             
             LOG.info("Abonnement mis à jour en base de données: {}", abonnement.getId());
             

@@ -278,13 +278,18 @@ public class InscriptionService {
             if (planTarifaire != null) {
                 abonnement.setPlanId(planTarifaire.getId());
                 abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
+                abonnement.setPrixMensuel(planTarifaire.getMontantMensuel());
                 abonnement.setDevise(planTarifaire.getDevise());
                 abonnement.setType(planTarifaire.getCode());
             } else {
-                // Valeur par défaut si le plan tarifaire n'est pas disponible
+                // Valeurs par défaut si le plan tarifaire n'est pas disponible
                 abonnement.setType("STANDARD");
+                abonnement.setPrixMensuel(199.0);
+                abonnement.setMontantMensuel(199.0);
+                abonnement.setDevise("EUR");
             }
             
+            // S'assurer que tous les champs requis sont définis
             abonnement.setStatut("active");
             abonnement.setDateDebut(LocalDate.now());
             abonnement.setActif(true);

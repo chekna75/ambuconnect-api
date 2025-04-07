@@ -57,6 +57,9 @@ public class AbonnementEntity extends PanacheEntityBase {
     @Column(name = "montant_mensuel")
     private Double montantMensuel;
 
+    @Column(name = "prix_mensuel", nullable = false)
+    private Double prixMensuel;
+
     @Column(name = "devise")
     private String devise;
 
