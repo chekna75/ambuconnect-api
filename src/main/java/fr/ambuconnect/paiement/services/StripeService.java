@@ -337,34 +337,12 @@ public class StripeService {
             
             // Utiliser le code du plan au lieu de l'ID du prix Stripe
             String priceId = subscription.getItems().getData().get(0).getPrice().getId();
-            PlanTarifaireEntity planTarifaire = null;
-            String typePlan = null;
+            String typePlan = getPlanTypeFromPriceId(priceId);
             
-            // Chercher le plan correspondant
-            for (Map.Entry<String, String> entry : SUBSCRIPTION_PRICES.entrySet()) {
-                if (entry.getValue().equals(priceId)) {
-                    typePlan = entry.getKey(); // START, PRO ou ENTREPRISE
-                    try {
-                        planTarifaire = PlanTarifaireEntity.findByCode(typePlan);
-                        if (planTarifaire != null) {
-                            abonnement.setPlanId(planTarifaire.getId());
-                            abonnement.setType(planTarifaire.getCode());
-                            break;
-                        }
-                    } catch (Exception e) {
-                        LOG.warn("Impossible de récupérer le plan tarifaire: {}", e.getMessage());
-                    }
-                }
-            }
-            
-            // Si aucun plan n'a été trouvé, créer le plan correspondant
+            // Chercher ou créer le plan tarifaire
+            PlanTarifaireEntity planTarifaire = PlanTarifaireEntity.findByCode(typePlan);
             if (planTarifaire == null) {
-                if (typePlan == null) {
-                    // Si on n'a pas pu déterminer le type de plan, utiliser START par défaut
-                    typePlan = "START";
-                }
-                
-                // Créer le plan
+                // Créer le plan s'il n'existe pas
                 planTarifaire = new PlanTarifaireEntity();
                 planTarifaire.setCode(typePlan);
                 
@@ -386,73 +364,40 @@ public class StripeService {
                 planTarifaire.setDevise("EUR");
                 entityManager.persist(planTarifaire);
                 entityManager.flush();
-                
-                abonnement.setPlanId(planTarifaire.getId());
-                abonnement.setType(planTarifaire.getCode());
             }
             
-            abonnement.setStatut(subscription.getStatus());
-            abonnement.setActif("active".equals(subscription.getStatus()));
+            // Définir le plan_id et autres informations du plan
+            abonnement.setPlanId(planTarifaire.getId());
+            abonnement.setType(planTarifaire.getCode());
             
-            // Dates
-            Instant startInstant = Instant.ofEpochSecond(subscription.getStartDate());
-            abonnement.setDateDebut(LocalDate.ofInstant(startInstant, ZoneId.systemDefault()));
-            abonnement.setDateCreation(LocalDate.now());
-            
-            if (subscription.getCurrentPeriodEnd() != null) {
-                Instant endInstant = Instant.ofEpochSecond(subscription.getCurrentPeriodEnd());
-                abonnement.setDateProchainPaiement(LocalDate.ofInstant(endInstant, ZoneId.systemDefault()));
-            }
-            
-            // Montant
+            // Définir les montants
             Double montant = subscription.getItems().getData().get(0).getPrice().getUnitAmount() / 100.0;
             abonnement.setMontantMensuel(montant);
             abonnement.setPrixMensuel(montant);
             abonnement.setMontant(montant);
             abonnement.setDevise(subscription.getItems().getData().get(0).getPrice().getCurrency().toUpperCase());
             
-            // S'assurer que tous les champs obligatoires sont définis
-            if (abonnement.getPrixMensuel() == null) {
-                abonnement.setPrixMensuel(planTarifaire.getMontantMensuel());
-            }
-            if (abonnement.getMontantMensuel() == null) {
-                abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
-            }
-            if (abonnement.getMontant() == null) {
-                abonnement.setMontant(planTarifaire.getMontantMensuel());
-            }
-            if (abonnement.getDevise() == null) {
-                abonnement.setDevise("EUR");
-            }
-            if (abonnement.getDateProchainPaiement() == null) {
+            // Définir les dates
+            abonnement.setDateDebut(LocalDate.now());
+            abonnement.setDateCreation(LocalDate.now());
+            if (subscription.getCurrentPeriodEnd() != null) {
+                Instant endInstant = Instant.ofEpochSecond(subscription.getCurrentPeriodEnd());
+                abonnement.setDateProchainPaiement(LocalDate.ofInstant(endInstant, ZoneId.systemDefault()));
+            } else {
                 abonnement.setDateProchainPaiement(LocalDate.now().plusMonths(1));
             }
-            if (abonnement.getDateDebut() == null) {
-                abonnement.setDateDebut(LocalDate.now());
-            }
-            if (abonnement.getDateCreation() == null) {
-                abonnement.setDateCreation(LocalDate.now());
-            }
-            if (abonnement.getStatut() == null) {
-                abonnement.setStatut("active");
-            }
-            if (abonnement.getFrequenceFacturation() == null) {
-                abonnement.setFrequenceFacturation("MENSUEL");
-            }
             
-            // Définir la fréquence de facturation en fonction de l'intervalle Stripe
+            // Définir le statut et la fréquence
+            abonnement.setStatut(subscription.getStatus());
+            abonnement.setActif("active".equals(subscription.getStatus()));
+            
             String interval = subscription.getItems().getData().get(0).getPrice().getRecurring().getInterval();
-            if ("month".equals(interval)) {
-                abonnement.setFrequenceFacturation("MENSUEL");
-            } else if ("year".equals(interval)) {
-                abonnement.setFrequenceFacturation("ANNUEL");
-            } else {
-                // Valeur par défaut
-                abonnement.setFrequenceFacturation("MENSUEL");
-            }
+            abonnement.setFrequenceFacturation("month".equals(interval) ? "MENSUEL" : "ANNUEL");
             
-            // Persister
+            // Persister l'abonnement
             entityManager.persist(abonnement);
+            entityManager.flush();
+            
             LOG.info("Abonnement enregistré en base de données: {}", abonnement.getId());
             
         } catch (Exception e) {
