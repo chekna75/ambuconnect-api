@@ -41,7 +41,7 @@ public class ContactService {
 
             // Envoi de l'email à l'équipe AmbuConnect
             emailService.sendEmail(
-                "contact@ambuconnect-app.com", // Remplacer par l'email de destination souhaité
+                "ambuconnect@ambuconnect-app.com", // Remplacer par l'email de destination souhaité
                 "Nouvelle demande de contact - " + request.getType(),
                 emailBody.toString()
             );
