@@ -88,6 +88,7 @@ public class AdministrateurResourse {
 
     @POST
     @Path("/createchauffeur")
+    @RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response craeteChauffeur(@RequestBody ChauffeurDto chauffeurDto) throws Exception{
@@ -151,6 +152,7 @@ public class AdministrateurResourse {
     @Path("/{id}/updatechauffeur")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR"})
     @Transactional
     public Response updateChauffeur(
             @PathParam("id") UUID id,
@@ -172,6 +174,7 @@ public class AdministrateurResourse {
 
     @GET
 @Path("/entreprise/{identreprise}")
+@RolesAllowed({"admin", "ADMIN", "regulateur", "REGULATEUR", "chauffeur", "CHAUFFEUR"})
 @Produces(MediaType.APPLICATION_JSON)
 public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") UUID identreprise) {
         return administrateurService.findByEntreprise(identreprise);
