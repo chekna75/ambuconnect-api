@@ -65,7 +65,7 @@ public class ChauffeurConnexionService {
         }
         
         // 2. Récupérer le plan tarifaire associé à l'abonnement
-        PlanTarifaireEntity planTarifaire = PlanTarifaireEntity.findByCode(abonnement.getPlanId());
+        PlanTarifaireEntity planTarifaire = PlanTarifaireEntity.findById(abonnement.getPlanId());
         if (planTarifaire == null) {
             LOG.error("Plan tarifaire non trouvé pour l'abonnement: {}", abonnement.getId());
             throw new ForbiddenException("Une erreur est survenue avec votre abonnement. Contactez votre administrateur.");

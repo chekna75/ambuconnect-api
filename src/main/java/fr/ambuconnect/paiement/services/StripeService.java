@@ -22,6 +22,7 @@ import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import fr.ambuconnect.paiement.dto.CustomerRequest;
 import fr.ambuconnect.paiement.dto.SubscriptionRequest;
 import fr.ambuconnect.paiement.entity.AbonnementEntity;
+import fr.ambuconnect.paiement.entity.PlanTarifaireEntity;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -319,7 +320,24 @@ public class StripeService {
             abonnement.setEntreprise(entreprise);
             abonnement.setStripeSubscriptionId(subscription.getId());
             abonnement.setStripeCustomerId(customer.getId());
-            abonnement.setPlanId(subscription.getItems().getData().get(0).getPrice().getId());
+            
+            // Utiliser le code du plan au lieu de l'ID du prix Stripe
+            String priceId = subscription.getItems().getData().get(0).getPrice().getId();
+            for (Map.Entry<String, String> entry : SUBSCRIPTION_PRICES.entrySet()) {
+                if (entry.getValue().equals(priceId)) {
+                    // Si on trouve le code correspondant, l'utiliser et chercher le plan dans la BD
+                    try {
+                        PlanTarifaireEntity plan = PlanTarifaireEntity.findByCode(entry.getKey());
+                        if (plan != null) {
+                            abonnement.setPlanId(plan.getId());
+                        }
+                    } catch (Exception e) {
+                        LOG.warn("Impossible de récupérer le plan tarifaire: {}", e.getMessage());
+                    }
+                    break;
+                }
+            }
+            
             abonnement.setStatut(subscription.getStatus());
             abonnement.setActif("active".equals(subscription.getStatus()));
             
@@ -362,7 +380,23 @@ public class StripeService {
             // Mettre à jour les informations
             abonnement.setStatut(subscription.getStatus());
             abonnement.setActif("active".equals(subscription.getStatus()));
-            abonnement.setPlanId(subscription.getItems().getData().get(0).getPrice().getId());
+            
+            // Utiliser le code du plan au lieu de l'ID du prix Stripe
+            String priceId = subscription.getItems().getData().get(0).getPrice().getId();
+            for (Map.Entry<String, String> entry : SUBSCRIPTION_PRICES.entrySet()) {
+                if (entry.getValue().equals(priceId)) {
+                    // Si on trouve le code correspondant, l'utiliser et chercher le plan dans la BD
+                    try {
+                        PlanTarifaireEntity plan = PlanTarifaireEntity.findByCode(entry.getKey());
+                        if (plan != null) {
+                            abonnement.setPlanId(plan.getId());
+                        }
+                    } catch (Exception e) {
+                        LOG.warn("Impossible de récupérer le plan tarifaire: {}", e.getMessage());
+                    }
+                    break;
+                }
+            }
             
             // Dates
             if (subscription.getCurrentPeriodEnd() != null) {

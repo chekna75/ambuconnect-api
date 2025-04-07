@@ -276,7 +276,7 @@ public class InscriptionService {
             
             // Si le plan tarifaire est fourni, utiliser ses informations
             if (planTarifaire != null) {
-                abonnement.setPlanId(planTarifaire.getCode());
+                abonnement.setPlanId(planTarifaire.getId());
                 abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
                 abonnement.setDevise(planTarifaire.getDevise());
             }
