@@ -17,6 +17,8 @@ import fr.ambuconnect.authentification.mapper.AuthentificationMapper;
 import fr.ambuconnect.authentification.utils.JwtUtils;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
+import fr.ambuconnect.paiement.entity.AbonnementEntity;
+import fr.ambuconnect.paiement.services.StripeService;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -42,6 +44,9 @@ public class AuthenService {
 
     @Inject
     EmailService emailService;
+
+    @Inject
+    StripeService stripeService;
 
     @ConfigProperty(name = "app.frontend.url")
     String frontendUrl;
@@ -138,7 +143,7 @@ public class AuthenService {
     @Transactional
     public String connexionAdmin(String email, String motDePasse, Boolean isAdmin) {
         try {
-            System.out.println("Tentative de connexion admin - Email: " + email);
+            LOG.info("Tentative de connexion admin - Email: {}", email);
             
             AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
             if (admin != null && verifierMotDePasse(motDePasse, admin.getMotDePasse())) {
@@ -148,9 +153,37 @@ public class AuthenService {
                     role = "SUPERADMIN";
                 }
                 
-                // Vérifier si l'entreprise a un abonnement actif
-                boolean abonnementActif = true; // Par défaut, tous les utilisateurs ont un abonnement actif
-                String planType = "PREMIUM"; // Par défaut, tous les utilisateurs ont un plan PREMIUM
+                // Vérifier si l'entreprise a un abonnement actif et récupérer son type
+                boolean abonnementActif = false;
+                String planType = "START"; // Plan par défaut si aucun abonnement trouvé
+                
+                if (admin.getEntreprise() != null) {
+                    try {
+                        // Récupérer l'abonnement actif
+                        AbonnementEntity abonnement = AbonnementEntity.find(
+                            "entreprise.id = ?1 and actif = true", 
+                            admin.getEntreprise().getId()
+                        ).firstResult();
+                        
+                        if (abonnement != null && abonnement.getStripeSubscriptionId() != null) {
+                            // Vérifier le statut dans Stripe
+                            com.stripe.model.Subscription subscription = 
+                                com.stripe.model.Subscription.retrieve(abonnement.getStripeSubscriptionId());
+                            
+                            if (subscription != null) {
+                                abonnementActif = "active".equals(subscription.getStatus());
+                                String priceId = subscription.getItems().getData().get(0).getPrice().getId();
+                                planType = stripeService.getPlanTypeFromPriceId(priceId);
+                                LOG.info("Abonnement Stripe trouvé - Type: {}, Actif: {}", planType, abonnementActif);
+                            }
+                        } else {
+                            LOG.warn("Aucun abonnement actif trouvé pour l'entreprise: {}", admin.getEntreprise().getId());
+                        }
+                    } catch (Exception e) {
+                        LOG.error("Erreur lors de la vérification de l'abonnement Stripe: {}", e.getMessage());
+                        // En cas d'erreur, on utilise les valeurs par défaut
+                    }
+                }
                 
                 return jwtUtils.generateCompleteToken(
                     admin.getId(),
@@ -169,8 +202,7 @@ public class AuthenService {
             }
             throw new IllegalArgumentException("Identifiants invalides");
         } catch (Exception e) {
-            System.out.println("Erreur lors de la connexion: " + e.getMessage());
-            e.printStackTrace();
+            LOG.error("Erreur inattendue pour {}: {}", email, e.getMessage());
             throw e;
         }
     }

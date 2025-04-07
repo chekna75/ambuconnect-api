@@ -73,6 +73,20 @@ public class StripeService {
     }
 
     /**
+     * Convertit un Stripe Price ID en type de plan AmbuConnect
+     */
+    public String getPlanTypeFromPriceId(String priceId) {
+        // Parcourir la map SUBSCRIPTION_PRICES pour trouver le type correspondant
+        for (Map.Entry<String, String> entry : SUBSCRIPTION_PRICES.entrySet()) {
+            if (entry.getValue().equals(priceId)) {
+                return entry.getKey();
+            }
+        }
+        // Si aucun type ne correspond, retourner START par défaut
+        return "START";
+    }
+
+    /**
      * Crée un nouveau client dans Stripe
      */
     public Customer createCustomer(CustomerRequest request) {
@@ -699,6 +713,30 @@ public class StripeService {
         } catch (StripeException e) {
             LOG.error("Erreur lors de la création du SetupIntent", e);
             throw new RuntimeException("Erreur lors de la création du SetupIntent: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Récupère l'abonnement actif d'un customer Stripe
+     */
+    public Subscription getActiveSubscription(String customerId) {
+        try {
+            LOG.debug("Recherche de l'abonnement actif pour le customer: {}", customerId);
+            
+            Map<String, Object> params = new HashMap<>();
+            params.put("customer", customerId);
+            params.put("status", "active");
+            params.put("limit", 1);
+            
+            Subscription.list(params).getData().stream()
+                .findFirst()
+                .orElse(null);
+                
+            LOG.debug("Aucun abonnement actif trouvé pour le customer: {}", customerId);
+            return null;
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la recherche de l'abonnement actif: {}", e.getMessage());
+            return null;
         }
     }
 } 

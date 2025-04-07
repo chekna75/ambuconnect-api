@@ -101,12 +101,33 @@ public class InscriptionService {
             // 5. Création de l'administrateur
             AdministrateurEntity adminEntity = creerAdministrateur(administrateurDto);
             LOG.info("Administrateur créé avec succès. ID: {}", adminEntity.getId());
-            
+
+            // 6. Création de l'enregistrement d'abonnement si un ID d'abonnement est fourni
+            if (stripePriceId != null) {
+                enregistrerAbonnement(entrepriseEntity.getId(), stripePriceId, planTarifaire);
+            }
+
 
             
-            // 7. Envoi d'un email de bienvenue
+            // 6. Création de l'abonnement
+            if (stripePriceId != null) {
+                enregistrerAbonnement(entrepriseEntity.getId(), stripePriceId, planTarifaire);
+            }
+            
+            // 7. Envoi d'un email de bienvenue à l'administrateur
             String motDePasseClair = administrateurDto.getMotDePasse();
             envoyerEmailBienvenue(adminEntity, motDePasseClair, planTarifaire);
+            
+            // 8. Envoi des détails d'inscription à l'équipe AmbuConnect
+            try {
+                emailService.sendNewCompanyRegistrationDetails(
+                    inscriptionDto,
+                    "ambuconnect@ambuconnect-app.com"
+                );
+            } catch (Exception e) {
+                LOG.error("Erreur lors de l'envoi des détails d'inscription par email", e);
+                // Ne pas bloquer l'inscription si l'envoi échoue
+            }
             
             return administrateurMapper.toDto(adminEntity);
             

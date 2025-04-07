@@ -536,6 +536,7 @@ public class AdministrateurService {
             EntrepriseEntity entreprise = new EntrepriseEntity();
             entreprise.setNom(administrateurDto.getEntrepriseNom());
             
+            
             // Stocker les informations d'abonnement (si votre entité a ces champs)
             // Si ces méthodes ne sont pas disponibles, modifiez selon votre structure
             try {

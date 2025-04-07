@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 
+import fr.ambuconnect.administrateur.dto.InscriptionEntrepriseDto;
+
 @ApplicationScoped
 public class EmailService {
 
@@ -145,5 +147,64 @@ public class EmailService {
         mailer.send(email);
         
         LOG.info("Email envoyé avec succès à {}", destinataire);
+    }
+
+    /**
+     * Envoie un email avec les détails d'inscription d'une entreprise
+     */
+    public void sendNewCompanyRegistrationDetails(InscriptionEntrepriseDto inscriptionDto, String adminEmail) {
+        try {
+            LOG.info("Envoi des détails d'inscription pour l'entreprise: {}", inscriptionDto.getEntreprise().getNom());
+            
+            String subject = "Nouvelle inscription entreprise - " + inscriptionDto.getEntreprise().getNom();
+            
+            StringBuilder body = new StringBuilder();
+            body.append("Détails de la nouvelle inscription:\n\n");
+            
+            // Informations de l'entreprise
+            body.append("ENTREPRISE:\n");
+            body.append("Nom: ").append(inscriptionDto.getEntreprise().getNom()).append("\n");
+            body.append("SIRET: ").append(inscriptionDto.getEntreprise().getSiret()).append("\n");
+            body.append("Email: ").append(inscriptionDto.getEntreprise().getEmail()).append("\n");
+            body.append("Téléphone: ").append(inscriptionDto.getEntreprise().getTelephone()).append("\n");
+            body.append("Adresse: ").append(inscriptionDto.getEntreprise().getAdresse()).append("\n");
+            body.append("Code Postal: ").append(inscriptionDto.getEntreprise().getCodePostal()).append("\n\n");
+            
+            // Informations de l'administrateur
+            body.append("ADMINISTRATEUR:\n");
+            if (inscriptionDto.getAdministrateur() != null) {
+                body.append("Nom: ").append(inscriptionDto.getAdministrateur().getNom()).append("\n");
+                body.append("Prénom: ").append(inscriptionDto.getAdministrateur().getPrenom()).append("\n");
+                body.append("Email: ").append(inscriptionDto.getAdministrateur().getEmail()).append("\n");
+                body.append("Téléphone: ").append(inscriptionDto.getAdministrateur().getTelephone()).append("\n");
+            } else {
+                body.append("Nom: ").append(inscriptionDto.getNom()).append("\n");
+                body.append("Prénom: ").append(inscriptionDto.getPrenom()).append("\n");
+                body.append("Email: ").append(inscriptionDto.getEmail()).append("\n");
+                body.append("Téléphone: ").append(inscriptionDto.getTelephone()).append("\n");
+            }
+            body.append("\n");
+            
+            // Informations de l'abonnement
+            body.append("ABONNEMENT:\n");
+            body.append("Type: ").append(inscriptionDto.getCodeAbonnement() != null ? 
+                inscriptionDto.getCodeAbonnement() : "START").append("\n");
+            if (inscriptionDto.getStripeSubscriptionId() != null) {
+                body.append("ID Stripe: ").append(inscriptionDto.getStripeSubscriptionId()).append("\n");
+            }
+            
+            // Envoi de l'email
+            mailer.send(Mail.withText(
+                adminEmail,
+                subject,
+                body.toString()
+            ));
+            
+            LOG.info("Email avec les détails d'inscription envoyé avec succès à {}", adminEmail);
+            
+        } catch (Exception e) {
+            LOG.error("Erreur lors de l'envoi de l'email des détails d'inscription", e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'email des détails d'inscription", e);
+        }
     }
 } 

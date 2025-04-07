@@ -371,6 +371,12 @@ public List<AdministrateurDto> getAdminsByEntreprise(@PathParam("identreprise") 
             
             // Utiliser le type d'abonnement effectif (provient de typeAbonnement ou subscriptionType)
             String typeAbonnement = inscriptionDto.getTypeAbonnementEffectif();
+
+            abonnementService.enregistrerAbonnement(
+                nouvelAdmin.getEntrepriseId(), 
+                inscriptionDto.getStripeSubscriptionId()
+            );
+
             
             
             return Response.status(Response.Status.CREATED)
