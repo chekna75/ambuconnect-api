@@ -323,25 +323,58 @@ public class StripeService {
             
             // Utiliser le code du plan au lieu de l'ID du prix Stripe
             String priceId = subscription.getItems().getData().get(0).getPrice().getId();
+            PlanTarifaireEntity planTarifaire = null;
+            String typePlan = null;
+            
+            // Chercher le plan correspondant
             for (Map.Entry<String, String> entry : SUBSCRIPTION_PRICES.entrySet()) {
                 if (entry.getValue().equals(priceId)) {
-                    // Si on trouve le code correspondant, l'utiliser et chercher le plan dans la BD
+                    typePlan = entry.getKey(); // START, PRO ou ENTREPRISE
                     try {
-                        PlanTarifaireEntity plan = PlanTarifaireEntity.findByCode(entry.getKey());
-                        if (plan != null) {
-                            abonnement.setPlanId(plan.getId());
-                            abonnement.setType(plan.getCode());
+                        planTarifaire = PlanTarifaireEntity.findByCode(typePlan);
+                        if (planTarifaire != null) {
+                            abonnement.setPlanId(planTarifaire.getId());
+                            abonnement.setType(planTarifaire.getCode());
+                            break;
                         }
                     } catch (Exception e) {
                         LOG.warn("Impossible de récupérer le plan tarifaire: {}", e.getMessage());
                     }
-                    break;
                 }
             }
             
-            // Si le type n'a pas été défini, utiliser une valeur par défaut
-            if (abonnement.getType() == null) {
-                abonnement.setType("STANDARD");
+            // Si aucun plan n'a été trouvé, créer le plan correspondant
+            if (planTarifaire == null) {
+                if (typePlan == null) {
+                    // Si on n'a pas pu déterminer le type de plan, utiliser START par défaut
+                    typePlan = "START";
+                }
+                
+                // Créer le plan
+                planTarifaire = new PlanTarifaireEntity();
+                planTarifaire.setCode(typePlan);
+                
+                switch (typePlan) {
+                    case "START":
+                        planTarifaire.setNom("AmbuConnect START");
+                        planTarifaire.setMontantMensuel(199.0);
+                        break;
+                    case "PRO":
+                        planTarifaire.setNom("AmbuConnect PRO");
+                        planTarifaire.setMontantMensuel(299.0);
+                        break;
+                    case "ENTREPRISE":
+                        planTarifaire.setNom("AmbuConnect ENTREPRISE");
+                        planTarifaire.setMontantMensuel(499.0);
+                        break;
+                }
+                
+                planTarifaire.setDevise("EUR");
+                entityManager.persist(planTarifaire);
+                entityManager.flush();
+                
+                abonnement.setPlanId(planTarifaire.getId());
+                abonnement.setType(planTarifaire.getCode());
             }
             
             abonnement.setStatut(subscription.getStatus());
@@ -361,14 +394,18 @@ public class StripeService {
             Double montant = subscription.getItems().getData().get(0).getPrice().getUnitAmount() / 100.0;
             abonnement.setMontantMensuel(montant);
             abonnement.setPrixMensuel(montant);
+            abonnement.setMontant(montant);
             abonnement.setDevise(subscription.getItems().getData().get(0).getPrice().getCurrency().toUpperCase());
             
             // S'assurer que tous les champs obligatoires sont définis
             if (abonnement.getPrixMensuel() == null) {
-                abonnement.setPrixMensuel(199.0);
+                abonnement.setPrixMensuel(planTarifaire.getMontantMensuel());
             }
             if (abonnement.getMontantMensuel() == null) {
-                abonnement.setMontantMensuel(199.0);
+                abonnement.setMontantMensuel(planTarifaire.getMontantMensuel());
+            }
+            if (abonnement.getMontant() == null) {
+                abonnement.setMontant(planTarifaire.getMontantMensuel());
             }
             if (abonnement.getDevise() == null) {
                 abonnement.setDevise("EUR");
@@ -384,9 +421,6 @@ public class StripeService {
             }
             if (abonnement.getStatut() == null) {
                 abonnement.setStatut("active");
-            }
-            if (abonnement.getType() == null) {
-                abonnement.setType("STANDARD");
             }
             if (abonnement.getFrequenceFacturation() == null) {
                 abonnement.setFrequenceFacturation("MENSUEL");
@@ -409,6 +443,7 @@ public class StripeService {
             
         } catch (Exception e) {
             LOG.error("Erreur lors du traitement de l'événement d'abonnement créé", e);
+            throw new RuntimeException("Erreur lors du traitement de l'événement d'abonnement créé: " + e.getMessage());
         }
     }
     
