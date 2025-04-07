@@ -77,38 +77,49 @@ public class AbonnementService {
             abonnement.setStripeSubscriptionId(stripeSubscriptionId);
             abonnement.setStripeCustomerId(subscription.getCustomer());
             
-            // Extraire l'ID du plan et essayer de le convertir en UUID
-            String planIdStr = subscription.getItems().getData().get(0).getPlan().getId();
-            try {
-                // Vérifier si l'ID est un code de plan tarifaire connu
-                PlanTarifaireEntity planTarifaire = PlanTarifaireEntity.findByCode(planIdStr);
-                if (planTarifaire != null) {
-                    // Utiliser l'UUID du plan tarifaire
-                    abonnement.setPlanId(planTarifaire.getId().toString());
-                    abonnement.setType(planTarifaire.getCode());
-                } else {
-                    // Si non, essayer de le convertir en UUID
-                    try {
-                        UUID planUuid = UUID.fromString(planIdStr);
-                        abonnement.setPlanId(planUuid.toString());
-                        // Chercher le plan tarifaire pour obtenir le code
-                        PlanTarifaireEntity plan = PlanTarifaireEntity.findById(planUuid);
-                        if (plan != null) {
-                            abonnement.setType(plan.getCode());
-                        } else {
-                            abonnement.setType("START"); // Valeur par défaut
-                        }
-                    } catch (IllegalArgumentException e) {
-                        LOG.warn("L'ID du plan {} n'est pas un UUID valide, le champ plan_id sera null", planIdStr);
-                        // Plan ID reste null
-                        abonnement.setType("START"); // Valeur par défaut
-                    }
+            // Extraire l'ID du plan et chercher le plan tarifaire correspondant
+            String stripePriceId = subscription.getItems().getData().get(0).getPrice().getId();
+            LOG.info("Recherche du plan tarifaire pour le Stripe Price ID: {}", stripePriceId);
+            
+            // Chercher le plan tarifaire par stripePriceId
+            PlanTarifaireEntity planTarifaire = PlanTarifaireEntity.find("stripePriceId", stripePriceId).firstResult();
+            
+            if (planTarifaire == null) {
+                LOG.info("Création d'un nouveau plan tarifaire pour le stripePriceId: {}", stripePriceId);
+                planTarifaire = new PlanTarifaireEntity();
+                
+                // Déterminer le type de plan à partir du stripePriceId
+                String typePlan;
+                switch (stripePriceId) {
+                    case "price_1RB2AtAPjtnUAxI8gR1lQBhY":
+                        typePlan = "ENTREPRISE";
+                        planTarifaire.setMontantMensuel(399.0);
+                        break;
+                    case "price_1RB2AbAPjtnUAxI8VxzHVi9t":
+                        typePlan = "PRO";
+                        planTarifaire.setMontantMensuel(199.0);
+                        break;
+                    default:
+                        typePlan = "START";
+                        planTarifaire.setMontantMensuel(129.0);
                 }
-            } catch (Exception e) {
-                LOG.warn("Erreur lors de la conversion du plan ID: {}", e.getMessage());
-                // Plan ID reste null
-                abonnement.setType("START"); // Valeur par défaut
+                
+                planTarifaire.setCode(typePlan);
+                planTarifaire.setNom("AmbuConnect " + typePlan);
+                planTarifaire.setDevise("EUR");
+                planTarifaire.setStripePriceId(stripePriceId);
+                
+                // Persister le plan tarifaire
+                entityManager.persist(planTarifaire);
+                entityManager.flush();
+                LOG.info("Plan tarifaire créé avec succès: {}", planTarifaire.getId());
+            } else {
+                LOG.info("Plan tarifaire existant trouvé: {}", planTarifaire.getId());
             }
+            
+            // Définir le plan_id et le type
+            abonnement.setPlanId(planTarifaire.getId().toString());
+            abonnement.setType(planTarifaire.getCode());
             
             abonnement.setStatut(subscription.getStatus());
             
