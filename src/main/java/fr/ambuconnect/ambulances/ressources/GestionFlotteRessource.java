@@ -34,12 +34,6 @@ public class GestionFlotteRessource {
                     .build();
             }
 
-            if (vehicleDTO.getAmbulanceId() == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new ErrorResponse("L'ID de l'ambulance est requis"))
-                    .build();
-            }
-
             VehicleDTO addedVehicle = gestionFlotteService.addVehicle(vehicleDTO);
             return Response.status(Response.Status.CREATED).entity(addedVehicle).build();
         } catch (IllegalArgumentException e) {
