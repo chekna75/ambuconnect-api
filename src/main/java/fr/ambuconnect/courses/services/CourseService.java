@@ -76,16 +76,14 @@ public class CourseService {
         // Nous ne bloquons plus la création de courses si le chauffeur a déjà une course en cours
         // Cela permet de planifier des courses futures
         
+        AmbulanceEntity ambulance = null;
         // Vérifier si l'ambulance est spécifiée
-        if (courseDto.getAmbulanceId() == null) {
-            throw new IllegalArgumentException("L'ID de l'ambulance est requis");
-        }
-        
-        
-        // Récupération de l'ambulance
-        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(courseDto.getAmbulanceId());
-        if (ambulance == null) {
-            throw new IllegalArgumentException("Ambulance non trouvée");
+        if (courseDto.getAmbulanceId() != null) {
+            // Récupération de l'ambulance
+            ambulance = AmbulanceEntity.findByEntrepriseId(courseDto.getAmbulanceId());
+            if (ambulance == null) {
+                throw new IllegalArgumentException("Ambulance non trouvée");
+            }
         }
     
         // Récupération du planning à partir du chauffeur
