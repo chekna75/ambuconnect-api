@@ -34,7 +34,7 @@ public class JwtUtils {
     /**
      * Génère un token JWT avec les informations complètes de l'utilisateur
      */
-    public String generateToken(UUID userId, String email, String role, UUID entrepriseId) {
+    public String generateToken(UUID userId, String email, String role, UUID entrepriseId, UUID ambulanceId) {
         try {
             LOG.debug("Génération du token JWT pour l'utilisateur: {}", email);
             LOG.debug("Configuration - issuer: {}, tokenLifespan: {} secondes", issuer, TOKEN_LIFESPAN);
@@ -49,6 +49,7 @@ public class JwtUtils {
             // S'assurer que les IDs sont bien UUID et non des emails
             String userIdStr = userId != null ? userId.toString() : "";
             String entrepriseIdStr = entrepriseId != null ? entrepriseId.toString() : "";
+            String ambulanceIdStr = ambulanceId != null ? ambulanceId.toString() : "";
             
             String token = Jwt.claims()
                     .issuer(issuer)
@@ -64,6 +65,7 @@ public class JwtUtils {
                     .claim("email", email)
                     .claim("role", role)           // S'assurer que le rôle est cohérent avec les groupes
                     .claim("entrepriseId", entrepriseIdStr)
+                    .claim("ambulanceId", ambulanceIdStr)
                     .sign(privateKey);
                     
             LOG.debug("Token JWT généré avec succès, expiration: {}", expiration);
@@ -83,7 +85,8 @@ public class JwtUtils {
             UUID userId, 
             String email, 
             String role, 
-            UUID entrepriseId, 
+            UUID entrepriseId,
+            UUID ambulanceId,
             String nom, 
             String prenom, 
             String telephone, 
@@ -104,6 +107,7 @@ public class JwtUtils {
             // S'assurer que les IDs sont bien UUID et non des emails
             String userIdStr = userId != null ? userId.toString() : "";
             String entrepriseIdStr = entrepriseId != null ? entrepriseId.toString() : "";
+            String ambulanceIdStr = ambulanceId != null ? ambulanceId.toString() : "";
             
             String token = Jwt.claims()
                     .issuer(issuer)
@@ -127,6 +131,7 @@ public class JwtUtils {
                     .claim("entrepriseAdresse", entrepriseAdresse)
                     .claim("abonnementActif", abonnementActif)
                     .claim("planType", planType)
+                    .claim("ambulanceId", ambulanceIdStr)
                     .sign(privateKey);
                     
             LOG.debug("Token JWT complet généré avec succès, expiration: {}", expiration);

@@ -19,6 +19,8 @@ import fr.ambuconnect.entreprise.mapper.EntrepriseMapper;
 import fr.ambuconnect.paiement.entity.AbonnementEntity;
 import fr.ambuconnect.paiement.entity.PlanTarifaireEntity;
 import fr.ambuconnect.paiement.services.PlanTarifaireService;
+import fr.ambuconnect.ambulances.entity.AmbulanceEntity;
+import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -91,6 +93,10 @@ public class InscriptionService {
             // 2. Création de l'entreprise
             EntrepriseEntity entrepriseEntity = creerEntreprise(inscriptionDto.getEntreprise());
             LOG.info("Entreprise créée avec succès. ID: {}", entrepriseEntity.getId());
+
+            // 2.1 Création de l'ambulance par défaut
+            creerAmbulanceParDefaut(entrepriseEntity);
+            LOG.info("Ambulance par défaut créée pour l'entreprise: {}", entrepriseEntity.getId());
 
             // 3. Préparation des informations de l'administrateur
             AdministrateurDto administrateurDto = getAdministrateurDto(inscriptionDto);
@@ -366,5 +372,24 @@ public class InscriptionService {
             LOG.error("Erreur lors de l'envoi de l'email de bienvenue", e);
             // Ne pas bloquer l'inscription si l'envoi de l'email échoue
         }
+    }
+
+    private void creerAmbulanceParDefaut(EntrepriseEntity entreprise) {
+        AmbulanceEntity ambulance = new AmbulanceEntity();
+        
+        // Générer l'immatriculation (max 20 caractères)
+        String immatriculation = "AMBU-" + entreprise.getId().toString().substring(0, 14);
+        
+        // Informations de base
+        ambulance.setImmatriculation(immatriculation);
+        ambulance.setNom("Ambulance par défaut");
+        ambulance.setMarque("Non spécifiée");
+        ambulance.setModele("Non spécifié");
+        ambulance.setEntreprise(entreprise);
+        ambulance.setStatut(StatutAmbulance.EN_SERVICE);
+        
+        
+        ambulance.persist();
+        LOG.info("Ambulance par défaut créée avec l'immatriculation: {}", immatriculation);
     }
 } 

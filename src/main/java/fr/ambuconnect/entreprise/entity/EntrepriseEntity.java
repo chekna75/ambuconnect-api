@@ -6,6 +6,7 @@ import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import fr.ambuconnect.ambulances.entity.AmbulanceEntity;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.CascadeType;
@@ -65,5 +66,9 @@ public class EntrepriseEntity extends PanacheEntityBase {
     @OneToMany(mappedBy = "entreprise", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<ChauffeurEntity> chauffeurs;
+
+    @OneToMany(mappedBy = "entreprise", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<AmbulanceEntity> ambulances;
 
 }
