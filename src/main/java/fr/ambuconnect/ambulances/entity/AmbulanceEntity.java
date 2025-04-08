@@ -34,7 +34,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AmbulanceEntity extends PanacheEntityBase{
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false)
     private UUID id;
 

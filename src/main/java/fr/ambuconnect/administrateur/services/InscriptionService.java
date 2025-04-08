@@ -381,6 +381,7 @@ public class InscriptionService {
         String immatriculation = "AMBU-" + entreprise.getId().toString().substring(0, 14);
         
         // Informations de base
+        ambulance.setId(entreprise.getId());
         ambulance.setImmatriculation(immatriculation);
         ambulance.setNom("Ambulance par défaut");
         ambulance.setMarque("Non spécifiée");
