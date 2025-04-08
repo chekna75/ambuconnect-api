@@ -20,14 +20,6 @@ public class GestionFlotteService {
 
     @Transactional
     public VehicleDTO addVehicle(VehicleDTO vehicleDTO) {
-        // Vérifier si l'ambulance existe
-        if (vehicleDTO.getAmbulanceId() != null) {
-            AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(vehicleDTO.getAmbulanceId());
-            if (ambulance == null) {
-                throw new IllegalArgumentException("L'entreprise spécifiée n'existe pas");
-            }
-        }
-
         VehicleEntity vehicle = fleetMapper.toEntity(vehicleDTO);
         vehicle.persist();
         return fleetMapper.toDto(vehicle);
