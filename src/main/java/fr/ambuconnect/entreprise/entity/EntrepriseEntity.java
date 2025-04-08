@@ -69,6 +69,6 @@ public class EntrepriseEntity extends PanacheEntityBase {
 
     @OneToMany(mappedBy = "entreprise", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private List<AmbulanceEntity> ambulances;
+    private AmbulanceEntity ambulance;
 
 }
