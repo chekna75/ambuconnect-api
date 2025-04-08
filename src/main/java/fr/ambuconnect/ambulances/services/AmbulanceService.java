@@ -277,7 +277,7 @@ public class AmbulanceService {
     }
 
     public List<VehicleDTO> getAllVehicules(UUID ambulanceId) {
-        AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(ambulanceId);
+        AmbulanceEntity ambulance = AmbulanceEntity.findById(ambulanceId);
         if (ambulance == null) {
             throw new NotFoundException("Ambulance non trouvée");
         }
