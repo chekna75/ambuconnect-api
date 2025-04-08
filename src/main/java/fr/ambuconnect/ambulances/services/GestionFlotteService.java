@@ -3,6 +3,7 @@ package fr.ambuconnect.ambulances.services;
 import fr.ambuconnect.ambulances.entity.*;
 import fr.ambuconnect.ambulances.mapper.FleetMapper;
 import fr.ambuconnect.ambulances.dto.*;
+import fr.ambuconnect.ambulances.enums.StatutAmbulance;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -11,6 +12,7 @@ import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 
 @ApplicationScoped
 public class GestionFlotteService {
@@ -21,6 +23,31 @@ public class GestionFlotteService {
     @Transactional
     public VehicleDTO addVehicle(VehicleDTO vehicleDTO) {
         VehicleEntity vehicle = fleetMapper.toEntity(vehicleDTO);
+        
+        // Si un ID d'ambulance est fourni
+        if (vehicleDTO.getAmbulanceId() != null) {
+            // Chercher l'ambulance existante ou en créer une nouvelle
+            AmbulanceEntity ambulance = AmbulanceEntity.findById(vehicleDTO.getAmbulanceId());
+            if (ambulance == null) {
+                // Créer une nouvelle ambulance avec l'ID fourni
+                ambulance = new AmbulanceEntity();
+                ambulance.setId(vehicleDTO.getAmbulanceId());
+                ambulance.setImmatriculation(vehicle.getImmatriculation()); // Utiliser l'immatriculation du véhicule
+                ambulance.setStatut(StatutAmbulance.EN_SERVICE);
+            }
+            
+            // Établir la relation bidirectionnelle
+            vehicle.setAmbulance(ambulance);
+            if (ambulance.getVehicules() == null) {
+                ambulance.setVehicules(new ArrayList<>());
+            }
+            ambulance.getVehicules().add(vehicle);
+            
+            // Persister l'ambulance
+            ambulance.persist();
+        }
+        
+        // Persister le véhicule
         vehicle.persist();
         return fleetMapper.toDto(vehicle);
     }
