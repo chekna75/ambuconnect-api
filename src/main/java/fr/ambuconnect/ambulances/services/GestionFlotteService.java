@@ -22,9 +22,9 @@ public class GestionFlotteService {
     public VehicleDTO addVehicle(VehicleDTO vehicleDTO) {
         // Vérifier si l'ambulance existe
         if (vehicleDTO.getAmbulanceId() != null) {
-            AmbulanceEntity ambulance = AmbulanceEntity.findById(vehicleDTO.getAmbulanceId());
+            AmbulanceEntity ambulance = AmbulanceEntity.findByEntrepriseId(vehicleDTO.getAmbulanceId());
             if (ambulance == null) {
-                throw new IllegalArgumentException("L'ambulance spécifiée n'existe pas");
+                throw new IllegalArgumentException("L'entreprise spécifiée n'existe pas");
             }
         }
 
