@@ -82,7 +82,7 @@ public class CourseService {
             // Récupération de l'ambulance
             ambulance = AmbulanceEntity.findByEntrepriseId(courseDto.getAmbulanceId());
             if (ambulance == null) {
-                throw new IllegalArgumentException("Ambulance non trouvée");
+                LOG.warn("Attention : L'ambulance avec l'ID {} n'a pas été trouvée", courseDto.getAmbulanceId());
             }
         }
     
