@@ -11,6 +11,7 @@ import com.stripe.model.PaymentMethod;
 import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionItem;
 import com.stripe.model.SubscriptionSchedule;
+import com.stripe.model.PromotionCode;
 import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.PaymentMethodAttachParams;
@@ -24,6 +25,7 @@ import fr.ambuconnect.paiement.dto.SubscriptionRequest;
 import fr.ambuconnect.paiement.dto.PromoCodeValidationResponse;
 import fr.ambuconnect.paiement.entity.AbonnementEntity;
 import fr.ambuconnect.paiement.entity.PlanTarifaireEntity;
+import fr.ambuconnect.paiement.entity.PromoCodeEntity;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -324,6 +326,10 @@ public class StripeService {
                     
                 case "invoice.payment_failed":
                     handleInvoicePaymentFailed((Invoice) dataObjectDeserializer.getObject().get());
+                    break;
+
+                case "promotion_code.created":
+                    handlePromotionCodeCreated((PromotionCode) dataObjectDeserializer.getObject().get());
                     break;
                     
                 default:
@@ -708,6 +714,64 @@ public class StripeService {
         } catch (Exception e) {
             LOG.error("Erreur lors de la recherche de l'abonnement actif: {}", e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Gère l'événement de création d'un code promo
+     */
+    private void handlePromotionCodeCreated(PromotionCode promotionCode) {
+        LOG.info("Nouveau code promo créé: {}", promotionCode.getId());
+        
+        try {
+            // Vérifier si le code existe déjà
+            String codePromo = promotionCode.getCode().toUpperCase();
+            PromoCodeEntity existingCode = PromoCodeEntity.findByCode(codePromo);
+            if (existingCode != null) {
+                LOG.info("Code promo déjà existant en base de données: {}", codePromo);
+                return;
+            }
+
+            // Créer une nouvelle entité PromoCode
+            PromoCodeEntity promoCode = new PromoCodeEntity();
+            promoCode.setCode(codePromo);
+            
+            // Récupérer le pourcentage de réduction du coupon associé
+            com.stripe.model.Coupon coupon = promotionCode.getCoupon();
+            if (coupon.getPercentOff() != null) {
+                promoCode.setPourcentageReduction(coupon.getPercentOff().intValue());
+            } else if (coupon.getAmountOff() != null) {
+                // Convertir le montant fixe en pourcentage approximatif
+                double montantTotal = 199.0; // Prix de base START
+                double pourcentage = (coupon.getAmountOff() / 100.0 / montantTotal) * 100;
+                promoCode.setPourcentageReduction((int) pourcentage);
+            }
+
+            // Dates de validité
+            promoCode.setDateDebut(LocalDate.now());
+            if (promotionCode.getExpiresAt() != null) {
+                Instant expiresAt = Instant.ofEpochSecond(promotionCode.getExpiresAt());
+                promoCode.setDateFin(LocalDate.ofInstant(expiresAt, ZoneId.systemDefault()));
+            }
+
+            // Nombre maximum d'utilisations
+            if (promotionCode.getMaxRedemptions() != null) {
+                promoCode.setNombreUtilisationsMax(promotionCode.getMaxRedemptions().intValue());
+            }
+
+            promoCode.setNombreUtilisationsActuel(0);
+            promoCode.setActif(promotionCode.getActive());
+            promoCode.setDescription("Code promo créé via Stripe Dashboard");
+
+            // Persister l'entité
+            entityManager.persist(promoCode);
+            entityManager.flush();
+
+            LOG.info("Code promo enregistré en base de données: {}", promoCode.getId());
+            
+        } catch (Exception e) {
+            LOG.error("Erreur lors du traitement de l'événement de création de code promo", e);
+            throw new RuntimeException("Erreur lors du traitement de l'événement de création de code promo: " + e.getMessage());
         }
     }
 } 
