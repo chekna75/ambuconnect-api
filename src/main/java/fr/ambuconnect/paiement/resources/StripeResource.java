@@ -2,7 +2,9 @@ package fr.ambuconnect.paiement.resources;
 
 import fr.ambuconnect.paiement.dto.CustomerRequest;
 import fr.ambuconnect.paiement.dto.SubscriptionRequest;
+import fr.ambuconnect.paiement.dto.PromoCodeValidationResponse;
 import fr.ambuconnect.paiement.services.StripeService;
+import fr.ambuconnect.paiement.services.PromoCodeService;
 import fr.ambuconnect.utils.ErrorResponse;
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
@@ -35,6 +37,9 @@ public class StripeResource {
 
     @Inject
     StripeService stripeService;
+
+    @Inject
+    PromoCodeService promoCodeService;
 
     /**
      * Crée un nouveau client Stripe
@@ -180,6 +185,25 @@ public class StripeResource {
             LOG.error("Erreur lors de la création du SetupIntent", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                      .entity(new ErrorResponse("Erreur lors de la création du SetupIntent: " + e.getMessage()))
+                     .build();
+        }
+    }
+
+    /**
+     * Valide un code promo
+     */
+    @GET
+    @Path("/validate-promo")
+    @PermitAll
+    public Response validatePromoCode(@QueryParam("code") String code) {
+        try {
+            LOG.info("Validation du code promo: {}", code);
+            PromoCodeValidationResponse response = promoCodeService.validerCode(code);
+            return Response.ok(response).build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la validation du code promo", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                     .entity(new ErrorResponse("Erreur lors de la validation du code promo: " + e.getMessage()))
                      .build();
         }
     }

@@ -21,6 +21,7 @@ import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import fr.ambuconnect.paiement.dto.CustomerRequest;
 import fr.ambuconnect.paiement.dto.SubscriptionRequest;
+import fr.ambuconnect.paiement.dto.PromoCodeValidationResponse;
 import fr.ambuconnect.paiement.entity.AbonnementEntity;
 import fr.ambuconnect.paiement.entity.PlanTarifaireEntity;
 import jakarta.annotation.PostConstruct;
@@ -57,6 +58,9 @@ public class StripeService {
     @Inject
     @ConfigProperty(name = "stripe.webhook.secret", defaultValue = "")
     private String stripeWebhookSecret;
+
+    @Inject
+    PromoCodeService promoCodeService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -177,15 +181,28 @@ public class StripeService {
                 .setPrice(priceId)
                 .build();
             
-            SubscriptionCreateParams params = SubscriptionCreateParams.builder()
+            SubscriptionCreateParams.Builder paramsBuilder = SubscriptionCreateParams.builder()
                 .setCustomer(request.getCustomerId())
                 .addItem(item)
                 .setAutomaticTax(SubscriptionCreateParams.AutomaticTax.builder()
                     .setEnabled(request.isAutomaticTax())
-                    .build())
-                .build();
+                    .build());
+
+            // Appliquer le code promo si fourni
+            if (request.getPromoCode() != null && !request.getPromoCode().isEmpty()) {
+                PromoCodeValidationResponse promoValidation = promoCodeService.validerCode(request.getPromoCode());
+                if (promoValidation.isValide()) {
+                    // Calculer la réduction
+                    double reduction = promoValidation.getPourcentageReduction() / 100.0;
+                    paramsBuilder.addExpand("latest_invoice")
+                               .setCoupon(createPromoCoupon(reduction));
+                    
+                    // Marquer le code comme utilisé
+                    promoCodeService.appliquerCode(request.getPromoCode());
+                }
+            }
             
-            Subscription subscription = Subscription.create(params);
+            Subscription subscription = Subscription.create(paramsBuilder.build());
             
             LOG.info("Abonnement créé avec succès: {}", subscription.getId());
             return subscription;
@@ -193,6 +210,15 @@ public class StripeService {
             LOG.error("Erreur lors de la création de l'abonnement Stripe", e);
             throw new RuntimeException("Erreur lors de la création de l'abonnement: " + e.getMessage());
         }
+    }
+
+    private String createPromoCoupon(double reduction) throws StripeException {
+        Map<String, Object> couponParams = new HashMap<>();
+        couponParams.put("percent_off", reduction * 100);
+        couponParams.put("duration", "once");
+        
+        com.stripe.model.Coupon coupon = com.stripe.model.Coupon.create(couponParams);
+        return coupon.getId();
     }
 
     /**

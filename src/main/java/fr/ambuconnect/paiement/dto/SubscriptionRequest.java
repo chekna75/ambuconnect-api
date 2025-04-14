@@ -13,4 +13,5 @@ public class SubscriptionRequest {
     private String paymentMethodId;
     private boolean automaticTax = true;
     private String subscriptionType; // "START", "PRO", ou "ENTREPRISE"
+    private String promoCode; // Nouveau champ pour le code promo
 } 
