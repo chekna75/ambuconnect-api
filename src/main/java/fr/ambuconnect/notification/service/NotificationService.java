@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import fr.ambuconnect.courses.entity.CoursesEntity;
+import fr.ambuconnect.courses.entity.DemandePriseEnChargeEntity;
 import fr.ambuconnect.notification.dto.NotificationDto;
 import fr.ambuconnect.notification.entity.NotificationEntity;
 import fr.ambuconnect.notification.mapper.NotificationMapper;
@@ -15,6 +16,10 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import jakarta.websocket.Session;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service pour gérer les notifications aux utilisateurs
@@ -30,6 +35,13 @@ public class NotificationService {
 
     @Inject
     private NotificationWebSocket notificationWebSocket;
+
+    private final Map<UUID, Session> patientSessions = new ConcurrentHashMap<>();
+    private final Map<UUID, Session> entrepriseSessions = new ConcurrentHashMap<>();
+    private final Map<UUID, Session> chauffeurSessions = new ConcurrentHashMap<>();
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @Transactional
     public NotificationDto creerNotification(String message, String type, UUID destinataireId, UUID courseId) {
@@ -221,5 +233,147 @@ public class NotificationService {
         }
         
         return notifications.size();
+    }
+
+    public void registerPatientSession(UUID patientId, Session session) {
+        patientSessions.put(patientId, session);
+    }
+
+    public void registerEntrepriseSession(UUID entrepriseId, Session session) {
+        entrepriseSessions.put(entrepriseId, session);
+    }
+
+    public void registerChauffeurSession(UUID chauffeurId, Session session) {
+        chauffeurSessions.put(chauffeurId, session);
+    }
+
+    public void unregisterSession(UUID id) {
+        patientSessions.remove(id);
+        entrepriseSessions.remove(id);
+        chauffeurSessions.remove(id);
+    }
+
+    public void notifierCreationDemande(DemandePriseEnChargeEntity demande) {
+        NotificationMessage message = new NotificationMessage(
+            "NOUVELLE_DEMANDE",
+            "Nouvelle demande de transport",
+            String.format("Nouvelle demande de transport pour %s", demande.getAdresseArrivee())
+        );
+        
+        // Notifier les entreprises à proximité
+        entrepriseSessions.forEach((entrepriseId, session) -> {
+            try {
+                session.getAsyncRemote().sendText(objectMapper.writeValueAsString(message));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public void notifierAcceptationDemande(DemandePriseEnChargeEntity demande) {
+        NotificationMessage messagePatient = new NotificationMessage(
+            "DEMANDE_ACCEPTEE",
+            "Demande acceptée",
+            "Votre demande de transport a été acceptée"
+        );
+
+        NotificationMessage messageChauffeur = new NotificationMessage(
+            "NOUVELLE_COURSE",
+            "Nouvelle course assignée",
+            String.format("Nouvelle course vers %s", demande.getAdresseArrivee())
+        );
+
+        // Notifier le patient
+        Session patientSession = patientSessions.get(demande.getPatient().getId());
+        if (patientSession != null) {
+            try {
+                patientSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(messagePatient));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Notifier le chauffeur si assigné
+        if (demande.getEntrepriseAssignee() != null) {
+            Session chauffeurSession = chauffeurSessions.get(demande.getEntrepriseAssignee().getId());
+            if (chauffeurSession != null) {
+                try {
+                    chauffeurSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(messageChauffeur));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void notifierArriveeAmbulance(CoursesEntity course) {
+        NotificationMessage message = new NotificationMessage(
+            "ARRIVEE_AMBULANCE",
+            "Ambulance en approche",
+            String.format("Votre ambulance arrive dans environ %d minutes", course.getTempsTrajetEstime())
+        );
+
+        Session patientSession = patientSessions.get(course.getPatient().getId());
+        if (patientSession != null) {
+            try {
+                patientSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(message));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void notifierFinCourse(CoursesEntity course) {
+        NotificationMessage messagePatient = new NotificationMessage(
+            "COURSE_TERMINEE",
+            "Course terminée",
+            "Votre course est terminée"
+        );
+
+        NotificationMessage messageEntreprise = new NotificationMessage(
+            "COURSE_TERMINEE",
+            "Course terminée",
+            String.format("Course %s terminée", course.getId())
+        );
+
+        // Notifier le patient
+        Session patientSession = patientSessions.get(course.getPatient().getId());
+        if (patientSession != null) {
+            try {
+                patientSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(messagePatient));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Notifier l'entreprise
+        Session entrepriseSession = entrepriseSessions.get(course.getEntreprise().getId());
+        if (entrepriseSession != null) {
+            try {
+                entrepriseSession.getAsyncRemote().sendText(objectMapper.writeValueAsString(messageEntreprise));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static class NotificationMessage {
+        private String type;
+        private String titre;
+        private String message;
+
+        public NotificationMessage(String type, String titre, String message) {
+            this.type = type;
+            this.titre = titre;
+            this.message = message;
+        }
+
+        // Getters and setters
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+        public String getTitre() { return titre; }
+        public void setTitre(String titre) { this.titre = titre; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
     }
 } 
