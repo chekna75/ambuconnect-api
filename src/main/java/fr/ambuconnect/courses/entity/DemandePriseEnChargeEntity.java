@@ -48,7 +48,7 @@ public class DemandePriseEnChargeEntity extends PanacheEntityBase {
     @Column(name = "adresse_depart", nullable = false)
     private String adresseDepart;
 
-    @Column(name = "adresse_arrivee", nullable = false)
+    @Column(name = "adresse_destination", nullable = false)
     private String adresseArrivee;
 
     @Column(name = "latitude_depart")
