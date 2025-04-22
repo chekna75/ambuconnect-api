@@ -72,7 +72,7 @@ public class PatientRequestEntity extends PanacheEntityBase {
     @Column(nullable = false)
     private PatientRequestStatus status;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "additional_notes", columnDefinition = "TEXT")
     private String additionalNotes;
 
     public static List<PatientRequestEntity> findPendingRequests() {
