@@ -531,3 +531,86 @@ BEGIN
     (gen_random_uuid(), chauffeur2_id, '2024-03-01', '2024-03-15', 'CONGES_PAYES', 'EN_ATTENTE', 'Vacances familiales', '2024-01-15');
 
 END $$;
+
+-- Tables pour le module établissements de santé
+CREATE TABLE ambuconnectdb.etablissements_sante (
+    id UUID PRIMARY KEY,
+    nom VARCHAR(255) NOT NULL,
+    type_etablissement VARCHAR(50) NOT NULL,
+    adresse VARCHAR(255) NOT NULL,
+    email_contact VARCHAR(255) NOT NULL UNIQUE,
+    telephone_contact VARCHAR(20) NOT NULL,
+    responsable_referent_id UUID REFERENCES ambuconnectdb.administrateurs(id) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE ambuconnectdb.utilisateurs_etablissement (
+    id UUID PRIMARY KEY,
+    etablissement_id UUID REFERENCES ambuconnectdb.etablissements_sante(id) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    mot_de_passe VARCHAR(255) NOT NULL,
+    nom VARCHAR(255) NOT NULL,
+    prenom VARCHAR(255) NOT NULL,
+    telephone VARCHAR(20),
+    role VARCHAR(50) NOT NULL,
+    actif BOOLEAN NOT NULL DEFAULT false
+);
+
+CREATE TABLE ambuconnectdb.demandes_transport (
+    id UUID PRIMARY KEY,
+    etablissement_id UUID REFERENCES ambuconnectdb.etablissements_sante(id) NOT NULL,
+    created_by UUID REFERENCES ambuconnectdb.utilisateurs_etablissement(id) NOT NULL,
+    patient_id UUID REFERENCES ambuconnectdb.patient(id) NOT NULL,
+    adresse_depart VARCHAR(255) NOT NULL,
+    adresse_arrivee VARCHAR(255) NOT NULL,
+    horaire_souhaite TIMESTAMP NOT NULL,
+    type_transport VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'EN_ATTENTE',
+    societe_affectee_id UUID REFERENCES ambuconnectdb.entreprises(id),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE TABLE ambuconnectdb.configurations_etablissement (
+    id UUID PRIMARY KEY,
+    etablissement_id UUID REFERENCES ambuconnectdb.etablissements_sante(id) NOT NULL,
+    lundi_debut TIME,
+    lundi_fin TIME,
+    mardi_debut TIME,
+    mardi_fin TIME,
+    mercredi_debut TIME,
+    mercredi_fin TIME,
+    jeudi_debut TIME,
+    jeudi_fin TIME,
+    vendredi_debut TIME,
+    vendredi_fin TIME,
+    samedi_debut TIME,
+    samedi_fin TIME,
+    dimanche_debut TIME,
+    dimanche_fin TIME
+);
+
+CREATE TABLE ambuconnectdb.etablissement_societes_preferees (
+    configuration_id UUID REFERENCES ambuconnectdb.configurations_etablissement(id) NOT NULL,
+    societe_id UUID REFERENCES ambuconnectdb.entreprises(id) NOT NULL,
+    PRIMARY KEY (configuration_id, societe_id)
+);
+
+CREATE TABLE ambuconnectdb.etablissement_tarifs_negocies (
+    configuration_id UUID REFERENCES ambuconnectdb.configurations_etablissement(id) NOT NULL,
+    societe_id UUID NOT NULL,
+    type_transport VARCHAR(50) NOT NULL,
+    tarif_base DECIMAL(10,2) NOT NULL,
+    reduction_pourcentage INTEGER NOT NULL,
+    PRIMARY KEY (configuration_id, societe_id, type_transport)
+);
+
+CREATE TABLE ambuconnectdb.messages_etablissement (
+    id UUID PRIMARY KEY,
+    etablissement_id UUID REFERENCES ambuconnectdb.etablissements_sante(id) NOT NULL,
+    auteur_id UUID REFERENCES ambuconnectdb.utilisateurs_etablissement(id) NOT NULL,
+    message TEXT NOT NULL,
+    date_envoi TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    canal VARCHAR(50) NOT NULL,
+    demande_transport_id UUID REFERENCES ambuconnectdb.demandes_transport(id)
+);
