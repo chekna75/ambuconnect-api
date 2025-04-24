@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
+import jakarta.annotation.security.PermitAll;
 
 import fr.ambuconnect.etablissement.dto.EtablissementSanteDto;
 import fr.ambuconnect.etablissement.dto.UtilisateurEtablissementDto;
@@ -14,6 +15,7 @@ import fr.ambuconnect.etablissement.service.EtablissementService;
 @Path("/etablissements")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@PermitAll
 public class EtablissementResource {
 
   @Inject
