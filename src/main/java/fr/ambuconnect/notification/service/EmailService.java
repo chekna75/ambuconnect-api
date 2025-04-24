@@ -79,4 +79,18 @@ public class EmailService {
         log.info("Envoi email de confirmation d'activation à {}", email);
         // TODO: Implémenter l'envoi d'email
     }
+
+    public void sendEmail(String destinataire, String sujet, String contenu) throws Exception {
+        LOG.info("Envoi d'un email à {} avec le sujet: {}", destinataire, sujet);
+        
+        Mail email = new Mail();
+        email.setFrom(emailFrom);
+        email.setTo(List.of(destinataire));
+        email.setSubject(sujet);
+        email.setText(contenu);
+        
+        mailer.send(email);
+        
+        LOG.info("Email envoyé avec succès à {}", destinataire);
+    }
 } 
