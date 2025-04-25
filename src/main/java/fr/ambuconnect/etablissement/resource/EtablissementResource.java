@@ -12,6 +12,7 @@ import jakarta.annotation.security.RolesAllowed;
 import fr.ambuconnect.etablissement.dto.EtablissementSanteDto;
 import fr.ambuconnect.etablissement.dto.UtilisateurEtablissementDto;
 import fr.ambuconnect.etablissement.service.EtablissementService;
+import fr.ambuconnect.etablissement.service.TokenService;
 import fr.ambuconnect.utils.ErrorResponse;
 import fr.ambuconnect.common.exceptions.BadRequestException;
 import fr.ambuconnect.common.exceptions.NotFoundException;
@@ -23,6 +24,9 @@ public class EtablissementResource {
 
   @Inject
   EtablissementService etablissementService;
+
+  @Inject
+  TokenService tokenService;
 
   @GET
   @PermitAll
@@ -203,6 +207,68 @@ public class EtablissementResource {
       return Response.serverError()
         .entity(new ErrorResponse("Erreur lors de la suppression de l'utilisateur: " + e.getMessage()))
         .build();
+    }
+  }
+
+  @POST
+  @Path("/creer-utilisateur-token")
+  @PermitAll
+  public Response creerUtilisateurAvecToken(
+      @QueryParam("token") String token,
+      UtilisateurEtablissementDto utilisateurDto
+  ) {
+      try {
+          // Valider le token et récupérer l'ID de l'établissement
+          UUID etablissementId = tokenService.validateToken(token);
+          
+          // Créer l'utilisateur dans l'établissement
+          UtilisateurEtablissementDto utilisateurCree = etablissementService.creerUtilisateur(
+              etablissementId,
+              utilisateurDto
+          );
+
+          return Response.status(Response.Status.CREATED)
+              .entity(utilisateurCree)
+              .build();
+
+      } catch (NotFoundException e) {
+          return Response.status(Response.Status.NOT_FOUND)
+              .entity(new ErrorResponse("Token invalide ou établissement non trouvé: " + e.getMessage()))
+              .build();
+      } catch (BadRequestException e) {
+          return Response.status(Response.Status.BAD_REQUEST)
+              .entity(new ErrorResponse("Données invalides ou token expiré: " + e.getMessage()))
+              .build();
+      } catch (Exception e) {
+          return Response.serverError()
+              .entity(new ErrorResponse("Erreur lors de la création de l'utilisateur: " + e.getMessage()))
+              .build();
+      }
+  }
+
+  @POST
+  @Path("/{id}/generer-token")
+  @RolesAllowed({"admin", "ADMIN"})
+  public Response genererTokenActivation(@PathParam("id") UUID etablissementId) {
+    try {
+      String token = tokenService.generateActivationToken(etablissementId);
+      return Response.ok(new TokenResponse(token)).build();
+    } catch (NotFoundException e) {
+      return Response.status(Response.Status.NOT_FOUND)
+        .entity(new ErrorResponse("Établissement non trouvé: " + e.getMessage()))
+        .build();
+    } catch (Exception e) {
+      return Response.serverError()
+        .entity(new ErrorResponse("Erreur lors de la génération du token: " + e.getMessage()))
+        .build();
+    }
+  }
+
+  private static class TokenResponse {
+    public String token;
+
+    public TokenResponse(String token) {
+      this.token = token;
     }
   }
 } 

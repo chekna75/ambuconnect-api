@@ -39,7 +39,8 @@ public class EmailService {
             
             Vous avez créé un établissement AmbuConnect.    
             
-            Pour confirmer votre inscription, veuillez cliquer sur le lien suivant :
+            Nous allons procéder à son activation dans les plus brefs délais.
+            Vous recevrez un email de confirmation de l'activation de votre établissement.
             %s
             
             Cordialement,
