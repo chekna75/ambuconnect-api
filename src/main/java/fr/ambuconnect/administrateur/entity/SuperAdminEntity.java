@@ -15,7 +15,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "super_admins")
+@Table(name = "super_admin")
 @Data
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
