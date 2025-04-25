@@ -141,6 +141,41 @@ public class AuthenService {
     }
 
     @Transactional
+    public String connexionSuperAdmin(String email, String motDePasse) {
+        // Vérifier si l'entreprise a un abonnement actif et récupérer son type
+        boolean abonnementActif = false;
+        String planType = "START"; // Plan par défaut si aucun abonnement trouvé
+        try {
+            LOG.info("Tentative de connexion superadmin - Email: {}", email);
+            
+            AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
+            if (admin != null && verifierMotDePasse(motDePasse, admin.getMotDePasse())) {
+                String role = "SUPERADMIN";
+                return jwtUtils.generateCompleteToken(
+                    admin.getId(),
+                    admin.getEmail(),
+                    role,
+                    admin.getEntreprise().getId(),
+                    admin.getEntreprise().getAmbulances().get(0).getId(),
+                    admin.getNom(),
+                    admin.getPrenom(),
+                    admin.getTelephone(),
+                    admin.getEntreprise().getNom(),
+                    admin.getEntreprise().getSiret(),
+                    admin.getEntreprise().getAdresse(),
+                    abonnementActif,
+                    planType
+                );
+            }
+            throw new IllegalArgumentException("Identifiants invalides");
+        } catch (Exception e) {
+            LOG.error("Erreur inattendue pour {}: {}", email, e.getMessage());
+            throw e;
+        }
+    }
+    
+
+    @Transactional
     public String connexionAdmin(String email, String motDePasse, Boolean isAdmin) {
         try {
             LOG.info("Tentative de connexion admin - Email: {}", email);

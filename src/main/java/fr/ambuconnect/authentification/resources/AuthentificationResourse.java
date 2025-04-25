@@ -215,6 +215,26 @@ public class AuthentificationResourse {
         }
     }
 
+    @POST
+    @Path("/superadmin/login")
+    @PermitAll
+    public Response loginSuperAdmin(@Valid LoginRequestDto loginRequest) {
+        try {
+            return Response.ok(authenService.connexionSuperAdmin(loginRequest.getEmail(), loginRequest.getMotDePasse()))
+                .build();
+        } catch (IllegalArgumentException e) {
+            LOG.error("Erreur d'authentification pour {}: {}", loginRequest.getEmail(), e.getMessage());
+            return Response.status(Response.Status.UNAUTHORIZED)
+                .entity(new ErrorResponse("Identifiants invalides"))
+                .build();   
+        } catch (Exception e) {
+            LOG.error("Erreur inattendue pour {}: {}", loginRequest.getEmail(), e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Erreur interne du serveur"))
+                .build();
+        }
+    }
+
 }
 
 
