@@ -142,4 +142,50 @@ public class JwtUtils {
             throw new RuntimeException("Erreur lors de la génération du token JWT complet", e);
         }
     }
+
+    public String generateCompleteTokenSuperAdmin(
+        UUID userId, 
+        String email, 
+        String role, 
+        String nom, 
+        String prenom
+        ) {
+    
+    try {
+        LOG.debug("Génération du token JWT complet pour l'utilisateur: {}", email);
+        
+        Instant now = Instant.now();
+        Instant expiration = now.plusSeconds(TOKEN_LIFESPAN);
+        
+        RSAPrivateKey privateKey = keyProvider.privateKey();
+        
+        // S'assurer que les IDs sont bien UUID et non des emails
+        String userIdStr = userId != null ? userId.toString() : "";
+
+        
+        String token = Jwt.claims()
+                .issuer(issuer)
+                .subject(email)
+                .upn(email)
+                .groups(new HashSet<>(Arrays.asList(role)))
+                .issuedAt(now)
+                .expiresAt(expiration)
+                .claim(Claims.jti.name(), UUID.randomUUID().toString())
+                .claim("id", userIdStr)               // ID explicitement comme UUID
+                .claim("user_id", userIdStr)
+                .claim("uuid", userIdStr)             // Ajout d'un champ uuid pour clarté
+                .claim("email", email)
+                .claim("role", role)
+                .claim("nom", nom)
+                .claim("prenom", prenom)
+                .sign(privateKey);
+                
+        LOG.debug("Token JWT complet généré avec succès, expiration: {}", expiration);
+        return token;
+        
+    } catch (Exception e) {
+        LOG.error("Erreur lors de la génération du token JWT complet: {}", e.getMessage(), e);
+        throw new RuntimeException("Erreur lors de la génération du token JWT complet", e);
+    }
+}
 } 

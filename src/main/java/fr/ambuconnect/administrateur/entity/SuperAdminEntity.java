@@ -39,4 +39,8 @@ public class SuperAdminEntity extends PanacheEntityBase{
     @Column(name = "mot_de_passe", nullable = false)
     private String motDePasse;
 
+    public static SuperAdminEntity findByEmail(String email) {
+        return find("email", email).firstResult();
+    }
+
 }

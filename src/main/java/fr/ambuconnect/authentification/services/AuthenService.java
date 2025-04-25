@@ -12,6 +12,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
+import fr.ambuconnect.administrateur.entity.SuperAdminEntity;
 import fr.ambuconnect.authentification.entity.PasswordResetTokenEntity;
 import fr.ambuconnect.authentification.mapper.AuthentificationMapper;
 import fr.ambuconnect.authentification.utils.JwtUtils;
@@ -142,29 +143,18 @@ public class AuthenService {
 
     @Transactional
     public String connexionSuperAdmin(String email, String motDePasse) {
-        // Vérifier si l'entreprise a un abonnement actif et récupérer son type
-        boolean abonnementActif = false;
-        String planType = "START"; // Plan par défaut si aucun abonnement trouvé
         try {
             LOG.info("Tentative de connexion superadmin - Email: {}", email);
             
-            AdministrateurEntity admin = AdministrateurEntity.findByEmail(email);
+            SuperAdminEntity admin = SuperAdminEntity.findByEmail(email);
             if (admin != null && verifierMotDePasse(motDePasse, admin.getMotDePasse())) {
                 String role = "SUPERADMIN";
-                return jwtUtils.generateCompleteToken(
+                return jwtUtils.generateCompleteTokenSuperAdmin(
                     admin.getId(),
                     admin.getEmail(),
                     role,
-                    admin.getEntreprise().getId(),
-                    admin.getEntreprise().getAmbulances().get(0).getId(),
                     admin.getNom(),
-                    admin.getPrenom(),
-                    admin.getTelephone(),
-                    admin.getEntreprise().getNom(),
-                    admin.getEntreprise().getSiret(),
-                    admin.getEntreprise().getAdresse(),
-                    abonnementActif,
-                    planType
+                    admin.getPrenom()
                 );
             }
             throw new IllegalArgumentException("Identifiants invalides");
