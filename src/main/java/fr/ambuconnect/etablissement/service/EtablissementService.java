@@ -14,7 +14,7 @@ import fr.ambuconnect.etablissement.dto.UtilisateurEtablissementDto;
 import fr.ambuconnect.etablissement.entity.EtablissementSante;
 import fr.ambuconnect.etablissement.entity.UtilisateurEtablissement;
 import fr.ambuconnect.etablissement.mapper.EtablissementMapper;
-import fr.ambuconnect.notification.service.EmailService;
+import fr.ambuconnect.notification.service.EmailServiceEtablissement;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -36,7 +36,7 @@ public class EtablissementService {
     AuthenService authenService;
 
     @Inject
-    EmailService emailService;
+    EmailServiceEtablissement emailService;
 
     @Transactional
     public EtablissementSanteDto creerEtablissement(EtablissementSanteDto dto) {

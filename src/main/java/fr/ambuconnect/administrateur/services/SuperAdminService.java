@@ -1,60 +1,108 @@
 package fr.ambuconnect.administrateur.services;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.time.LocalDate;
-
-
-import org.jboss.logging.Logger;
-import fr.ambuconnect.administrateur.dto.AdministrateurDto;
-import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.administrateur.mapper.AdministrateurMapper;
-import fr.ambuconnect.administrateur.role.Entity.RoleEntity;
 import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.authentification.services.EmailService;
-import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
-import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
 import fr.ambuconnect.chauffeur.mapper.ChauffeurMapper;
-import fr.ambuconnect.entreprise.dto.EntrepriseDto;
-import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import fr.ambuconnect.entreprise.mapper.EntrepriseMapper;
+import fr.ambuconnect.etablissement.dto.EtablissementSanteDto;
+import fr.ambuconnect.etablissement.dto.UtilisateurEtablissementDto;
+import fr.ambuconnect.etablissement.entity.EtablissementSante;
+import fr.ambuconnect.etablissement.entity.UtilisateurEtablissement;
+import fr.ambuconnect.etablissement.mapper.EtablissementMapper;
+import fr.ambuconnect.notification.service.EmailServiceEtablissement;
+import fr.ambuconnect.planning.services.PlanningService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
+
+
+import fr.ambuconnect.administrateur.dto.AdministrateurDto;
+import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
+import fr.ambuconnect.administrateur.role.Entity.RoleEntity;
+import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
+import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
+import fr.ambuconnect.entreprise.dto.EntrepriseDto;
+import fr.ambuconnect.entreprise.entity.EntrepriseEntity;
 import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotFoundException;
-import fr.ambuconnect.planning.services.PlanningService;
 
 @ApplicationScoped
-public class AdministrateurService {
+public class SuperAdminService {
 
     private static final Logger LOG = Logger.getLogger(AdministrateurService.class);
 
     private final AdministrateurMapper administrateurMapper;
     private final ChauffeurMapper chauffeurMapper;
     private final AuthenService authenService;
-    private final PlanningService planningService;
     private final EmailService emailService;
     private final EntrepriseMapper entrepriseMapper;
     @PersistenceContext
     private EntityManager entityManager;
 
     @Inject
-    public AdministrateurService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, PlanningService planningService, EmailService emailService, EntrepriseMapper entrepriseMapper) {
+    EtablissementMapper mapper;
+
+    @Inject
+    EmailServiceEtablissement emailServiceEtablissement;
+
+    @Inject
+    public SuperAdminService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, EmailService emailService, EntrepriseMapper entrepriseMapper) {
         this.administrateurMapper = administrateurMapper;
         this.chauffeurMapper = chauffeurMapper;
         this.authenService = authenService;
-        this.planningService = planningService;
         this.emailService = emailService;
         this.entrepriseMapper = entrepriseMapper;
     }
 
+        /**
+     * Récuperation de tout les administrateurs
+     * 
+     * @return Liste des administrateurs
+     */
+    public List<AdministrateurDto> findAllAdministrateurs() {
+        List<AdministrateurEntity> administrateurs = AdministrateurEntity.listAll();
+        return administrateurs.stream()
+                .map(administrateurMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     /**
+     * Récuperation de tout les chauffeurs
+     * 
+     * @return Liste des chauffeurs
+     */
+    public List<ChauffeurDto> findAllChauffeurs() {
+        List<ChauffeurEntity> chauffeurs = ChauffeurEntity.listAll();
+        return chauffeurs.stream()
+                .map(chauffeurMapper::chauffeurToDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Récuperation de tout les entreprises
+     * 
+     * @return Liste des entreprises
+     */
+    public List<EntrepriseDto> findAllEntreprises() {
+        List<EntrepriseEntity> entreprises = EntrepriseEntity.listAll();
+        return entreprises.stream()
+                .map(entrepriseMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+
+        /**
      * Création d'un admin
      * 
      * @param administrateurDto
@@ -125,6 +173,34 @@ public class AdministrateurService {
             LOG.error("Erreur inattendue lors de la création de l'administrateur", e);
             throw new InternalServerErrorException("Une erreur inattendue est survenue");
         }
+    }
+
+    public AdministrateurDto updateAdministrateur(UUID id, AdministrateurDto administrateurDto) {
+        AdministrateurEntity administrateur = AdministrateurEntity.findById(id);
+        if (administrateur == null) {
+            throw new NotFoundException("Administrateur non trouvé");
+        }
+
+        try {
+            // Mettre à jour les champs
+            administrateur.setNom(administrateurDto.getNom());
+            administrateur.setPrenom(administrateurDto.getPrenom());
+            administrateur.setEmail(administrateurDto.getEmail());
+            administrateur.setTelephone(administrateurDto.getTelephone());
+            administrateur.setActif(administrateurDto.isActif());
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la mise à jour de l'administrateur", e);
+            throw new InternalServerErrorException("Erreur lors de la mise à jour de l'administrateur: " + e.getMessage());
+        }
+        return administrateurMapper.toDto(administrateur);
+    }
+
+    public void deleteAdministrateur(UUID id) {
+        AdministrateurEntity administrateur = AdministrateurEntity.findById(id);
+        if (administrateur == null) {
+            throw new NotFoundException("Administrateur non trouvé");
+        }
+        entityManager.remove(administrateur);
     }
 
     /**
@@ -345,270 +421,272 @@ public class AdministrateurService {
         entityManager.remove(chauffeur);
     }
 
-    /**
-     * Récuperer tout les chauffeurs d'une entreprise
-     * @param administrateurId
-     * @return
-     */
-    public List<ChauffeurDto> findAll(UUID administrateurId) {
-        AdministrateurEntity administrateur = AdministrateurEntity.findById(administrateurId);
-        if (administrateur == null) {
-            throw new NotFoundException("Administrateur non trouvé");
-        }
-
-        List<ChauffeurEntity> chauffeurs = ChauffeurEntity.list("entreprise", administrateur.getEntreprise());
-        return chauffeurs.stream()
-                .map(chauffeurMapper::chauffeurToDto)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Retourne un chauffeur par son ID
-     * @param id
-     * @return
-     */
-    public ChauffeurDto findById(UUID id) {
-        ChauffeurEntity chauffeur = ChauffeurEntity.findById(id);
-        return chauffeurMapper.chauffeurToDto(chauffeur);
-    }
-
-    /**
-     * Recherche des chauffeurs selon différents critères
-     * @param administrateurId ID de l'administrateur effectuant la recherche
-     * @param searchTerm terme de recherche (nom, prénom, email)
-     * @return Liste des chauffeurs correspondant aux critères
-     */
-    public List<ChauffeurDto> rechercherChauffeurs(UUID administrateurId, String searchTerm) {
-        AdministrateurEntity administrateur = AdministrateurEntity.findById(administrateurId);
-        if (administrateur == null) {
-            throw new NotFoundException("Administrateur non trouvé");
-        }
-
-        String searchTermLower = searchTerm.toLowerCase();
-        List<ChauffeurEntity> chauffeurs = ChauffeurEntity.list(
-            "entreprise = ?1 and (lower(nom) like ?2 or lower(prenom) like ?2 or lower(email) like ?2)",
-            administrateur.getEntreprise(),
-            "%" + searchTermLower + "%"
-        );
-
-        return chauffeurs.stream()
-                .map(chauffeurMapper::chauffeurToDto)
-                .collect(Collectors.toList());
-    }
-
-    public List<AdministrateurDto> findByEntreprise(UUID identreprise) {
-        List<AdministrateurEntity> admins = AdministrateurEntity.list("entreprise.id", identreprise);
-        return admins.stream()
-                .map(administrateurMapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Récupère tous les chauffeurs appartenant à une entreprise spécifique
-     * 
-     * @param entrepriseId ID de l'entreprise
-     * @return Liste des chauffeurs de l'entreprise
-     */
-    public List<ChauffeurDto> getChauffeursByEntreprise(UUID entrepriseId) {
-        LOG.debug("Récupération des chauffeurs pour l'entreprise: " + entrepriseId);
-        
-        if (entrepriseId == null) {
-            LOG.error("ID d'entreprise non fourni pour la recherche de chauffeurs");
-            throw new BadRequestException("L'ID de l'entreprise est obligatoire");
-        }
-        
-        List<ChauffeurEntity> chauffeurs = ChauffeurEntity.findByEntrepriseId(entrepriseId);
-        
-        LOG.debug("Nombre de chauffeurs trouvés: " + chauffeurs.size());
-        
-        return chauffeurs.stream()
-                .map(chauffeurMapper::chauffeurToDto)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Création d'un superadmin
-     * 
-     * @param administrateurDto Les informations du superadmin à créer
-     * @return Le DTO du superadmin créé
-     */
     @Transactional
-    public AdministrateurDto createSuperAdmin(AdministrateurDto administrateurDto) {
-        LOG.debug("Début création superadmin avec email: " + administrateurDto.getEmail());
-        
-        // Vérifier si l'email est correct pour un superadmin
-        if (!administrateurDto.getEmail().equals("superadmin@ambuconnect.fr")) {
-            LOG.error("L'email n'est pas celui attendu pour un superadmin");
-            throw new BadRequestException("L'email d'un superadmin doit être superadmin@ambuconnect.fr");
-        }
-        
+    public EtablissementSanteDto creerEtablissement(EtablissementSanteDto dto) {
+        LOG.debug("Création d'un établissement de santé : {}"+ dto.getEmailContact());
+
         // Vérifier si l'email existe déjà
-        if (AdministrateurEntity.findByEmail(administrateurDto.getEmail()) != null) {
-            LOG.error("Un superadmin avec cet email existe déjà");
-            throw new BadRequestException("Un superadmin avec cet email existe déjà");
+        if (EtablissementSante.findByEmail(dto.getEmailContact()) != null) {
+            throw new BadRequestException("Un établissement avec cet email existe déjà");
         }
-        
+
         try {
-            // Récupérer le rôle ADMIN (le rôle SUPERADMIN est attribué au niveau du service d'authentification)
-            RoleEntity roleAdmin = RoleEntity.findByName("ADMIN");
-            if (roleAdmin == null) {
-                LOG.error("Rôle ADMIN non trouvé");
-                throw new NotFoundException("Le rôle ADMIN n'existe pas");
+            // Vérifier si le responsable référent existe
+            AdministrateurEntity responsable = entityManager.find(AdministrateurEntity.class, dto.getResponsableReferentId());
+            if (responsable == null) {
+                throw new NotFoundException("Le responsable référent n'existe pas");
             }
-            
-            // Forcer le rôle à ADMIN (sera converti en SUPERADMIN lors de la connexion)
-            administrateurDto.setRole(roleAdmin.getNom());
-            
-            // Hasher le mot de passe
-            String hashedPassword = authenService.hasherMotDePasse(administrateurDto.getMotDePasse());
-            administrateurDto.setMotDePasse(hashedPassword);
-            
+
             // Convertir DTO en entité
-            AdministrateurEntity superAdmin = administrateurMapper.toEntity(administrateurDto);
-            
-            // Définir le rôle
-            superAdmin.setRole(roleAdmin);
-            
+            EtablissementSante etablissement = mapper.toEntity(dto);
+            etablissement.setResponsableReferent(responsable);
+
             // Persister l'entité
-            entityManager.persist(superAdmin);
+            entityManager.persist(etablissement);
             entityManager.flush();
-            
-            LOG.info("Superadmin créé avec succès: " + administrateurDto.getEmail());
-            
-            // Retourner le DTO du superadmin créé
-            return administrateurMapper.toDto(superAdmin);
-            
+
+            // Envoyer l'email de confirmation
+            emailServiceEtablissement.sendNewEtablissementConfirmation(
+                dto.getEmailContact(),
+                dto.getNom(),
+                responsable.getNom(),
+                responsable.getPrenom()
+            );
+
+            LOG.info("Établissement créé avec succès : {}"+ dto.getEmailContact());
+
+            return mapper.toDto(etablissement);
+
         } catch (PersistenceException e) {
-            LOG.error("Erreur lors de la persistance du superadmin", e);
-            throw new BadRequestException("Erreur lors de la création du superadmin: " + e.getMessage());
-        } catch (Exception e) {
-            LOG.error("Erreur inattendue lors de la création du superadmin", e);
-            throw new InternalServerErrorException("Une erreur inattendue est survenue");
+            LOG.error("Erreur lors de la création de l'établissement", e);
+            throw new BadRequestException("Erreur lors de la création de l'établissement : " + e.getMessage());
         }
     }
 
-    public AdministrateurDto updateAdministrateur(UUID id, AdministrateurDto administrateurDto) {
-        AdministrateurEntity administrateur = AdministrateurEntity.findById(id);
-        if (administrateur == null) {
-            throw new NotFoundException("Administrateur non trouvé");
-        }
-
-        try {
-            // Mettre à jour les champs
-            administrateur.setNom(administrateurDto.getNom());
-            administrateur.setPrenom(administrateurDto.getPrenom());
-            administrateur.setEmail(administrateurDto.getEmail());
-            administrateur.setTelephone(administrateurDto.getTelephone());
-            administrateur.setActif(administrateurDto.isActif());
-        } catch (Exception e) {
-            LOG.error("Erreur lors de la mise à jour de l'administrateur", e);
-            throw new InternalServerErrorException("Erreur lors de la mise à jour de l'administrateur: " + e.getMessage());
-        }
-        return administrateurMapper.toDto(administrateur);
-    }
-
-    public void deleteAdministrateur(UUID id) {
-        AdministrateurEntity administrateur = AdministrateurEntity.findById(id);
-        if (administrateur == null) {
-            throw new NotFoundException("Administrateur non trouvé");
-        }
-        entityManager.remove(administrateur);
-    }
-
-    /**
-     * Création d'un administrateur avec son entreprise après inscription et paiement sur le site vitrine
-     * 
-     * @param administrateurDto Les informations de l'administrateur
-     * @param abonnementStripeId L'identifiant de l'abonnement Stripe
-     * @return Le DTO de l'administrateur créé
-     */
     @Transactional
-    public AdministrateurDto inscriptionEntrepriseAdmin(AdministrateurDto administrateurDto, String abonnementStripeId) {
-        LOG.debug("Début création administrateur après inscription sur site vitrine avec email: " + administrateurDto.getEmail());
-        
+    public UtilisateurEtablissementDto creerUtilisateur(UUID etablissementId, UtilisateurEtablissementDto dto) {
+        LOG.debug("Création d'un utilisateur pour l'établissement {} : {}"+ etablissementId+ dto.getEmail());
+
         // Vérifier si l'email existe déjà
-        if (AdministrateurEntity.findByEmail(administrateurDto.getEmail()) != null) {
-            LOG.error("Email déjà utilisé: " + administrateurDto.getEmail());
-            throw new BadRequestException("Un compte avec cet email existe déjà");
+        if (UtilisateurEtablissement.findByEmail(dto.getEmail()) != null) {
+            throw new BadRequestException("Un utilisateur avec cet email existe déjà");
         }
-        
+
         try {
-            // Créer l'entreprise d'abord
-            EntrepriseEntity entreprise = new EntrepriseEntity();
-            entreprise.setNom(administrateurDto.getEntrepriseNom());
-            entreprise.setEmail(administrateurDto.getEntrepriseEmail());
-            entreprise.setSiret(administrateurDto.getEntrepriseSiret());
-            entreprise.setAdresse(administrateurDto.getEntrepriseAdresse());
-            entreprise.setCodePostal(administrateurDto.getEntrepriseCodePostal());
-            entreprise.setTelephone(administrateurDto.getEntrepriseTelephone());
-            
-            // Valeurs par défaut si non fournies
-            if (entreprise.getEmail() == null) entreprise.setEmail("À définir");
-            if (entreprise.getSiret() == null) entreprise.setSiret("À définir");
-            if (entreprise.getAdresse() == null) entreprise.setAdresse("À définir");
-            if (entreprise.getCodePostal() == null) entreprise.setCodePostal("00000");
-            if (entreprise.getTelephone() == null) entreprise.setTelephone("À définir");
-            
-            // Stocker les informations d'abonnement
-            entreprise.setAbonnementStripeId(abonnementStripeId);
-            entreprise.setDateInscription(LocalDate.now());
-            entreprise.setActif(true);
-            
-            // Persister l'entreprise
-            entityManager.persist(entreprise);
-            entityManager.flush();
-            
-            // Récupérer le rôle ADMIN
-            RoleEntity roleAdmin = RoleEntity.findByName("ADMIN");
-            if (roleAdmin == null) {
-                LOG.error("Rôle ADMIN non trouvé");
-                throw new NotFoundException("Le rôle ADMIN n'existe pas");
+            // Vérifier si l'établissement existe
+            EtablissementSante etablissement = entityManager.find(EtablissementSante.class, etablissementId);
+            if (etablissement == null) {
+                throw new NotFoundException("L'établissement n'existe pas");
             }
-            
-            // Définir le rôle et l'entreprise
-            administrateurDto.setRole(roleAdmin.getNom());
-            administrateurDto.setEntrepriseId(entreprise.getId());
-            
+
             // Sauvegarder le mot de passe en clair pour l'email
-            String motDePasseClair = administrateurDto.getMotDePasse();
-            
+            String motDePasseClair = dto.getMotDePasse();
+
             // Hasher le mot de passe
             String hashedPassword = authenService.hasherMotDePasse(motDePasseClair);
-            administrateurDto.setMotDePasse(hashedPassword);
-            
+            dto.setMotDePasse(hashedPassword);
+
             // Convertir DTO en entité
-            AdministrateurEntity nouvelAdmin = administrateurMapper.toEntity(administrateurDto);
-            
-            // Définir le rôle et l'entreprise
-            nouvelAdmin.setRole(roleAdmin);
-            nouvelAdmin.setEntreprise(entreprise);
-            nouvelAdmin.setActif(true);
-            
-            // Persister l'administrateur
-            entityManager.persist(nouvelAdmin);
+            UtilisateurEtablissement utilisateur = mapper.toEntity(dto);
+            utilisateur.setEtablissement(etablissement);
+
+            // Persister l'entité
+            entityManager.persist(utilisateur);
             entityManager.flush();
-            
+
             // Envoyer l'email avec les identifiants
-            emailService.sendNewAccountCredentialsAdmin(
-                administrateurDto.getEmail(),
-                administrateurDto.getNom(),
-                administrateurDto.getPrenom(),
-                roleAdmin.getNom(),
-                motDePasseClair
+            emailServiceEtablissement.sendNewUserCredentials(
+                dto.getEmail(),
+                dto.getNom(),
+                dto.getPrenom(),
+                dto.getRole().toString(),
+                motDePasseClair,
+                etablissement.getNom()
             );
-            
-            LOG.info("Administrateur et entreprise créés avec succès après inscription: " + administrateurDto.getEmail());
-            
-            // Retourner le DTO de l'administrateur créé
-            return administrateurMapper.toDto(nouvelAdmin);
-            
+
+            LOG.info("Utilisateur créé avec succès : {}"+ dto.getEmail());
+
+            return mapper.toDto(utilisateur);
+
         } catch (PersistenceException e) {
-            LOG.error("Erreur lors de la persistance après inscription", e);
-            throw new BadRequestException("Erreur lors de la création du compte: " + e.getMessage());
-        } catch (Exception e) {
-            LOG.error("Erreur inattendue lors de la création après inscription", e);
-            throw new InternalServerErrorException("Une erreur inattendue est survenue");
+            LOG.error("Erreur lors de la création de l'utilisateur", e);
+            throw new BadRequestException("Erreur lors de la création de l'utilisateur : " + e.getMessage());
         }
     }
+
+    @Transactional
+    public void activerEtablissement(UUID id) {
+        LOG.debug("Activation de l'établissement : " + id);
+
+        EtablissementSante etablissement = entityManager.find(EtablissementSante.class, id);
+        if (etablissement == null) {
+            throw new NotFoundException("L'établissement n'existe pas");
+        }
+
+        etablissement.setActive(true);
+        entityManager.merge(etablissement);
+
+        // Envoyer l'email de confirmation d'activation
+        emailServiceEtablissement.sendEtablissementActivationConfirmation(
+            etablissement.getEmailContact(),
+            etablissement.getNom()
+        );
+
+        LOG.info("Établissement activé avec succès : {}"+ id);
+    }
+
+    @Transactional
+    public void desactiverEtablissement(UUID id) {
+        LOG.debug("Désactivation de l'établissement : {}"+ id);
+
+        EtablissementSante etablissement = entityManager.find(EtablissementSante.class, id);
+        if (etablissement == null) {
+            throw new NotFoundException("L'établissement n'existe pas");
+        }
+
+        etablissement.setActive(false);
+        entityManager.merge(etablissement);
+
+        LOG.info("Établissement désactivé avec succès : {}"+ id);
+    }
+
+    @Transactional
+    public EtablissementSanteDto mettreAJourEtablissement(UUID id, EtablissementSanteDto dto) {
+        LOG.debug("Mise à jour de l'établissement : {}"+ id);
+
+        EtablissementSante etablissement = entityManager.find(EtablissementSante.class, id);
+        if (etablissement == null) {
+            throw new NotFoundException("L'établissement n'existe pas");
+        }
+
+        // Vérifier si le nouvel email est déjà utilisé par un autre établissement
+        if (!etablissement.getEmailContact().equals(dto.getEmailContact())) {
+            EtablissementSante existant = EtablissementSante.findByEmail(dto.getEmailContact());
+            if (existant != null && !existant.getId().equals(id)) {
+                throw new BadRequestException("Un établissement avec cet email existe déjà");
+            }
+        }
+
+        try {
+            // Mettre à jour l'entité
+            mapper.updateEntity(etablissement, dto);
+            entityManager.merge(etablissement);
+            entityManager.flush();
+
+            LOG.info("Établissement mis à jour avec succès : {}"+ id);
+
+            return mapper.toDto(etablissement);
+
+        } catch (PersistenceException e) {
+            LOG.error("Erreur lors de la mise à jour de l'établissement", e);
+            throw new BadRequestException("Erreur lors de la mise à jour de l'établissement : " + e.getMessage());
+        }
+    }
+
+    public List<EtablissementSanteDto> rechercherEtablissements(String query) {
+        LOG.debug("Recherche d'établissements avec le critère : {}"+ query);
+
+        String searchQuery = "%" + query.toLowerCase() + "%";
+        List<EtablissementSante> etablissements = EtablissementSante.list(
+            "LOWER(nom) LIKE ?1 OR LOWER(emailContact) LIKE ?1 OR LOWER(telephoneContact) LIKE ?1",
+            searchQuery
+        );
+
+        return etablissements.stream()
+            .map(mapper::toDto)
+            .collect(Collectors.toList());
+    }
+
+    public EtablissementSanteDto getEtablissement(UUID id) {
+        LOG.debug("Récupération de l'établissement : {}"+ id);
+
+        EtablissementSante etablissement = entityManager.find(EtablissementSante.class, id);
+        if (etablissement == null) {
+            throw new NotFoundException("L'établissement n'existe pas");
+        }
+
+        return mapper.toDto(etablissement);
+    }
+
+    public List<UtilisateurEtablissementDto> getUtilisateurs(UUID etablissementId) {
+        LOG.debug("Récupération des utilisateurs de l'établissement : {}"+ etablissementId);
+
+        List<UtilisateurEtablissement> utilisateurs = UtilisateurEtablissement.list(
+            "etablissement.id", etablissementId
+        );
+
+        return utilisateurs.stream()
+            .map(mapper::toDto)
+            .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void supprimerUtilisateur(UUID etablissementId, UUID utilisateurId) {
+        LOG.debug("Suppression de l'utilisateur {} de l'établissement {}"+ utilisateurId+ etablissementId);
+
+        UtilisateurEtablissement utilisateur = entityManager.find(UtilisateurEtablissement.class, utilisateurId);
+        if (utilisateur == null || !utilisateur.getEtablissement().getId().equals(etablissementId)) {
+            throw new NotFoundException("L'utilisateur n'existe pas dans cet établissement");
+        }
+
+        entityManager.remove(utilisateur);
+        LOG.info("Utilisateur supprimé avec succès : {}"+ utilisateurId);
+    }
+
+    @Transactional
+    public EntrepriseDto creerEntreprise(EntrepriseDto entrepriseDto) {
+        EntrepriseEntity nouvelleEntreprise = entrepriseMapper.toEntity(entrepriseDto);
+        entityManager.persist(nouvelleEntreprise);
+        return entrepriseMapper.toDto(nouvelleEntreprise);
+    }
+
+    public EntrepriseDto obtenirEntreprise(UUID id) {
+        EntrepriseEntity entreprise = EntrepriseEntity.findById(id);
+        if (entreprise == null) {
+            throw new NotFoundException("Entreprise non trouvée");
+        }
+        return entrepriseMapper.toDto(entreprise);
+    }
+
+    public List<EntrepriseDto> obtenirToutesLesEntreprises() {
+        List<EntrepriseEntity> entreprises = EntrepriseEntity.listAll();
+        return entreprises.stream()
+                .map(entrepriseMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public EntrepriseDto mettreAJourEntreprise(UUID id, EntrepriseDto entrepriseDto) {
+        EntrepriseEntity entreprise = EntrepriseEntity.findById(id);
+        if (entreprise == null) {
+            throw new NotFoundException("Entreprise non trouvée");
+        }
+        entreprise = entrepriseMapper.toEntity(entrepriseDto);
+        entreprise.setId(id);
+        entityManager.merge(entreprise);
+        return entrepriseMapper.toDto(entreprise);
+    }
+
+    @Transactional
+    public void supprimerEntreprise(UUID id) {
+        EntrepriseEntity entreprise = EntrepriseEntity.findById(id);
+        if (entreprise == null) {
+            throw new NotFoundException("Entreprise non trouvée");
+        }
+        entityManager.remove(entreprise);
+    }
+
+    public EntrepriseEntity findById(UUID id) {
+        return EntrepriseEntity.findById(id);
+    }
+
+    @Transactional
+    public List<EntrepriseDto> getAllEntreprise() {
+        List<EntrepriseEntity> entreprises = EntrepriseEntity.listAll();
+        return entreprises.stream()
+                .map(entrepriseMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
 
 }

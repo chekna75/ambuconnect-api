@@ -1,7 +1,7 @@
 package fr.ambuconnect.etablissement.service;
 
 import fr.ambuconnect.etablissement.dto.ContactMessageDto;
-import fr.ambuconnect.notification.service.EmailService;
+import fr.ambuconnect.notification.service.EmailServiceEtablissement;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 public class ContactService {
 
     @Inject
-    EmailService emailService;
+    EmailServiceEtablissement emailService;
 
 
     @ConfigProperty(name = "app.contact.email")

@@ -14,9 +14,9 @@ import java.util.List;
 
 @Slf4j
 @ApplicationScoped
-public class EmailService {
+public class EmailServiceEtablissement {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EmailService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EmailServiceEtablissement.class);
 
     @Inject Mailer mailer;
 

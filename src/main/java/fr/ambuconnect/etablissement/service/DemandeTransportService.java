@@ -14,7 +14,7 @@ import fr.ambuconnect.etablissement.entity.EtablissementSante;
 import fr.ambuconnect.etablissement.entity.StatusDemande;
 import fr.ambuconnect.etablissement.entity.UtilisateurEtablissement;
 import fr.ambuconnect.etablissement.mapper.EtablissementMapper;
-import fr.ambuconnect.notification.service.EmailService;
+import fr.ambuconnect.notification.service.EmailServiceEtablissement;
 import fr.ambuconnect.patient.entity.PatientEntity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,7 +34,7 @@ public class DemandeTransportService {
     EtablissementMapper mapper;
 
     @Inject
-    EmailService emailService;
+    EmailServiceEtablissement emailService;
 
     @Transactional
     public DemandeTransportDto creerDemande(UUID etablissementId, UUID utilisateurId, DemandeTransportDto dto) {
