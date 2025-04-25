@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
+import fr.ambuconnect.administrateur.dto.SuperAdminDto;
 import fr.ambuconnect.administrateur.services.SuperAdminService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.entreprise.dto.EntrepriseDto;
@@ -31,6 +32,8 @@ public class SuperAdminRessource {
 
     @Inject
     SuperAdminService superAdminService;
+
+
 
     // Endpoints pour les Administrateurs
 

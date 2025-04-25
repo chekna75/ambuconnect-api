@@ -3,6 +3,8 @@ package fr.ambuconnect.authentification.resources;
 import java.util.UUID;
 import java.util.HashMap;
 
+import fr.ambuconnect.administrateur.dto.SuperAdminDto;
+import fr.ambuconnect.administrateur.services.SuperAdminService;
 import fr.ambuconnect.authentification.dto.LoginRequestDto;
 import fr.ambuconnect.authentification.dto.MotDePasseRequestDto;
 import fr.ambuconnect.authentification.dto.ResetPasswordRequestDto;
@@ -43,6 +45,9 @@ public class AuthentificationResourse {
 
     @Inject
     AuthenService authenService;
+
+    @Inject
+    SuperAdminService superAdminService;
 
     @POST
     @Path("/admin/login")
@@ -234,6 +239,21 @@ public class AuthentificationResourse {
                 .build();
         }
     }
+
+        // Endpoints pour les SuperAdmins
+        @POST
+        @Path("/superadmins")
+        public Response createSuperAdmin(@Valid SuperAdminDto superAdminDto) {
+            try {
+                SuperAdminDto created = superAdminService.creationSuperAdmin(superAdminDto);
+                return Response.status(Response.Status.CREATED).entity(created).build();
+            } catch (Exception e) {
+                LOG.error("Erreur lors de la création du superadmin", e);
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse("Erreur lors de la création du superadmin"))
+                    .build();
+            }
+        }
 
 }
 

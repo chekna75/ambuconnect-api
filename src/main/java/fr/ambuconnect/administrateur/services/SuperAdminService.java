@@ -1,6 +1,7 @@
 package fr.ambuconnect.administrateur.services;
 
 import fr.ambuconnect.administrateur.mapper.AdministrateurMapper;
+import fr.ambuconnect.administrateur.mapper.SuperAdminMapper;
 import fr.ambuconnect.authentification.services.AuthenService;
 import fr.ambuconnect.authentification.services.EmailService;
 import fr.ambuconnect.chauffeur.mapper.ChauffeurMapper;
@@ -25,7 +26,9 @@ import org.jboss.logging.Logger;
 
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
+import fr.ambuconnect.administrateur.dto.SuperAdminDto;
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
+import fr.ambuconnect.administrateur.entity.SuperAdminEntity;
 import fr.ambuconnect.administrateur.role.Entity.RoleEntity;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.chauffeur.entity.ChauffeurEntity;
@@ -57,6 +60,8 @@ public class SuperAdminService {
     EmailServiceEtablissement emailServiceEtablissement;
 
     @Inject
+    SuperAdminMapper superAdminMapper;
+    @Inject
     public SuperAdminService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, EmailService emailService, EntrepriseMapper entrepriseMapper) {
         this.administrateurMapper = administrateurMapper;
         this.chauffeurMapper = chauffeurMapper;
@@ -65,7 +70,18 @@ public class SuperAdminService {
         this.entrepriseMapper = entrepriseMapper;
     }
 
-        /**
+    /**
+     * Crée un Superadmin
+     * 
+     * @return Dto SuperAdmin
+     */
+    public SuperAdminDto creationSuperAdmin(SuperAdminDto superAdminDto) {
+        SuperAdminEntity superAdminEntity = superAdminMapper.toEntity(superAdminDto);
+        superAdminEntity.persist();
+        return superAdminMapper.toDto(superAdminEntity);
+    }
+
+    /**
      * Récuperation de tout les administrateurs
      * 
      * @return Liste des administrateurs
