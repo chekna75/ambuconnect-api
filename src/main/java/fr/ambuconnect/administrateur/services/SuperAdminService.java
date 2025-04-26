@@ -44,6 +44,9 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotFoundException;
 
+import java.util.Map;
+import java.util.HashMap;
+
 @ApplicationScoped
 public class SuperAdminService {
 
@@ -759,6 +762,33 @@ public class SuperAdminService {
     public List<PatientDto> getAllPatient(UUID entrepriseId) {
         List<PatientEntity> patientEntity = PatientEntity.findByIdEntreprise(entrepriseId);
         return patientEntity.stream().map(patientMapper::toDto).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Integer> statistiqueDashboard() {
+        List<PatientEntity> patientEntity = PatientEntity.listAll();
+        List<EntrepriseEntity> entrepriseEntity = EntrepriseEntity.listAll();
+        List<EtablissementSante> etablissementSante = EtablissementSante.listAll();
+        List<AdministrateurEntity> administrateurEntity = AdministrateurEntity.listAll();
+        List<ChauffeurEntity> chauffeurEntity = ChauffeurEntity.listAll();
+
+        int totalPatients = patientEntity.size();
+        int totalEntreprises = entrepriseEntity.size();
+        int totalEtablissements = etablissementSante.size();
+        int totalAdministrateurs = administrateurEntity.size();
+        int totalChauffeurs = chauffeurEntity.size();
+
+        int totalGlobal = totalPatients + totalEntreprises + totalEtablissements + totalAdministrateurs + totalChauffeurs;
+
+        Map<String, Integer> stats = new HashMap<>();
+        stats.put("patients", totalPatients);
+        stats.put("entreprises", totalEntreprises);
+        stats.put("etablissements", totalEtablissements);
+        stats.put("administrateurs", totalAdministrateurs);
+        stats.put("chauffeurs", totalChauffeurs);
+        stats.put("total", totalGlobal);
+
+        return stats;
     }
 
 

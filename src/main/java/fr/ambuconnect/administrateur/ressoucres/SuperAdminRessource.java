@@ -513,4 +513,18 @@ public class SuperAdminRessource {
                 .build();
         }
     }
+
+    @GET
+    @Path("/dashboard/statistiques")
+    public Response getDashboardStats() {
+        try {
+            Map<String, Integer> stats = superAdminService.statistiqueDashboard();
+            return Response.ok(stats).build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération des statistiques du dashboard", e);
+            return Response.serverError()
+                .entity(new ErrorResponse("Erreur lors de la récupération des statistiques du dashboard"))
+                .build();
+        }
+    }
 }
