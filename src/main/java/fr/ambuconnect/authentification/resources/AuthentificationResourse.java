@@ -255,6 +255,27 @@ public class AuthentificationResourse {
             }
         }
 
+    @PUT
+    @Path("/superadmin/{email}/reinitialiser-mot-de-passe")
+    @PermitAll
+    public Response reinitialiserMotDePasseSuperAdmin(
+            @PathParam("email") String superAdminEmail,
+            @Valid MotDePasseRequestDto request) {
+        try {
+            authenService.reinitialiserMotDePasseSuperAdmin(superAdminEmail, request.getNouveauMotDePasse());
+            return Response.ok().build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                         .entity(new ErrorResponse("SuperAdmin non trouvé"))
+                         .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la réinitialisation du mot de passe superadmin", e);
+            return Response.serverError()
+                         .entity(new ErrorResponse("Erreur lors de la réinitialisation"))
+                         .build();
+        }
+    }
+
 }
 
 

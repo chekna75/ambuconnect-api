@@ -335,6 +335,24 @@ public class AuthenService {
     }
 
     @Transactional
+    public void reinitialiserMotDePasseSuperAdmin(String superAdminEmail, String nouveauMotDePasse) {
+        try {
+            LOG.info("Début réinitialisation mot de passe pour superadmin: {}", superAdminEmail);
+            SuperAdminEntity superAdmin = SuperAdminEntity.findByEmail(superAdminEmail);
+            if (superAdmin == null) {
+                throw new NotFoundException("SuperAdmin non trouvé");
+            }
+            String motDePasseHashe = hasherMotDePasse(nouveauMotDePasse);
+            superAdmin.setMotDePasse(motDePasseHashe);
+            superAdmin.persist();
+            LOG.info("Mot de passe superadmin réinitialisé avec succès");
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la réinitialisation du mot de passe superadmin: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Transactional
     public void demandeReinitialisationMotDePasse(String email) {
         LOG.info("Demande de réinitialisation de mot de passe pour: " + email);
         
