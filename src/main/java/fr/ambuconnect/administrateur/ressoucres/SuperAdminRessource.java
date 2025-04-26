@@ -502,10 +502,10 @@ public class SuperAdminRessource {
     }
 
     @GET
-    @Path("/patients/entreprise/{entrepriseId}")
-    public Response getAllPatients(@PathParam("entrepriseId") UUID entrepriseId) {
+    @Path("/patients/entreprise")
+    public Response getAllPatients() {
         try {
-            List<PatientDto> patients = superAdminService.getAllPatient(entrepriseId);
+            List<PatientDto> patients = superAdminService.getAllPatient();
             return Response.ok(patients).build();
         } catch (Exception e) {
             LOG.error("Erreur lors de la récupération des patients", e);

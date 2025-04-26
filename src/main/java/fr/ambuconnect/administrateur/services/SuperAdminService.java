@@ -764,8 +764,8 @@ public class SuperAdminService {
         entityManager.remove(patientEntity);
     }
 
-    public List<PatientDto> getAllPatient(UUID entrepriseId) {
-        List<PatientEntity> patientEntity = PatientEntity.findByIdEntreprise(entrepriseId);
+    public List<PatientDto> getAllPatient() {
+        List<PatientEntity> patientEntity = PatientEntity.listAll();
         return patientEntity.stream().map(patientMapper::toDto).collect(Collectors.toList());
     }
 
