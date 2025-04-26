@@ -12,6 +12,7 @@ import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
 import fr.ambuconnect.entreprise.dto.EntrepriseDto;
 import fr.ambuconnect.etablissement.dto.EtablissementSanteDto;
 import fr.ambuconnect.etablissement.dto.UtilisateurEtablissementDto;
+import fr.ambuconnect.patient.dto.PatientDto;
 import fr.ambuconnect.utils.ErrorResponse;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -423,6 +424,92 @@ public class SuperAdminRessource {
             LOG.error("Erreur lors de la recherche d'établissements", e);
             return Response.serverError()
                 .entity(new ErrorResponse("Erreur lors de la recherche d'établissements"))
+                .build();
+        }
+    }
+
+    @POST
+    @Path("/patients/{entrepriseId}")
+    public Response createPatient(@PathParam("entrepriseId") UUID entrepriseId, @Valid PatientDto patientDto) {
+        try {
+            PatientDto created = superAdminService.creePatient(patientDto, entrepriseId);
+            return Response.status(Response.Status.CREATED).entity(created).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la création du patient", e);
+            return Response.serverError()
+                .entity(new ErrorResponse("Erreur lors de la création du patient"))
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/patients/{id}")
+    public Response getPatient(@PathParam("id") UUID id) {
+        try {
+            PatientDto patient = superAdminService.obtenirPatient(id);
+            return Response.ok(patient).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération du patient", e);
+            return Response.serverError()
+                .entity(new ErrorResponse("Erreur lors de la récupération du patient"))
+                .build();
+        }
+    }
+
+    @PUT
+    @Path("/patients/{id}")
+    public Response updatePatient(@PathParam("id") UUID id, @Valid PatientDto patientDto) {
+        try {
+            PatientDto updated = superAdminService.modifierPatient(id, patientDto);
+            return Response.ok(updated).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la mise à jour du patient", e);
+            return Response.serverError()
+                .entity(new ErrorResponse("Erreur lors de la mise à jour du patient"))
+                .build();
+        }
+    }
+
+    @DELETE
+    @Path("/patients/{id}")
+    public Response deletePatient(@PathParam("id") UUID id) {
+        try {
+            superAdminService.supprimerPatient(id);
+            return Response.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la suppression du patient", e);
+            return Response.serverError()
+                .entity(new ErrorResponse("Erreur lors de la suppression du patient"))
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/patients/entreprise/{entrepriseId}")
+    public Response getAllPatients(@PathParam("entrepriseId") UUID entrepriseId) {
+        try {
+            List<PatientDto> patients = superAdminService.getAllPatient(entrepriseId);
+            return Response.ok(patients).build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération des patients", e);
+            return Response.serverError()
+                .entity(new ErrorResponse("Erreur lors de la récupération des patients"))
                 .build();
         }
     }

@@ -12,6 +12,10 @@ import fr.ambuconnect.etablissement.entity.EtablissementSante;
 import fr.ambuconnect.etablissement.entity.UtilisateurEtablissement;
 import fr.ambuconnect.etablissement.mapper.EtablissementMapper;
 import fr.ambuconnect.notification.service.EmailServiceEtablissement;
+import fr.ambuconnect.patient.dto.PatientDto;
+import fr.ambuconnect.patient.entity.PatientEntity;
+import fr.ambuconnect.patient.mapper.PatientMapper;
+import fr.ambuconnect.patient.services.PatientService;
 import fr.ambuconnect.planning.services.PlanningService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -60,14 +64,22 @@ public class SuperAdminService {
     EmailServiceEtablissement emailServiceEtablissement;
 
     @Inject
+    PatientMapper patientMapper;
+
+    @Inject
+    PatientService patientService;
+
+    @Inject
     SuperAdminMapper superAdminMapper;
     @Inject
-    public SuperAdminService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, EmailService emailService, EntrepriseMapper entrepriseMapper) {
+    public SuperAdminService(AdministrateurMapper administrateurMapper, ChauffeurMapper chauffeurMapper, AuthenService authenService, EmailService emailService, EntrepriseMapper entrepriseMapper, PatientMapper patientMapper, PatientService patientService) {
         this.administrateurMapper = administrateurMapper;
         this.chauffeurMapper = chauffeurMapper;
         this.authenService = authenService;
         this.emailService = emailService;
         this.entrepriseMapper = entrepriseMapper;
+        this.patientMapper = patientMapper;
+        this.patientService = patientService;
     }
 
     /**
@@ -702,6 +714,51 @@ public class SuperAdminService {
         return entreprises.stream()
                 .map(entrepriseMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public PatientDto creePatient(PatientDto patient, UUID entrepriseId) {
+        EntrepriseEntity entrepriseEntity = EntrepriseEntity.findById(entrepriseId);
+        if (entrepriseEntity == null) {
+            throw new IllegalArgumentException("Entreprise non trouvée");
+        }
+        PatientEntity patientEntity = patientMapper.toEntity(patient);
+        entityManager.persist(patientEntity);
+        return patientMapper.toDto(patientEntity);
+    }
+
+    @Transactional
+    public PatientDto obtenirPatient(UUID id) {
+        PatientEntity patientEntity = PatientEntity.findById(id);
+        if (patientEntity == null) {
+            throw new IllegalArgumentException("Patient non trouvé");
+        }
+        return patientMapper.toDto(patientEntity);
+    }
+
+    @Transactional
+    public PatientDto modifierPatient(UUID id, PatientDto patient) {
+        PatientEntity patientEntity = PatientEntity.findById(id);
+        if (patientEntity == null) {
+            throw new IllegalArgumentException("Patient non trouvé");
+        }
+        patientEntity = patientMapper.toEntity(patient);
+        entityManager.merge(patientEntity);
+        return patientMapper.toDto(patientEntity);
+    }
+
+    @Transactional
+    public void supprimerPatient(UUID id) {
+        PatientEntity patientEntity = PatientEntity.findById(id);
+        if (patientEntity == null) {
+            throw new IllegalArgumentException("Patient non trouvé");
+        }
+        entityManager.remove(patientEntity);
+    }
+
+    public List<PatientDto> getAllPatient(UUID entrepriseId) {
+        List<PatientEntity> patientEntity = PatientEntity.findByIdEntreprise(entrepriseId);
+        return patientEntity.stream().map(patientMapper::toDto).collect(Collectors.toList());
     }
 
 
