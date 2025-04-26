@@ -12,6 +12,7 @@ import fr.ambuconnect.etablissement.entity.EtablissementSante;
 import fr.ambuconnect.etablissement.entity.UtilisateurEtablissement;
 import fr.ambuconnect.etablissement.mapper.EtablissementMapper;
 import fr.ambuconnect.notification.service.EmailServiceEtablissement;
+import fr.ambuconnect.paiement.entity.AbonnementEntity;
 import fr.ambuconnect.patient.dto.PatientDto;
 import fr.ambuconnect.patient.entity.PatientEntity;
 import fr.ambuconnect.patient.mapper.PatientMapper;
@@ -45,6 +46,8 @@ import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotFoundException;
 
 import java.util.Map;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 @ApplicationScoped
@@ -789,6 +792,40 @@ public class SuperAdminService {
         stats.put("total", totalGlobal);
 
         return stats;
+    }
+
+    public List<Map<String, Object>> repartitionAbonnementsActifsParType() {
+        List<Object[]> results = entityManager.createQuery(
+            "SELECT a.type, COUNT(a) FROM AbonnementEntity a WHERE a.actif = true GROUP BY a.type"
+        ).getResultList();
+    
+        List<Map<String, Object>> repartition = new ArrayList<>();
+        for (Object[] row : results) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("type", row[0]);
+            entry.put("count", ((Number) row[1]).intValue());
+            repartition.add(entry);
+        }
+        return repartition;
+    }
+
+    public List<Map<String, Object>> paiementsRecents30Jours() {
+        LocalDate ilYA30Jours = LocalDate.now().minusDays(30);
+        List<AbonnementEntity> abonnements = entityManager.createQuery(
+            "SELECT a FROM AbonnementEntity a WHERE a.actif = true AND a.dateDebut >= :date", AbonnementEntity.class
+        ).setParameter("date", ilYA30Jours)
+         .getResultList();
+    
+        List<Map<String, Object>> paiements = new ArrayList<>();
+        for (AbonnementEntity a : abonnements) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("date", a.getDateDebut());
+            entry.put("entreprise", a.getEntreprise().getNom());
+            entry.put("montant", a.getPrixMensuel());
+            entry.put("type", a.getType());
+            paiements.add(entry);
+        }
+        return paiements;
     }
 
 

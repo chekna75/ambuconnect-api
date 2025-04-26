@@ -527,4 +527,16 @@ public class SuperAdminRessource {
                 .build();
         }
     }
+
+    @GET
+    @Path("/repartition-abonnements")
+    public Response getRepartitionAbonnements() {
+        return Response.ok(superAdminService.repartitionAbonnementsActifsParType()).build();
+    }
+
+    @GET
+    @Path("/recents")
+    public Response getPaiementsRecents() {
+        return Response.ok(superAdminService.paiementsRecents30Jours()).build();
+    }
 }
