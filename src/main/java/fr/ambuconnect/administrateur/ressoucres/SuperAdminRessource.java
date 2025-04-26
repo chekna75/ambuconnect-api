@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
+import fr.ambuconnect.administrateur.dto.AllUsersResponse;
 import fr.ambuconnect.administrateur.dto.SuperAdminDto;
 import fr.ambuconnect.administrateur.services.SuperAdminService;
 import fr.ambuconnect.chauffeur.dto.ChauffeurDto;
@@ -550,5 +551,17 @@ public class SuperAdminRessource {
     @Path("/courses/total")
     public Response getTotalCourses(@QueryParam("annee") int annee) {
         return Response.ok(superAdminService.totalCoursesAnnee(annee)).build();
+    }
+
+    @GET
+    @Path("/utilisateurs/all")
+    public Response getAllUsers() {
+        try {
+            AllUsersResponse all = superAdminService.getAllUsers();
+            return Response.ok(all).build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de la récupération de tous les utilisateurs", e);
+            return Response.serverError().entity(new ErrorResponse("Erreur lors de la récupération de tous les utilisateurs")).build();
+        }
     }
 }

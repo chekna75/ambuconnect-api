@@ -31,6 +31,7 @@ import org.jboss.logging.Logger;
 
 
 import fr.ambuconnect.administrateur.dto.AdministrateurDto;
+import fr.ambuconnect.administrateur.dto.AllUsersResponse;
 import fr.ambuconnect.administrateur.dto.SuperAdminDto;
 import fr.ambuconnect.administrateur.entity.AdministrateurEntity;
 import fr.ambuconnect.administrateur.entity.SuperAdminEntity;
@@ -852,6 +853,32 @@ public class SuperAdminService {
         ).setParameter("annee", annee)
          .getSingleResult();
         return total.intValue();
+    }
+
+    public AllUsersResponse getAllUsers() {
+        AllUsersResponse response = new AllUsersResponse();
+
+        // Chauffeurs
+        List<ChauffeurEntity> chauffeurs = ChauffeurEntity.listAll();
+        response.chauffeurs = chauffeurs.stream().map(chauffeurMapper::chauffeurToDto).collect(Collectors.toList());
+
+        // Patients
+        List<PatientEntity> patients = PatientEntity.listAll();
+        response.patients = patients.stream().map(patientMapper::toDto).collect(Collectors.toList());
+
+        // Administrateurs
+        List<AdministrateurEntity> admins = AdministrateurEntity.listAll();
+        response.administrateurs = admins.stream().map(administrateurMapper::toDto).collect(Collectors.toList());
+
+        // Régulateurs (filtre sur le rôle)
+        List<AdministrateurEntity> regulateurs = AdministrateurEntity.list("role.nom", "REGULATEUR");
+        response.regulateurs = regulateurs.stream().map(administrateurMapper::toDto).collect(Collectors.toList());
+
+        // Utilisateurs d'établissement
+        List<UtilisateurEtablissement> usersEtab = UtilisateurEtablissement.listAll();
+        response.utilisateursEtablissement = usersEtab.stream().map(mapper::toDto).collect(Collectors.toList());
+
+        return response;
     }
 
 }
