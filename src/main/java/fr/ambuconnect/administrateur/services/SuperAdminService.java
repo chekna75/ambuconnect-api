@@ -820,7 +820,7 @@ public class SuperAdminService {
         for (AbonnementEntity a : abonnements) {
             Map<String, Object> entry = new HashMap<>();
             entry.put("date", a.getDateDebut());
-            entry.put("entreprise", a.getEntreprise().getNom());
+            entry.put("entreprise", a.getEntreprise() != null ? a.getEntreprise().getNom() : "Non renseignée");
             entry.put("montant", a.getPrixMensuel());
             entry.put("type", a.getType());
             paiements.add(entry);
