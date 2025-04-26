@@ -539,4 +539,16 @@ public class SuperAdminRessource {
     public Response getPaiementsRecents() {
         return Response.ok(superAdminService.paiementsRecents30Jours()).build();
     }
+
+    @GET
+    @Path("/courses/par-mois")
+    public Response getCoursesParMois(@QueryParam("annee") int annee) {
+        return Response.ok(superAdminService.coursesParMois(annee)).build();
+    }
+
+    @GET
+    @Path("/courses/total")
+    public Response getTotalCourses(@QueryParam("annee") int annee) {
+        return Response.ok(superAdminService.totalCoursesAnnee(annee)).build();
+    }
 }

@@ -49,6 +49,7 @@ import java.util.Map;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 @ApplicationScoped
 public class SuperAdminService {
@@ -828,5 +829,29 @@ public class SuperAdminService {
         return paiements;
     }
 
+    public Map<String, Integer> coursesParMois(int annee) {
+        List<Object[]> results = entityManager.createQuery(
+            "SELECT FUNCTION('MONTH', c.dateHeureDepart), COUNT(c) FROM CoursesEntity c WHERE FUNCTION('YEAR', c.dateHeureDepart) = :annee GROUP BY FUNCTION('MONTH', c.dateHeureDepart)"
+        ).setParameter("annee", annee)
+         .getResultList();
+
+        Map<String, Integer> parMois = new LinkedHashMap<>();
+        for (int i = 1; i <= 12; i++) {
+            parMois.put(String.format("%02d", i), 0); // initialiser tous les mois à 0
+        }
+        for (Object[] row : results) {
+            String mois = String.format("%02d", ((Number) row[0]).intValue());
+            parMois.put(mois, ((Number) row[1]).intValue());
+        }
+        return parMois;
+    }
+
+    public int totalCoursesAnnee(int annee) {
+        Long total = entityManager.createQuery(
+            "SELECT COUNT(c) FROM CoursesEntity c WHERE FUNCTION('YEAR', c.dateHeureDepart) = :annee", Long.class
+        ).setParameter("annee", annee)
+         .getSingleResult();
+        return total.intValue();
+    }
 
 }
