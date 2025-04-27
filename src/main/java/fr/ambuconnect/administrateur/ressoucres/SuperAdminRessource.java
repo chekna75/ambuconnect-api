@@ -567,15 +567,25 @@ public class SuperAdminRessource {
 
     @POST
     @Path("/utilisateurs/email/creation")
-    public Response envoyerEmailCreationUtilisateur(@PathParam("email") String email, @PathParam("nomEtablissement") String nomEtablissement) {
-        superAdminService.envoyerEmailCreationUtilisateur(email, nomEtablissement);
-        return Response.ok().build();
+    public Response envoyerEmailCreationUtilisateur(@QueryParam("email") String email, @QueryParam("nomEtablissement") String nomEtablissement) {
+        try {
+            superAdminService.envoyerEmailCreationUtilisateur(email, nomEtablissement);
+            return Response.ok().build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de l'envoi de l'email de création d'utilisateur", e);
+            return Response.serverError().entity(new ErrorResponse("Erreur lors de l'envoi de l'email de création d'utilisateur")).build();
+        }
     }
 
     @POST
     @Path("/etablissements/email/activation")
-    public Response envoyerEmailActivationEtablissement(@PathParam("email") String email, @PathParam("nomEtablissement") String nomEtablissement) {
-        superAdminService.envoyerEmailActivationEtablissement(email, nomEtablissement);
-        return Response.ok().build();
+    public Response envoyerEmailActivationEtablissement(@QueryParam("email") String email, @QueryParam("nomEtablissement") String nomEtablissement) {
+        try {
+            superAdminService.envoyerEmailActivationEtablissement(email, nomEtablissement);
+            return Response.ok().build();
+        } catch (Exception e) {
+            LOG.error("Erreur lors de l'envoi de l'email d'activation d'établissement", e);
+            return Response.serverError().entity(new ErrorResponse("Erreur lors de l'envoi de l'email d'activation d'établissement")).build();
+        }
     }
 }
