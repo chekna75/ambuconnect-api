@@ -564,4 +564,18 @@ public class SuperAdminRessource {
             return Response.serverError().entity(new ErrorResponse("Erreur lors de la récupération de tous les utilisateurs")).build();
         }
     }
+
+    @POST
+    @Path("/utilisateurs/email/creation")
+    public Response envoyerEmailCreationUtilisateur(@PathParam("email") String email, @PathParam("nomEtablissement") String nomEtablissement) {
+        superAdminService.envoyerEmailCreationUtilisateur(email, nomEtablissement);
+        return Response.ok().build();
+    }
+
+    @POST
+    @Path("/etablissements/email/activation")
+    public Response envoyerEmailActivationEtablissement(@PathParam("email") String email, @PathParam("nomEtablissement") String nomEtablissement) {
+        superAdminService.envoyerEmailActivationEtablissement(email, nomEtablissement);
+        return Response.ok().build();
+    }
 }

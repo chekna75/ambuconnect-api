@@ -881,4 +881,12 @@ public class SuperAdminService {
         return response;
     }
 
+    public void envoyerEmailCreationUtilisateur(String email, String nomEtablissement){
+        emailServiceEtablissement.sendEtablissementActivationConfirmation(email, nomEtablissement);
+    }
+
+    public void envoyerEmailActivationEtablissement(String email, String nomEtablissement){
+        emailServiceEtablissement.sendEtablissementActivationConfirmation(email, nomEtablissement);
+    }
+
 }

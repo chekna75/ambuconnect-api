@@ -78,7 +78,21 @@ public class EmailServiceEtablissement {
 
     public void sendEtablissementActivationConfirmation(String email, String nomEtablissement) {
         log.info("Envoi email de confirmation d'activation à {}", email);
-        // TODO: Implémenter l'envoi d'email
+        String subject = "Confirmation d'activation d'établissement AmbuConnect";
+        String body = String.format("""
+            Bonjour,
+            
+            Votre établissement %s a été activé avec succès.
+
+            Vous pouvez désormais accéder à votre compte AmbuConnect, en créant un compte utilisateur.
+            Pour cela, rendez-vous sur le lien suivant :
+            %s/create-user
+
+            Cordialement,
+            L'équipe AmbuConnect
+            """, nomEtablissement, frontendUrl);
+        mailer.send(Mail.withText(email, subject, body));
+        
     }
 
     public void sendEmail(String destinataire, String sujet, String contenu) throws Exception {
