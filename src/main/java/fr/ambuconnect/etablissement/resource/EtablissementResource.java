@@ -100,7 +100,7 @@ public class EtablissementResource {
 
   @POST
   @Path("/{id}/utilisateurs")
-  @RolesAllowed({"admin", "ADMIN"})
+  @PermitAll
   public Response creerUtilisateur(@PathParam("id") UUID etablissementId, UtilisateurEtablissementDto dto) {
     try {
       UtilisateurEtablissementDto created = etablissementService.creerUtilisateur(etablissementId, dto);
