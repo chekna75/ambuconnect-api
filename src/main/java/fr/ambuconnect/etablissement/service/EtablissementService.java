@@ -146,7 +146,8 @@ public class EtablissementService {
         // Envoyer l'email de confirmation d'activation
         emailService.sendEtablissementActivationConfirmation(
             etablissement.getEmailContact(),
-            etablissement.getNom()
+            etablissement.getNom(),
+            id
         );
 
         log.info("Établissement activé avec succès : {}", id);

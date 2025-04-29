@@ -567,9 +567,12 @@ public class SuperAdminRessource {
 
     @POST
     @Path("/utilisateurs/email/creation")
-    public Response envoyerEmailCreationUtilisateur(@QueryParam("email") String email, @QueryParam("nomEtablissement") String nomEtablissement) {
+    public Response envoyerEmailCreationUtilisateur(
+        @QueryParam("email") String email, 
+        @QueryParam("nomEtablissement") String nomEtablissement,
+        @QueryParam("idEtablissement") UUID idEtablissement) {
         try {
-            superAdminService.envoyerEmailCreationUtilisateur(email, nomEtablissement);
+            superAdminService.envoyerEmailCreationUtilisateur(email, nomEtablissement, idEtablissement);
             return Response.ok().build();
         } catch (Exception e) {
             LOG.error("Erreur lors de l'envoi de l'email de création d'utilisateur", e);
@@ -579,9 +582,12 @@ public class SuperAdminRessource {
 
     @POST
     @Path("/etablissements/email/activation")
-    public Response envoyerEmailActivationEtablissement(@QueryParam("email") String email, @QueryParam("nomEtablissement") String nomEtablissement) {
+    public Response envoyerEmailActivationEtablissement(
+        @QueryParam("email") String email, 
+        @QueryParam("nomEtablissement") String nomEtablissement,
+        @QueryParam("idEtablissement") UUID idEtablissement) {
         try {
-            superAdminService.envoyerEmailActivationEtablissement(email, nomEtablissement);
+            superAdminService.envoyerEmailActivationEtablissement(email, nomEtablissement, idEtablissement);
             return Response.ok().build();
         } catch (Exception e) {
             LOG.error("Erreur lors de l'envoi de l'email d'activation d'établissement", e);

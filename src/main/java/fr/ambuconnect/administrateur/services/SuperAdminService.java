@@ -565,7 +565,8 @@ public class SuperAdminService {
         // Envoyer l'email de confirmation d'activation
         emailServiceEtablissement.sendEtablissementActivationConfirmation(
             etablissement.getEmailContact(),
-            etablissement.getNom()
+            etablissement.getNom(),
+            id
         );
 
         LOG.info("Établissement activé avec succès : {}"+ id);
@@ -881,12 +882,12 @@ public class SuperAdminService {
         return response;
     }
 
-    public void envoyerEmailCreationUtilisateur(String email, String nomEtablissement){
-        emailServiceEtablissement.sendEtablissementActivationConfirmation(email, nomEtablissement);
+    public void envoyerEmailCreationUtilisateur(String email, String nomEtablissement, UUID idEtablissement){
+        emailServiceEtablissement.sendEtablissementActivationConfirmation(email, nomEtablissement, idEtablissement);
     }
 
-    public void envoyerEmailActivationEtablissement(String email, String nomEtablissement){
-        emailServiceEtablissement.sendEtablissementActivationConfirmation(email, nomEtablissement);
+    public void envoyerEmailActivationEtablissement(String email, String nomEtablissement, UUID idEtablissement){
+        emailServiceEtablissement.sendEtablissementActivationConfirmation(email, nomEtablissement, idEtablissement);
     }
 
 }

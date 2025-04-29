@@ -11,6 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @ApplicationScoped
@@ -76,7 +77,7 @@ public class EmailServiceEtablissement {
         
     }
 
-    public void sendEtablissementActivationConfirmation(String email, String nomEtablissement) {
+    public void sendEtablissementActivationConfirmation(String email, String nomEtablissement, UUID idEtablissement) {
         log.info("Envoi email de confirmation d'activation à {}", email);
         String subject = "Confirmation d'activation d'établissement AmbuConnect";
         String body = String.format("""
@@ -86,11 +87,11 @@ public class EmailServiceEtablissement {
 
             Vous pouvez désormais accéder à votre compte AmbuConnect, en créant un compte utilisateur.
             Pour cela, rendez-vous sur le lien suivant :
-            %s/create-user
+            %s/create-user?idEtablissement=%s
 
             Cordialement,
             L'équipe AmbuConnect
-            """, nomEtablissement, frontendUrl);
+            """, nomEtablissement, frontendUrl, idEtablissement);
         mailer.send(Mail.withText(email, subject, body));
         
     }
